@@ -4,7 +4,8 @@
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "circuit-to-svg": "^0.0.175"
   },
   "peerDependencies": {
     "typescript": "^5"

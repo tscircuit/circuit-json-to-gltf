@@ -1,15 +1,8 @@
 # circuit-json-to-gltf
 
-To install dependencies:
+Converts circuit json to a 3D gltf file. Used for exporting circuits.
 
-```bash
-bun install
-```
+Implementation details:
 
-To run:
-
-```bash
-bun run index.ts
-```
-
-This project was created using `bun init` in bun v1.2.19. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+- Uses `circuit-to-svg` to render the top/bottom layers of the board to SVG, then `resvg` to convert the SVG to a PNG
+- Includes a builtin `stl` and `obj` model converter to support model URL loading
