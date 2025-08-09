@@ -8,6 +8,15 @@ export interface MeshData {
   colors?: number[]
 }
 
+export interface FaceMeshData {
+  top: MeshData
+  bottom: MeshData
+  front: MeshData
+  back: MeshData
+  left: MeshData
+  right: MeshData
+}
+
 export function createBoxMesh(size: Size3): MeshData {
   const hw = size.x / 2
   const hh = size.y / 2
@@ -142,6 +151,138 @@ export function createBoxMesh(size: Size3): MeshData {
   }
 
   return { positions, normals, texcoords, indices }
+}
+
+export function createBoxMeshByFaces(size: Size3): FaceMeshData {
+  const hw = size.x / 2
+  const hh = size.y / 2
+  const hd = size.z / 2
+
+  // Define the 6 faces as separate meshes
+  const faceDefinitions = {
+    // Front face (positive Z)
+    front: {
+      vertices: [
+        [-hw, -hh, hd],
+        [hw, -hh, hd],
+        [hw, hh, hd],
+        [-hw, hh, hd],
+      ],
+      normal: [0, 0, 1],
+      uvs: [
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    },
+    // Back face (negative Z)
+    back: {
+      vertices: [
+        [hw, -hh, -hd],
+        [-hw, -hh, -hd],
+        [-hw, hh, -hd],
+        [hw, hh, -hd],
+      ],
+      normal: [0, 0, -1],
+      uvs: [
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    },
+    // Top face (positive Y)
+    top: {
+      vertices: [
+        [-hw, hh, hd],
+        [hw, hh, hd],
+        [hw, hh, -hd],
+        [-hw, hh, -hd],
+      ],
+      normal: [0, 1, 0],
+      uvs: [
+        [0, 0],
+        [1, 0],
+        [1, 1],
+        [0, 1],
+      ],
+    },
+    // Bottom face (negative Y)
+    bottom: {
+      vertices: [
+        [-hw, -hh, -hd],
+        [hw, -hh, -hd],
+        [hw, -hh, hd],
+        [-hw, -hh, hd],
+      ],
+      normal: [0, -1, 0],
+      uvs: [
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    },
+    // Right face (positive X)
+    right: {
+      vertices: [
+        [hw, -hh, hd],
+        [hw, -hh, -hd],
+        [hw, hh, -hd],
+        [hw, hh, hd],
+      ],
+      normal: [1, 0, 0],
+      uvs: [
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    },
+    // Left face (negative X)
+    left: {
+      vertices: [
+        [-hw, -hh, -hd],
+        [-hw, -hh, hd],
+        [-hw, hh, hd],
+        [-hw, hh, -hd],
+      ],
+      normal: [-1, 0, 0],
+      uvs: [
+        [0, 1],
+        [1, 1],
+        [1, 0],
+        [0, 0],
+      ],
+    },
+  }
+
+  const result: FaceMeshData = {} as FaceMeshData
+
+  for (const [faceName, face] of Object.entries(faceDefinitions)) {
+    const positions: number[] = []
+    const normals: number[] = []
+    const texcoords: number[] = []
+    const indices = [0, 1, 2, 0, 2, 3]
+
+    // Add vertices for this face
+    for (let i = 0; i < 4; i++) {
+      const vertex = face.vertices[i]
+      positions.push(vertex[0], vertex[1], vertex[2])
+      normals.push(face.normal[0], face.normal[1], face.normal[2])
+      texcoords.push(face.uvs[i][0], face.uvs[i][1])
+    }
+
+    result[faceName as keyof FaceMeshData] = {
+      positions,
+      normals,
+      texcoords,
+      indices,
+    }
+  }
+
+  return result
 }
 
 export function createMeshFromSTL(stlMesh: STLMesh): MeshData {

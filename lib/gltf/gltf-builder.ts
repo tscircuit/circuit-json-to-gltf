@@ -21,10 +21,12 @@ import {
 import { BufferBuilder } from "./buffer-builder"
 import {
   createBoxMesh,
+  createBoxMeshByFaces,
   createMeshFromSTL,
   transformMesh,
   getBounds,
   type MeshData,
+  type FaceMeshData,
 } from "./geometry"
 
 export class GLTFBuilder {
@@ -81,6 +83,13 @@ export class GLTFBuilder {
     box: Box3D,
     defaultMaterialIndex: number,
   ): Promise<void> {
+    // If we have face-specific textures or need green sides, use face-based approach
+    if (box.texture && (box.texture.top || box.texture.bottom)) {
+      await this.addBoxWithFaceMaterials(box, defaultMaterialIndex)
+      return
+    }
+
+    // Fallback to original single-material approach
     let meshData: MeshData
 
     // Create geometry
@@ -93,39 +102,155 @@ export class GLTFBuilder {
     // Apply transformations
     meshData = transformMesh(meshData, box.center, box.rotation)
 
-    // Create material - if we have textures, create a new material for them
+    // Create material
     let materialIndex = defaultMaterialIndex
-    
-    // Handle textures first to determine if we need a special material
-    if (box.texture && box.texture.top && typeof box.texture.top === "string") {
-      // Create a material specifically for this textured box
-      materialIndex = this.addMaterial({
-        name: `TexturedMaterial_${this.materials.length}`,
+    if (box.color) {
+      materialIndex = this.addMaterialFromColor(box.color)
+    }
+
+    // Create mesh
+    const meshIndex = this.addMesh(meshData, materialIndex, box.label)
+
+    // Create node
+    const nodeIndex = this.nodes.length
+    this.nodes.push({
+      name: box.label || `Box${nodeIndex}`,
+      mesh: meshIndex,
+    })
+
+    // Add node to scene
+    this.gltf.scenes![0].nodes!.push(nodeIndex)
+  }
+
+  private async addBoxWithFaceMaterials(
+    box: Box3D,
+    defaultMaterialIndex: number,
+  ): Promise<void> {
+    // Create face-specific geometry
+    const faceMeshes = createBoxMeshByFaces(box.size)
+
+    // Create materials for each face
+    const faceMaterials: Record<string, number> = {}
+
+    // Top face - use texture if available
+    if (box.texture?.top) {
+      const topMaterialIndex = this.addMaterial({
+        name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0], // White base so texture shows properly
-          metallicFactor: 0.0, // Non-metallic for PCB
-          roughnessFactor: 0.8, // Slightly rough
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          metallicFactor: 0.0,
+          roughnessFactor: 0.8,
         },
       })
       
       const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-      
       if (textureIndex !== -1) {
-        // Apply texture to the new material
-        const material = this.materials[materialIndex]
+        const material = this.materials[topMaterialIndex]
         if (material.pbrMetallicRoughness) {
           material.pbrMetallicRoughness.baseColorTexture = {
             index: textureIndex,
           }
         }
       }
-    } else if (box.color) {
-      // No texture, use color-based material
-      materialIndex = this.addMaterialFromColor(box.color)
+      faceMaterials.top = topMaterialIndex
+    } else {
+      faceMaterials.top = defaultMaterialIndex
     }
 
-    // Create mesh
-    const meshIndex = this.addMesh(meshData, materialIndex, box.label)
+    // Bottom face - use texture if available
+    if (box.texture?.bottom) {
+      const bottomMaterialIndex = this.addMaterial({
+        name: `BottomMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          metallicFactor: 0.0,
+          roughnessFactor: 0.8,
+        },
+      })
+      
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
+      if (textureIndex !== -1) {
+        const material = this.materials[bottomMaterialIndex]
+        if (material.pbrMetallicRoughness) {
+          material.pbrMetallicRoughness.baseColorTexture = {
+            index: textureIndex,
+          }
+        }
+      }
+      faceMaterials.bottom = bottomMaterialIndex
+    } else {
+      faceMaterials.bottom = defaultMaterialIndex
+    }
+
+    // Side faces - use green color
+    const greenMaterialIndex = this.addMaterial({
+      name: `GreenSideMaterial_${this.materials.length}`,
+      pbrMetallicRoughness: {
+        baseColorFactor: [0.0, 0.55, 0.0, 1.0], // Green color for PCB sides
+        metallicFactor: 0.0,
+        roughnessFactor: 0.8,
+      },
+    })
+    faceMaterials.front = greenMaterialIndex
+    faceMaterials.back = greenMaterialIndex
+    faceMaterials.left = greenMaterialIndex
+    faceMaterials.right = greenMaterialIndex
+
+    // Create a single mesh with multiple primitives (one per face)
+    const meshIndex = this.meshes.length
+    const primitives: any[] = []
+
+    for (const [faceName, faceData] of Object.entries(faceMeshes)) {
+      // Apply transformations to each face
+      const transformedFaceData = transformMesh(faceData, box.center, box.rotation)
+      
+      // Create accessors for this face
+      const positionAccessorIndex = this.addAccessor(
+        transformedFaceData.positions,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const normalAccessorIndex = this.addAccessor(
+        transformedFaceData.normals,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const texcoordAccessorIndex = this.addAccessor(
+        transformedFaceData.texcoords,
+        "VEC2",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const indicesAccessorIndex = this.addAccessor(
+        transformedFaceData.indices,
+        "SCALAR",
+        COMPONENT_TYPE.UNSIGNED_SHORT,
+        TARGET.ELEMENT_ARRAY_BUFFER,
+      )
+
+      // Add primitive for this face
+      primitives.push({
+        attributes: {
+          POSITION: positionAccessorIndex,
+          NORMAL: normalAccessorIndex,
+          TEXCOORD_0: texcoordAccessorIndex,
+        },
+        indices: indicesAccessorIndex,
+        material: faceMaterials[faceName],
+        mode: PRIMITIVE_MODE.TRIANGLES,
+      })
+    }
+
+    // Create mesh with all face primitives
+    this.meshes.push({
+      name: box.label || `BoxMesh${meshIndex}`,
+      primitives,
+    })
 
     // Create node
     const nodeIndex = this.nodes.length
