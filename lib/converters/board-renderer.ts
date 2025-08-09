@@ -38,9 +38,8 @@ export async function renderBoardLayer(
     },
   })
 
-  // Flip the SVG for the top layer to match 3D orientation
-  const finalSvg =
-    layer === "top" ? svg.replace("<svg", '<svg transform="scale(1, -1)"') : svg
+  // Use the SVG without transformation
+  const finalSvg = svg
 
   // Use the best SVG-to-PNG conversion method for the platform
   return await convertSvgToPng(finalSvg, resolution, backgroundColor)
