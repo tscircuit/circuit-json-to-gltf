@@ -2,6 +2,8 @@
 
 Converts circuit JSON to 3D GLTF files. Used for exporting circuits as 3D models.
 
+<img width="3588" height="2010" alt="image" src="https://github.com/user-attachments/assets/9d104d90-9985-4c92-9be0-05b2638456c6" />
+
 ## Features
 
 - Convert circuit JSON to GLTF 2.0 format (JSON or binary)
