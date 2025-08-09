@@ -5,10 +5,13 @@
   "private": true,
   "scripts": {
     "test": "bun test tests/",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
     "build:site": "cosmos-export",
     "start": "cosmos"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.1.4",
     "@types/bun": "latest",
     "bun-match-svg": "^0.0.12",
     "circuit-to-svg": "^0.0.175",
