@@ -1,13 +1,41 @@
 {
   "name": "circuit-json-to-gltf",
-  "module": "index.ts",
+  "main": "dist/index.js",
   "type": "module",
-  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "test": "bun test tests/",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "build:site": "cosmos-export",
+    "start": "cosmos",
+    "build": "tsup-node lib/index.ts --format esm --dts --outDir dist"
+  },
+  "files": [
+    "dist"
+  ],
   "devDependencies": {
+    "@biomejs/biome": "^2.1.4",
+    "@google/model-viewer": "^4.1.0",
+    "@resvg/resvg-js": "^2.6.2",
+    "@resvg/resvg-wasm": "^2.6.2",
+    "@tscircuit/circuit-json-util": "^0.0.64",
     "@types/bun": "latest",
-    "circuit-to-svg": "^0.0.175"
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "bun-match-svg": "^0.0.12",
+    "circuit-json": "^0.0.226",
+    "circuit-to-svg": "^0.0.175",
+    "react": "^19.1.1",
+    "react-cosmos": "^7.0.0",
+    "react-cosmos-plugin-vite": "^7.0.0",
+    "react-dom": "^19.1.1",
+    "tsup": "^8.5.0",
+    "vite": "^7.1.1"
   },
   "peerDependencies": {
     "typescript": "^5"
-  }
+  },
+  "dependencies": {}
 }

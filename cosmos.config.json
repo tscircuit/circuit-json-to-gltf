@@ -1,0 +1,9 @@
+{
+  "plugins": ["react-cosmos-plugin-vite"],
+  "rootDir": "./site",
+  "fixturesDir": "./",
+  "fixtureFileSuffix": "fixture",
+  "vite": {
+    "configFile": "../vite.cosmos.config.ts"
+  }
+}
