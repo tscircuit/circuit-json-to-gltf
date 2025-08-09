@@ -1,8 +1,6 @@
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import type { BoardRenderOptions } from "../types"
-// Only import the WASM-compatible version for browser compatibility
-import { svgToPngDataUrl } from "../utils/svg-to-png-browser"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
@@ -36,10 +34,6 @@ export async function renderBoardLayer(
         top: silkscreenColor,
         bottom: silkscreenColor,
       },
-      pad: {
-        top: padColor,
-        bottom: padColor,
-      },
       drill: drillColor,
     },
   })
@@ -48,12 +42,28 @@ export async function renderBoardLayer(
   const finalSvg =
     layer === "top" ? svg.replace("<svg", '<svg transform="scale(1, -1)"') : svg
 
-  // Try using native browser SVG rendering instead of WASM
-  return await convertSvgToCanvasDataUrl(finalSvg, resolution, backgroundColor)
+  // Use the best SVG-to-PNG conversion method for the platform
+  return await convertSvgToPng(finalSvg, resolution, backgroundColor)
 }
 
-// Convert SVG to Canvas-based PNG (alternative to WASM)
-async function convertSvgToCanvasDataUrl(svgString: string, resolution: number, backgroundColor: string): Promise<string> {
+// Intelligent SVG to PNG conversion based on platform
+async function convertSvgToPng(svgString: string, resolution: number, backgroundColor: string): Promise<string> {
+  // Check if we're in a browser environment
+  if (typeof window !== "undefined" && typeof document !== "undefined") {
+    // Browser: Use Canvas API (works better for complex SVGs)
+    return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
+  } else {
+    // Node.js/Bun: Use WASM for high-quality rendering
+    const { svgToPngDataUrl } = await import("../utils/svg-to-png-browser")
+    return await svgToPngDataUrl(svgString, {
+      width: resolution,
+      background: backgroundColor,
+    })
+  }
+}
+
+// Browser-based Canvas SVG conversion
+async function convertSvgToCanvasBrowser(svgString: string, resolution: number, backgroundColor: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const canvas = document.createElement('canvas')
     canvas.width = resolution
@@ -77,7 +87,7 @@ async function convertSvgToCanvasDataUrl(svgString: string, resolution: number, 
         reject(error)
       }
     }
-    img.onerror = (error) => {
+    img.onerror = (error: any) => {
       console.error("Failed to load SVG image:", error)
       reject(error)
     }
@@ -85,34 +95,6 @@ async function convertSvgToCanvasDataUrl(svgString: string, resolution: number, 
   })
 }
 
-// Generate a test texture to debug which face we're seeing
-function generateDebugTexture(resolution: number): string {
-  const canvas = document.createElement('canvas')
-  canvas.width = resolution
-  canvas.height = resolution
-  const ctx = canvas.getContext('2d')!
-  
-  // Fill with bright magenta background
-  ctx.fillStyle = '#FF00FF'
-  ctx.fillRect(0, 0, resolution, resolution)
-  
-  // Add large text to identify this as the texture
-  ctx.fillStyle = '#FFFFFF'
-  ctx.font = `${resolution/8}px Arial`
-  ctx.textAlign = 'center'
-  ctx.fillText('PCB TEXTURE', resolution/2, resolution/2)
-  ctx.fillText('TOP VIEW', resolution/2, resolution/2 + resolution/8)
-  
-  // Add corner markers
-  ctx.fillStyle = '#FFFF00'
-  const cornerSize = resolution/16
-  ctx.fillRect(0, 0, cornerSize, cornerSize) // Top left
-  ctx.fillRect(resolution-cornerSize, 0, cornerSize, cornerSize) // Top right
-  ctx.fillRect(0, resolution-cornerSize, cornerSize, cornerSize) // Bottom left  
-  ctx.fillRect(resolution-cornerSize, resolution-cornerSize, cornerSize, cornerSize) // Bottom right
-  
-  return canvas.toDataURL('image/png')
-}
 
 export async function renderBoardTextures(
   circuitJson: CircuitJson,
