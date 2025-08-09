@@ -93,27 +93,35 @@ export class GLTFBuilder {
     // Apply transformations
     meshData = transformMesh(meshData, box.center, box.rotation)
 
-    // Create material
+    // Create material - if we have textures, create a new material for them
     let materialIndex = defaultMaterialIndex
-    if (box.color) {
-      materialIndex = this.addMaterialFromColor(box.color)
-    }
-
-    // Handle textures
-    if (box.texture) {
-      // For now, we'll just use the top texture if available
-      if (box.texture.top && typeof box.texture.top === "string") {
-        const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-        if (textureIndex !== -1) {
-          // Update material to use texture
-          const material = this.materials[materialIndex]
-          if (material.pbrMetallicRoughness) {
-            material.pbrMetallicRoughness.baseColorTexture = {
-              index: textureIndex,
-            }
+    
+    // Handle textures first to determine if we need a special material
+    if (box.texture && box.texture.top && typeof box.texture.top === "string") {
+      // Create a material specifically for this textured box
+      materialIndex = this.addMaterial({
+        name: `TexturedMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0], // White base so texture shows properly
+          metallicFactor: 0.0, // Non-metallic for PCB
+          roughnessFactor: 0.8, // Slightly rough
+        },
+      })
+      
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
+      
+      if (textureIndex !== -1) {
+        // Apply texture to the new material
+        const material = this.materials[materialIndex]
+        if (material.pbrMetallicRoughness) {
+          material.pbrMetallicRoughness.baseColorTexture = {
+            index: textureIndex,
           }
         }
       }
+    } else if (box.color) {
+      // No texture, use color-based material
+      materialIndex = this.addMaterialFromColor(box.color)
     }
 
     // Create mesh
@@ -327,7 +335,10 @@ export class GLTFBuilder {
     try {
       // Extract image data from data URL
       const base64Match = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/)
-      if (!base64Match) return -1
+      if (!base64Match) {
+        console.warn("Invalid data URL format")
+        return -1
+      }
 
       const mimeType = `image/${base64Match[1]}`
       const base64Data = base64Match[2]

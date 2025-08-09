@@ -1,14 +1,38 @@
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
-// @ts-ignore
-import wasmUrl from "@resvg/resvg-wasm/index_bg.wasm?url"
 
 let wasmInitialized = false
 
 async function ensureWasmInitialized() {
   if (!wasmInitialized) {
-    // Initialize WASM using the bundled version
-    await initWasm(fetch(wasmUrl))
-    wasmInitialized = true
+    try {
+      // Check if we're in a Node.js/Bun environment
+      if (typeof process !== "undefined" && process.versions?.node) {
+        // Dynamically import Node.js modules only in Node.js environment
+        const { readFileSync } = await import("fs")
+        const { fileURLToPath } = await import("url")
+        const { dirname, join } = await import("path")
+        
+        // Load WASM file directly from node_modules
+        const currentDir = dirname(fileURLToPath(import.meta.url))
+        const wasmPath = join(currentDir, "../../node_modules/@resvg/resvg-wasm/index_bg.wasm")
+        const wasmBuffer = readFileSync(wasmPath)
+        await initWasm(wasmBuffer)
+      } else {
+        // Browser environment - try to load from URL
+        try {
+          // @ts-ignore - Vite will handle this import
+          const wasmUrl = await import("@resvg/resvg-wasm/index_bg.wasm?url")
+          await initWasm(fetch(wasmUrl.default))
+        } catch {
+          // Fallback to CDN
+          await initWasm(fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"))
+        }
+      }
+      wasmInitialized = true
+    } catch (error) {
+      console.error("Failed to initialize WASM:", error)
+      throw error
+    }
   }
 }
 
@@ -58,7 +82,7 @@ export async function svgToPngDataUrl(
   const bytes = new Uint8Array(pngBuffer)
   const len = bytes.byteLength
   for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i])
+    binary += String.fromCharCode(bytes[i]!)
   }
   const base64 = btoa(binary)
 

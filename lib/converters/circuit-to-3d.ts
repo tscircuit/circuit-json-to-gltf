@@ -54,7 +54,6 @@ export async function convertCircuitJsonTo3D(
       y: boardThickness,
       z: pcbBoard.height,
     },
-    color: pcbColor,
   }
 
   // Render board textures if requested and resolution > 0
@@ -67,7 +66,12 @@ export async function convertCircuitJsonTo3D(
       }
     } catch (error) {
       console.warn("Failed to render board textures:", error)
+      // If texture rendering fails, use the fallback color
+      boardBox.color = pcbColor
     }
+  } else {
+    // No textures requested, use solid color
+    boardBox.color = pcbColor
   }
 
   boxes.push(boardBox)
