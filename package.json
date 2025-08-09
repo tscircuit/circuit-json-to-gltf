@@ -3,11 +3,22 @@
   "module": "index.ts",
   "type": "module",
   "private": true,
+  "scripts": {
+    "test": "bun test tests/"
+  },
   "devDependencies": {
     "@types/bun": "latest",
-    "circuit-to-svg": "^0.0.175"
+    "bun-match-svg": "^0.0.12",
+    "circuit-to-svg": "^0.0.175",
+    "react-cosmos": "^7.0.0",
+    "react-cosmos-plugin-vite": "^7.0.0"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "@tscircuit/circuit-json-util": "^0.0.64",
+    "circuit-json": "^0.0.226"
   }
 }
