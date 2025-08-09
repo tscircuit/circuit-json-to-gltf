@@ -57,8 +57,8 @@ export async function convertCircuitJsonTo3D(
     color: pcbColor,
   }
 
-  // Render board textures if requested
-  if (shouldRenderTextures) {
+  // Render board textures if requested and resolution > 0
+  if (shouldRenderTextures && textureResolution > 0) {
     try {
       const textures = await renderBoardTextures(circuitJson, textureResolution)
       boardBox.texture = {

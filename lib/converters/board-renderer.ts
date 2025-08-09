@@ -1,7 +1,8 @@
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
-import { svgToPng, svgToPngDataUrl } from "../utils/svg-to-png"
 import type { BoardRenderOptions } from "../types"
+// Only import the WASM-compatible version for browser compatibility
+import { svgToPngDataUrl } from "../utils/svg-to-png-browser"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
@@ -44,7 +45,7 @@ export async function renderBoardLayer(
     ? svg.replace("<svg", '<svg transform="scale(1, -1)"')
     : svg
 
-  // Convert to PNG data URL
+  // Convert to PNG data URL using WASM version
   return await svgToPngDataUrl(finalSvg, {
     width: resolution,
     background: backgroundColor,

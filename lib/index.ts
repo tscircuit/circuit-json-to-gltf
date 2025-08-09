@@ -63,5 +63,5 @@ export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 export { convertSceneToGLTF } from "./converters/scene-to-gltf"
 export { renderBoardLayer, renderBoardTextures } from "./converters/board-renderer"
 
-// Re-export utilities
-export { svgToPng, svgToPngDataUrl } from "./utils/svg-to-png"
+// Re-export utilities (conditionally based on environment)
+// Note: svg-to-png utilities are environment-specific and not exported here

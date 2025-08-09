@@ -4,7 +4,9 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test": "bun test tests/"
+    "test": "bun test tests/",
+    "build:site": "cosmos-export",
+    "start": "cosmos"
   },
   "devDependencies": {
     "@types/bun": "latest",
@@ -17,8 +19,16 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@google/model-viewer": "^4.1.0",
     "@resvg/resvg-js": "^2.6.2",
+    "@resvg/resvg-wasm": "^2.6.2",
     "@tscircuit/circuit-json-util": "^0.0.64",
-    "circuit-json": "^0.0.226"
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^5.0.0",
+    "circuit-json": "^0.0.226",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "vite": "^7.1.1"
   }
 }

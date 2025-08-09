@@ -1,5 +1,9 @@
 {
-  "$schema": "http://json.schemastore.org/cosmos-config",
   "plugins": ["react-cosmos-plugin-vite"],
-  "fixtureFileSuffix": "page"
+  "rootDir": "./site",
+  "fixturesDir": "./",
+  "fixtureFileSuffix": "fixture",
+  "vite": {
+    "configFile": "../vite.cosmos.config.ts"
+  }
 }
