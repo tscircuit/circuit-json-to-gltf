@@ -21,10 +21,6 @@ export async function renderBoardLayer(
     matchBoardAspectRatio: true,
     backgroundColor,
     drawPaddingOutsideBoard: false,
-    showPads: true,
-    showTraces: true,
-    showVias: true,
-    showSilkscreen: true,
     colorOverrides: {
       copper: {
         top: copperColor,
@@ -46,7 +42,11 @@ export async function renderBoardLayer(
 }
 
 // Intelligent SVG to PNG conversion based on platform
-async function convertSvgToPng(svgString: string, resolution: number, backgroundColor: string): Promise<string> {
+async function convertSvgToPng(
+  svgString: string,
+  resolution: number,
+  backgroundColor: string,
+): Promise<string> {
   // Check if we're in a browser environment
   if (typeof window !== "undefined" && typeof document !== "undefined") {
     // Browser: Use Canvas API (works better for complex SVGs)
@@ -62,26 +62,30 @@ async function convertSvgToPng(svgString: string, resolution: number, background
 }
 
 // Browser-based Canvas SVG conversion
-async function convertSvgToCanvasBrowser(svgString: string, resolution: number, backgroundColor: string): Promise<string> {
+async function convertSvgToCanvasBrowser(
+  svgString: string,
+  resolution: number,
+  backgroundColor: string,
+): Promise<string> {
   return new Promise((resolve, reject) => {
-    const canvas = document.createElement('canvas')
+    const canvas = document.createElement("canvas")
     canvas.width = resolution
     canvas.height = resolution
-    const ctx = canvas.getContext('2d')!
-    
+    const ctx = canvas.getContext("2d")!
+
     // Fill with background color first
     ctx.fillStyle = backgroundColor
     ctx.fillRect(0, 0, resolution, resolution)
-    
+
     // Create SVG data URL
     const svgDataUrl = `data:image/svg+xml;base64,${btoa(svgString)}`
-    
+
     // Create image from SVG
     const img = new Image()
     img.onload = () => {
       try {
         ctx.drawImage(img, 0, 0, resolution, resolution)
-        resolve(canvas.toDataURL('image/png'))
+        resolve(canvas.toDataURL("image/png"))
       } catch (error) {
         reject(error)
       }
@@ -94,7 +98,6 @@ async function convertSvgToCanvasBrowser(svgString: string, resolution: number, 
   })
 }
 
-
 export async function renderBoardTextures(
   circuitJson: CircuitJson,
   resolution = 1024,
@@ -103,7 +106,7 @@ export async function renderBoardTextures(
   bottom: string
 }> {
   console.log("Generating PCB texture...")
-  
+
   const [top, bottom] = await Promise.all([
     renderBoardLayer(circuitJson, {
       layer: "top",
@@ -116,11 +119,11 @@ export async function renderBoardTextures(
       backgroundColor: "#006600", // Darker green for bottom layer
     }),
   ])
-  
+
   console.log("PCB texture generated:", {
     topLength: top.length,
     bottomLength: bottom.length,
   })
-  
+
   return { top, bottom }
 }

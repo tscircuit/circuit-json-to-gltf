@@ -1,4 +1,8 @@
-import type { CircuitJson, CadComponent } from "circuit-json"
+import {
+  type CircuitJson,
+  type CadComponent,
+  any_circuit_element,
+} from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
   Box3D,
@@ -41,7 +45,7 @@ export async function convertCircuitJsonTo3D(
     coordinateTransform,
   } = options
 
-  const db = cju(circuitJson)
+  const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
   // Get PCB board
