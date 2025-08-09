@@ -67,11 +67,11 @@ export class GLTFBuilder {
     const defaultMaterialIndex = this.addMaterial({
       name: "Default",
       pbrMetallicRoughness: {
-        baseColorFactor: [0.5, 0.5, 0.5, 1.0],
+        baseColorFactor: [0.5, 0.5, 0.5, 0.5],
         metallicFactor: 0.1,
         roughnessFactor: 0.8,
       },
-      alphaMode: "OPAQUE",
+      alphaMode: "BLEND",
     })
 
     // Process boxes
@@ -106,7 +106,7 @@ export class GLTFBuilder {
     // Create material
     let materialIndex = defaultMaterialIndex
     if (box.color) {
-      materialIndex = this.addMaterialFromColor(box.color)
+      materialIndex = this.addMaterialFromColor(box.color, !box.mesh)
     }
 
     // Create mesh
@@ -396,11 +396,16 @@ export class GLTFBuilder {
     return index
   }
 
-  private addMaterialFromColor(color: Color): number {
+  private addMaterialFromColor(color: Color, makeTransparent = false): number {
     const baseColor: [number, number, number, number] =
       typeof color === "string"
         ? this.parseColorString(color)
         : [color[0] / 255, color[1] / 255, color[2] / 255, color[3]]
+
+    // Make components without models 50% transparent
+    if (makeTransparent) {
+      baseColor[3] = 0.5
+    }
 
     return this.addMaterial({
       name: `Material_${this.materials.length}`,
@@ -409,7 +414,7 @@ export class GLTFBuilder {
         metallicFactor: 0.1,
         roughnessFactor: 0.8,
       },
-      alphaMode: "OPAQUE",
+      alphaMode: makeTransparent ? "BLEND" : "OPAQUE",
     })
   }
 
