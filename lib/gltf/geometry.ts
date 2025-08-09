@@ -302,8 +302,8 @@ export function createMeshFromSTL(stlMesh: STLMesh): MeshData {
       texcoords.push(vertex.x, vertex.z)
     }
 
-    // Add indices
-    indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
+    // Add indices (reverse winding for correct face orientation)
+    indices.push(vertexIndex, vertexIndex + 2, vertexIndex + 1)
     vertexIndex += 3
   }
 

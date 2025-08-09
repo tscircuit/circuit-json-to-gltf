@@ -71,6 +71,7 @@ export class GLTFBuilder {
         metallicFactor: 0.1,
         roughnessFactor: 0.8,
       },
+      alphaMode: "OPAQUE",
     })
 
     // Process boxes
@@ -141,6 +142,7 @@ export class GLTFBuilder {
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
+        alphaMode: "OPAQUE",
       })
       
       const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
@@ -166,6 +168,7 @@ export class GLTFBuilder {
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
+        alphaMode: "OPAQUE",
       })
       
       const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
@@ -190,6 +193,7 @@ export class GLTFBuilder {
         metallicFactor: 0.0,
         roughnessFactor: 0.8,
       },
+      alphaMode: "OPAQUE",
     })
     faceMaterials.front = greenMaterialIndex
     faceMaterials.back = greenMaterialIndex
@@ -405,7 +409,7 @@ export class GLTFBuilder {
         metallicFactor: 0.1,
         roughnessFactor: 0.8,
       },
-      alphaMode: baseColor[3] < 1 ? "BLEND" : "OPAQUE",
+      alphaMode: "OPAQUE",
     })
   }
 
