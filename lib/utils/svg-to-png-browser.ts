@@ -1,13 +1,13 @@
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
+// @ts-ignore
+import wasmUrl from "@resvg/resvg-wasm/index_bg.wasm?url"
 
 let wasmInitialized = false
 
 async function ensureWasmInitialized() {
   if (!wasmInitialized) {
-    // Initialize WASM - in production you might want to host this file yourself
-    await initWasm(
-      fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"),
-    )
+    // Initialize WASM using the bundled version
+    await initWasm(fetch(wasmUrl))
     wasmInitialized = true
   }
 }
@@ -56,7 +56,8 @@ export async function svgToPngDataUrl(
   // Convert Uint8Array to base64
   let binary = ""
   const bytes = new Uint8Array(pngBuffer)
-  for (let i = 0; i < bytes.byteLength; i++) {
+  const len = bytes.byteLength
+  for (let i = 0; i < len; i++) {
     binary += String.fromCharCode(bytes[i])
   }
   const base64 = btoa(binary)
