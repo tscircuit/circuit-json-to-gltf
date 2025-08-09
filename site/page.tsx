@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react"
 import "@google/model-viewer"
+import usbCFlashlightCircuit from "./assets/usb-c-flashlight.json"
 
 // Declare model-viewer as a JSX element
 declare global {
@@ -21,69 +22,13 @@ declare global {
   }
 }
 
-// Example circuit JSON
-const exampleCircuit = [
-  {
-    type: "pcb_board",
-    pcb_board_id: "board1",
-    center: { x: 0, y: 0 },
-    width: 100,
-    height: 80,
-    thickness: 1.6,
-  },
-  {
-    type: "pcb_component",
-    pcb_component_id: "comp1",
-    source_component_id: "src1",
-    center: { x: -30, y: -20 },
-    width: 15,
-    height: 10,
-    layer: "top",
-  },
-  {
-    type: "pcb_component",
-    pcb_component_id: "comp2",
-    source_component_id: "src2",
-    center: { x: 20, y: 10 },
-    width: 20,
-    height: 20,
-    layer: "top",
-  },
-  {
-    type: "pcb_component",
-    pcb_component_id: "comp3",
-    source_component_id: "src3",
-    center: { x: -10, y: 20 },
-    width: 25,
-    height: 15,
-    layer: "top",
-  },
-  {
-    type: "source_component",
-    source_component_id: "src1",
-    name: "R1",
-    display_value: "10kΩ",
-  },
-  {
-    type: "source_component",
-    source_component_id: "src2",
-    name: "U1",
-    display_value: "ESP32",
-  },
-  {
-    type: "source_component",
-    source_component_id: "src3",
-    name: "C1",
-    display_value: "100µF",
-  },
-]
 
 export default function CircuitToGltfDemo() {
   const [gltfUrl, setGltfUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
   const [circuitJson, setCircuitJson] = useState(
-    JSON.stringify(exampleCircuit, null, 2),
+    JSON.stringify(usbCFlashlightCircuit, null, 2),
   )
   const [format, setFormat] = useState<"gltf" | "glb">("glb")
 
