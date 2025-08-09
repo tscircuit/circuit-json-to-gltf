@@ -1,4 +1,4 @@
-import type { Scene3D, Box3D, Color } from "../types"
+import type { Scene3D, Box3D, Color, OBJMesh } from "../types"
 import type {
   GLTF,
   GLTFScene,
@@ -23,6 +23,7 @@ import {
   createBoxMesh,
   createBoxMeshByFaces,
   createMeshFromSTL,
+  createMeshFromOBJ,
   transformMesh,
   getBounds,
   type MeshData,
@@ -90,6 +91,12 @@ export class GLTFBuilder {
       return
     }
 
+    // Handle OBJ meshes with materials
+    if (box.mesh && 'materials' in box.mesh && box.mesh.materials) {
+      await this.addOBJMeshWithMaterials(box, box.mesh as OBJMesh)
+      return
+    }
+
     // Fallback to original single-material approach
     let meshData: MeshData
 
@@ -116,6 +123,105 @@ export class GLTFBuilder {
     const nodeIndex = this.nodes.length
     this.nodes.push({
       name: box.label || `Box${nodeIndex}`,
+      mesh: meshIndex,
+    })
+
+    // Add node to scene
+    this.gltf.scenes![0].nodes!.push(nodeIndex)
+  }
+
+  private async addOBJMeshWithMaterials(box: Box3D, objMesh: OBJMesh): Promise<void> {
+    const meshDataArray = createMeshFromOBJ(objMesh)
+    
+    // Create materials from OBJ materials
+    const objMaterialIndices = new Map<number, number>()
+    
+    for (const [name, objMaterial] of objMesh.materials!) {
+      const dissolve = objMaterial.dissolve ?? 1.0
+      const alpha = 1.0 - dissolve
+      
+      let baseColor: [number, number, number, number] = [0.5, 0.5, 0.5, alpha]
+      
+      if (objMaterial.color) {
+        const color = typeof objMaterial.color === "string" 
+          ? this.parseColorString(objMaterial.color)
+          : [objMaterial.color[0] / 255, objMaterial.color[1] / 255, objMaterial.color[2] / 255, alpha]
+        baseColor = color
+        baseColor[3] = alpha
+      }
+      
+      const gltfMaterialIndex = this.addMaterial({
+        name: `OBJ_${name}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: baseColor,
+          metallicFactor: 0.1,
+          roughnessFactor: 0.8,
+        },
+        alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
+      })
+      
+      objMaterialIndices.set(parseInt(name), gltfMaterialIndex)
+    }
+
+    // Create primitives for each material group
+    const primitives: any[] = []
+    
+    for (const { meshData, materialIndex } of meshDataArray) {
+      const transformedMeshData = transformMesh(meshData, box.center, box.rotation)
+      
+      const positionAccessorIndex = this.addAccessor(
+        transformedMeshData.positions,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const normalAccessorIndex = this.addAccessor(
+        transformedMeshData.normals,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const texcoordAccessorIndex = this.addAccessor(
+        transformedMeshData.texcoords,
+        "VEC2",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const indicesAccessorIndex = this.addAccessor(
+        transformedMeshData.indices,
+        "SCALAR",
+        COMPONENT_TYPE.UNSIGNED_SHORT,
+        TARGET.ELEMENT_ARRAY_BUFFER,
+      )
+
+      const gltfMaterialIndex = objMaterialIndices.get(materialIndex) ?? objMaterialIndices.values().next().value ?? this.materials.length - 1
+
+      primitives.push({
+        attributes: {
+          POSITION: positionAccessorIndex,
+          NORMAL: normalAccessorIndex,
+          TEXCOORD_0: texcoordAccessorIndex,
+        },
+        indices: indicesAccessorIndex,
+        material: gltfMaterialIndex,
+        mode: PRIMITIVE_MODE.TRIANGLES,
+      })
+    }
+
+    // Create mesh with all material primitives
+    const meshIndex = this.meshes.length
+    this.meshes.push({
+      name: box.label || `OBJMesh${meshIndex}`,
+      primitives,
+    })
+
+    // Create node
+    const nodeIndex = this.nodes.length
+    this.nodes.push({
+      name: box.label || `OBJBox${nodeIndex}`,
       mesh: meshIndex,
     })
 

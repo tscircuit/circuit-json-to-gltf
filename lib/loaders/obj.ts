@@ -111,6 +111,12 @@ function parseOBJ(text: string, transform?: CoordinateTransformConfig): OBJMesh 
       const shininess = parseFloat(trimmed.split(/\s+/)[1]!)
       const mat = materials.get(activeMaterial)!
       mat.shininess = shininess
+    } else if (trimmed.startsWith("d ") && activeMaterial) {
+      const dissolve = parseFloat(trimmed.split(/\s+/)[1]!)
+      const mat = materials.get(activeMaterial)!
+      mat.dissolve = dissolve
+    } else if (trimmed === "endmtl") {
+      activeMaterial = undefined
     } else if (trimmed.startsWith("usemtl ")) {
       activeMaterial = trimmed.split(/\s+/)[1]!
     } else if (trimmed.startsWith("f ")) {

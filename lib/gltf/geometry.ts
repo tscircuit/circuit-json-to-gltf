@@ -1,4 +1,4 @@
-import type { Point3, Size3, STLMesh, Triangle } from "../types"
+import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
 
 export interface MeshData {
   positions: number[]
@@ -308,6 +308,48 @@ export function createMeshFromSTL(stlMesh: STLMesh): MeshData {
   }
 
   return { positions, normals, texcoords, indices }
+}
+
+export function createMeshFromOBJ(objMesh: OBJMesh): { meshData: MeshData, materialIndex: number }[] {
+  if (!objMesh.materials || objMesh.materials.size === 0) {
+    return [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
+  }
+
+  const materialMeshes = new Map<number, MeshData>()
+
+  for (const triangle of objMesh.triangles) {
+    const materialIndex = triangle.materialIndex ?? -1
+    
+    if (!materialMeshes.has(materialIndex)) {
+      materialMeshes.set(materialIndex, {
+        positions: [],
+        normals: [],
+        texcoords: [],
+        indices: [],
+      })
+    }
+    
+    const targetMesh = materialMeshes.get(materialIndex)!
+    const baseIndex = targetMesh.positions.length / 3
+
+    for (const vertex of triangle.vertices) {
+      targetMesh.positions.push(vertex.x, vertex.y, vertex.z)
+      targetMesh.normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
+      targetMesh.texcoords.push(vertex.x, vertex.z)
+    }
+
+    targetMesh.indices.push(baseIndex, baseIndex + 2, baseIndex + 1)
+  }
+
+  const result: { meshData: MeshData, materialIndex: number }[] = []
+  
+  for (const [materialIndex, meshData] of materialMeshes) {
+    if (meshData.positions.length > 0) {
+      result.push({ meshData, materialIndex })
+    }
+  }
+
+  return result.length > 0 ? result : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
 }
 
 export function transformMesh(

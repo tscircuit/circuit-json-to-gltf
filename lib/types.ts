@@ -69,6 +69,7 @@ export interface OBJMaterial {
   ambient?: Color
   specular?: Color
   shininess?: number
+  dissolve?: number
 }
 
 export type Color = string | [number, number, number, number]
