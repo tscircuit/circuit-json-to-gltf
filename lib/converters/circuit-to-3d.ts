@@ -1,6 +1,12 @@
 import type { CircuitJson, CadComponent } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
-import type { Box3D, Scene3D, CircuitTo3DOptions } from "../types"
+import type {
+  Box3D,
+  Scene3D,
+  CircuitTo3DOptions,
+  Camera3D,
+  Light3D,
+} from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
 import { renderBoardTextures } from "./board-renderer"
@@ -122,7 +128,8 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Try to load the mesh with default coordinate transform if none specified
-    const defaultTransform = coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
+    const defaultTransform =
+      coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
     try {
       if (model_stl_url) {
         box.mesh = await loadSTL(model_stl_url, defaultTransform)
