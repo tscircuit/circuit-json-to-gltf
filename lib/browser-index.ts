@@ -36,13 +36,13 @@ const mockBoardRenderer = {
 
 // Monkey-patch the module resolution
 if (typeof window !== "undefined") {
-  (globalThis as any).__circuit_json_to_gltf_board_renderer = mockBoardRenderer
+  ;(globalThis as any).__circuit_json_to_gltf_board_renderer = mockBoardRenderer
 }
 
 // Wrapper for circuit to 3D conversion
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
-  options: any = {}
+  options: any = {},
 ) {
   // Always disable textures in browser for now
   return originalConvertCircuitJsonTo3D(circuitJson, {
@@ -55,7 +55,7 @@ export async function convertCircuitJsonTo3D(
 // Main conversion function
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
-  options: ConversionOptions = {}
+  options: ConversionOptions = {},
 ): Promise<ArrayBuffer | object> {
   const { format = "gltf" } = options
 

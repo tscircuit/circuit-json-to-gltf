@@ -9,14 +9,14 @@ test("convertCircuitJsonTo3D should work without textures", async () => {
       center: { x: 0, y: 0 },
       width: 50,
       height: 30,
-      thickness: 1.6
-    }
+      thickness: 1.6,
+    },
   ]
-  
+
   const scene = await convertCircuitJsonTo3D(simpleCircuit as any, {
-    renderBoardTextures: false // Skip texture rendering
+    renderBoardTextures: false, // Skip texture rendering
   })
-  
+
   expect(scene).toBeDefined()
   expect(scene.boxes).toHaveLength(1)
   expect(scene.boxes[0].size.x).toBe(50)

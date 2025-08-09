@@ -22,7 +22,7 @@ function convertRotationFromCadRotation(rot: {
 
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
-  options: CircuitTo3DOptions = {}
+  options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
   const {
     pcbColor = "rgba(0,140,0,0.8)",
@@ -73,7 +73,8 @@ export async function convertCircuitJsonTo3D(
   boxes.push(boardBox)
 
   // Process CAD components (3D models)
-  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ?? []) as any
+  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
+    []) as any
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
@@ -84,7 +85,7 @@ export async function convertCircuitJsonTo3D(
 
     // Get the associated PCB component
     const pcbComponent = db.pcb_component.get(cad.pcb_component_id)
-    
+
     // Determine size
     const size = cad.size ?? {
       x: pcbComponent?.width ?? 2,
@@ -132,10 +133,12 @@ export async function convertCircuitJsonTo3D(
   for (const component of db.pcb_component.list()) {
     if (pcbComponentIdsWith3D.has(component.pcb_component_id)) continue
 
-    const sourceComponent = db.source_component.get(component.source_component_id)
+    const sourceComponent = db.source_component.get(
+      component.source_component_id,
+    )
     const compHeight = Math.min(
       Math.min(component.width, component.height),
-      defaultComponentHeight
+      defaultComponentHeight,
     )
 
     boxes.push({
@@ -157,7 +160,7 @@ export async function convertCircuitJsonTo3D(
 
   // Create a default camera positioned to view the board
   const boardDiagonal = Math.sqrt(
-    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height
+    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
   )
   const cameraDistance = boardDiagonal * 1.5
 

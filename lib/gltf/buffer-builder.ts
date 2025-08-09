@@ -2,18 +2,18 @@ export class BufferBuilder {
   private data: ArrayBuffer
   private view: DataView
   private offset: number
-  
+
   constructor(initialSize: number = 1024 * 1024) {
     this.data = new ArrayBuffer(initialSize)
     this.view = new DataView(this.data)
     this.offset = 0
   }
-  
+
   private ensureCapacity(additionalBytes: number) {
     if (this.offset + additionalBytes > this.data.byteLength) {
       const newSize = Math.max(
         this.data.byteLength * 2,
-        this.offset + additionalBytes
+        this.offset + additionalBytes,
       )
       const newData = new ArrayBuffer(newSize)
       const newView = new Uint8Array(newData)
@@ -22,7 +22,7 @@ export class BufferBuilder {
       this.view = new DataView(this.data)
     }
   }
-  
+
   addFloat32(value: number): number {
     const byteOffset = this.offset
     this.ensureCapacity(4)
@@ -30,7 +30,7 @@ export class BufferBuilder {
     this.offset += 4
     return byteOffset
   }
-  
+
   addUint16(value: number): number {
     const byteOffset = this.offset
     this.ensureCapacity(2)
@@ -38,7 +38,7 @@ export class BufferBuilder {
     this.offset += 2
     return byteOffset
   }
-  
+
   addUint32(value: number): number {
     const byteOffset = this.offset
     this.ensureCapacity(4)
@@ -46,7 +46,7 @@ export class BufferBuilder {
     this.offset += 4
     return byteOffset
   }
-  
+
   addFloat32Array(values: number[]): number {
     const byteOffset = this.offset
     this.ensureCapacity(values.length * 4)
@@ -56,7 +56,7 @@ export class BufferBuilder {
     }
     return byteOffset
   }
-  
+
   addUint16Array(values: number[]): number {
     const byteOffset = this.offset
     this.ensureCapacity(values.length * 2)
@@ -66,7 +66,7 @@ export class BufferBuilder {
     }
     return byteOffset
   }
-  
+
   addBytes(bytes: Uint8Array): number {
     const byteOffset = this.offset
     this.ensureCapacity(bytes.length)
@@ -74,7 +74,7 @@ export class BufferBuilder {
     this.offset += bytes.length
     return byteOffset
   }
-  
+
   align(alignment: number = 4) {
     const remainder = this.offset % alignment
     if (remainder !== 0) {
@@ -83,11 +83,11 @@ export class BufferBuilder {
       this.offset += padding
     }
   }
-  
+
   getBuffer(): ArrayBuffer {
     return this.data.slice(0, this.offset)
   }
-  
+
   getCurrentOffset(): number {
     return this.offset
   }

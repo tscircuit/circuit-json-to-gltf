@@ -33,11 +33,7 @@ function parseOBJ(text: string): OBJMesh {
       const z = parts[3]!
       vertices.push({ x: parseFloat(x), y: parseFloat(y), z: parseFloat(z) })
       if (parts.length >= 7) {
-        const [rStr, gStr, bStr] = parts.slice(4, 7) as [
-          string,
-          string,
-          string
-        ]
+        const [rStr, gStr, bStr] = parts.slice(4, 7) as [string, string, string]
         let r = Number(rStr)
         let g = Number(gStr)
         let b = Number(bStr)
@@ -152,23 +148,24 @@ function parseOBJ(text: string): OBJMesh {
             z: edge1.x * edge2.y - edge1.y * edge2.x,
           }
         }
-        
+
         const triangle: Triangle = {
           vertices: [v0, v1, v2],
           normal,
         }
-        
+
         // Add material index if we have an active material
         if (activeMaterial && materialIndexMap.has(activeMaterial)) {
           triangle.materialIndex = materialIndexMap.get(activeMaterial)
         }
-        
+
         // Add vertex color if available
-        const vColor = vertexColors[a.v] ?? vertexColors[b.v] ?? vertexColors[c.v]
+        const vColor =
+          vertexColors[a.v] ?? vertexColors[b.v] ?? vertexColors[c.v]
         if (vColor) {
           triangle.color = vColor
         }
-        
+
         triangles.push(triangle)
       }
     }

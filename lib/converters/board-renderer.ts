@@ -6,7 +6,7 @@ import { svgToPngDataUrl } from "../utils/svg-to-png-browser"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
-  options: BoardRenderOptions
+  options: BoardRenderOptions,
 ): Promise<string> {
   const {
     layer,
@@ -41,9 +41,8 @@ export async function renderBoardLayer(
   })
 
   // Flip the SVG for the top layer to match 3D orientation
-  const finalSvg = layer === "top" 
-    ? svg.replace("<svg", '<svg transform="scale(1, -1)"')
-    : svg
+  const finalSvg =
+    layer === "top" ? svg.replace("<svg", '<svg transform="scale(1, -1)"') : svg
 
   // Convert to PNG data URL using WASM version
   return await svgToPngDataUrl(finalSvg, {
@@ -54,7 +53,7 @@ export async function renderBoardLayer(
 
 export async function renderBoardTextures(
   circuitJson: CircuitJson,
-  resolution = 1024
+  resolution = 1024,
 ): Promise<{
   top: string
   bottom: string

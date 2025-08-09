@@ -56,33 +56,33 @@ const circuitJson = [
 async function main() {
   try {
     console.log("Converting circuit JSON to GLTF...")
-    
+
     // Convert to GLTF (JSON format)
     const gltf = await convertCircuitJsonToGltf(circuitJson as any, {
       format: "gltf",
       boardTextureResolution: 2048,
     })
-    
+
     // Save GLTF file
     await writeFile(
       join(__dirname, "output.gltf"),
-      JSON.stringify(gltf, null, 2)
+      JSON.stringify(gltf, null, 2),
     )
     console.log("Saved output.gltf")
-    
+
     // Convert to GLB (binary format)
     const glb = await convertCircuitJsonToGltf(circuitJson as any, {
       format: "glb",
       boardTextureResolution: 2048,
     })
-    
+
     // Save GLB file
     await writeFile(
       join(__dirname, "output.glb"),
-      Buffer.from(glb as ArrayBuffer)
+      Buffer.from(glb as ArrayBuffer),
     )
     console.log("Saved output.glb")
-    
+
     console.log("Conversion complete!")
   } catch (error) {
     console.error("Error converting circuit:", error)

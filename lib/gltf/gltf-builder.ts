@@ -38,7 +38,7 @@ export class GLTFBuilder {
   private textures: GLTFTexture[]
   private images: GLTFImage[]
   private imageDataMap: Map<string, Uint8Array>
-  
+
   constructor() {
     this.gltf = {
       asset: {
@@ -48,7 +48,7 @@ export class GLTFBuilder {
       scene: 0,
       scenes: [{ name: "Scene", nodes: [] }],
     }
-    
+
     this.bufferBuilder = new BufferBuilder()
     this.nodes = []
     this.meshes = []
@@ -59,7 +59,7 @@ export class GLTFBuilder {
     this.images = []
     this.imageDataMap = new Map()
   }
-  
+
   async buildFromScene3D(scene3D: Scene3D): Promise<void> {
     // Add default material
     const defaultMaterialIndex = this.addMaterial({
@@ -70,32 +70,35 @@ export class GLTFBuilder {
         roughnessFactor: 0.8,
       },
     })
-    
+
     // Process boxes
     for (const box of scene3D.boxes) {
       await this.addBox(box, defaultMaterialIndex)
     }
   }
-  
-  private async addBox(box: Box3D, defaultMaterialIndex: number): Promise<void> {
+
+  private async addBox(
+    box: Box3D,
+    defaultMaterialIndex: number,
+  ): Promise<void> {
     let meshData: MeshData
-    
+
     // Create geometry
     if (box.mesh) {
       meshData = createMeshFromSTL(box.mesh)
     } else {
       meshData = createBoxMesh(box.size)
     }
-    
+
     // Apply transformations
     meshData = transformMesh(meshData, box.center, box.rotation)
-    
+
     // Create material
     let materialIndex = defaultMaterialIndex
     if (box.color) {
       materialIndex = this.addMaterialFromColor(box.color)
     }
-    
+
     // Handle textures
     if (box.texture) {
       // For now, we'll just use the top texture if available
@@ -112,53 +115,57 @@ export class GLTFBuilder {
         }
       }
     }
-    
+
     // Create mesh
     const meshIndex = this.addMesh(meshData, materialIndex, box.label)
-    
+
     // Create node
     const nodeIndex = this.nodes.length
     this.nodes.push({
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
     })
-    
+
     // Add node to scene
     this.gltf.scenes![0].nodes!.push(nodeIndex)
   }
-  
-  private addMesh(meshData: MeshData, materialIndex: number, name?: string): number {
+
+  private addMesh(
+    meshData: MeshData,
+    materialIndex: number,
+    name?: string,
+  ): number {
     const meshIndex = this.meshes.length
-    
+
     // Create accessors for vertex data
     const positionAccessorIndex = this.addAccessor(
       meshData.positions,
       "VEC3",
       COMPONENT_TYPE.FLOAT,
-      TARGET.ARRAY_BUFFER
+      TARGET.ARRAY_BUFFER,
     )
-    
+
     const normalAccessorIndex = this.addAccessor(
       meshData.normals,
       "VEC3",
       COMPONENT_TYPE.FLOAT,
-      TARGET.ARRAY_BUFFER
+      TARGET.ARRAY_BUFFER,
     )
-    
+
     const texcoordAccessorIndex = this.addAccessor(
       meshData.texcoords,
       "VEC2",
       COMPONENT_TYPE.FLOAT,
-      TARGET.ARRAY_BUFFER
+      TARGET.ARRAY_BUFFER,
     )
-    
+
     const indicesAccessorIndex = this.addAccessor(
       meshData.indices,
       "SCALAR",
       COMPONENT_TYPE.UNSIGNED_SHORT,
-      TARGET.ELEMENT_ARRAY_BUFFER
+      TARGET.ELEMENT_ARRAY_BUFFER,
     )
-    
+
     // Create mesh
     this.meshes.push({
       name: name || `Mesh${meshIndex}`,
@@ -175,23 +182,23 @@ export class GLTFBuilder {
         },
       ],
     })
-    
+
     return meshIndex
   }
-  
+
   private addAccessor(
     data: number[],
     type: "SCALAR" | "VEC2" | "VEC3",
     componentType: number,
-    target: number
+    target: number,
   ): number {
     const accessorIndex = this.accessors.length
-    
+
     // Create buffer view
     const bufferViewIndex = this.bufferViews.length
     let byteOffset: number
     let byteLength: number
-    
+
     if (componentType === COMPONENT_TYPE.FLOAT) {
       byteOffset = this.bufferBuilder.addFloat32Array(data)
       byteLength = data.length * 4
@@ -201,14 +208,14 @@ export class GLTFBuilder {
     } else {
       throw new Error(`Unsupported component type: ${componentType}`)
     }
-    
+
     this.bufferViews.push({
       buffer: 0,
       byteOffset,
       byteLength,
       target,
     })
-    
+
     // Calculate count based on type
     let count: number
     switch (type) {
@@ -224,7 +231,7 @@ export class GLTFBuilder {
       default:
         throw new Error(`Unsupported type: ${type}`)
     }
-    
+
     // Calculate min/max for positions
     let min: number[] | undefined
     let max: number[] | undefined
@@ -233,7 +240,7 @@ export class GLTFBuilder {
       min = [bounds.min.x, bounds.min.y, bounds.min.z]
       max = [bounds.max.x, bounds.max.y, bounds.max.z]
     }
-    
+
     this.accessors.push({
       bufferView: bufferViewIndex,
       componentType,
@@ -242,21 +249,22 @@ export class GLTFBuilder {
       min,
       max,
     })
-    
+
     return accessorIndex
   }
-  
+
   private addMaterial(material: GLTFMaterial): number {
     const index = this.materials.length
     this.materials.push(material)
     return index
   }
-  
+
   private addMaterialFromColor(color: Color): number {
-    const baseColor: [number, number, number, number] = typeof color === "string"
-      ? this.parseColorString(color)
-      : [color[0] / 255, color[1] / 255, color[2] / 255, color[3]]
-    
+    const baseColor: [number, number, number, number] =
+      typeof color === "string"
+        ? this.parseColorString(color)
+        : [color[0] / 255, color[1] / 255, color[2] / 255, color[3]]
+
     return this.addMaterial({
       name: `Material_${this.materials.length}`,
       pbrMetallicRoughness: {
@@ -267,7 +275,7 @@ export class GLTFBuilder {
       alphaMode: baseColor[3] < 1 ? "BLEND" : "OPAQUE",
     })
   }
-  
+
   private parseColorString(color: string): [number, number, number, number] {
     // Simple color parsing - could be expanded
     if (color.startsWith("#")) {
@@ -300,7 +308,7 @@ export class GLTFBuilder {
         ]
       }
     }
-    
+
     // Default colors
     const namedColors: Record<string, [number, number, number, number]> = {
       white: [1, 1, 1, 1],
@@ -311,44 +319,46 @@ export class GLTFBuilder {
       gray: [0.5, 0.5, 0.5, 1],
       grey: [0.5, 0.5, 0.5, 1],
     }
-    
+
     return namedColors[color.toLowerCase()] || [0.5, 0.5, 0.5, 1]
   }
-  
+
   private async addTextureFromDataUrl(dataUrl: string): Promise<number> {
     try {
       // Extract image data from data URL
       const base64Match = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/)
       if (!base64Match) return -1
-      
+
       const mimeType = `image/${base64Match[1]}`
       const base64Data = base64Match[2]
-      const imageData = Uint8Array.from(atob(base64Data), (c) => c.charCodeAt(0))
-      
+      const imageData = Uint8Array.from(atob(base64Data), (c) =>
+        c.charCodeAt(0),
+      )
+
       // Store image data for later embedding
       const imageIndex = this.images.length
       this.imageDataMap.set(`image${imageIndex}`, imageData)
-      
+
       // Add image
       this.images.push({
         mimeType,
         bufferView: -1, // Will be set when finalizing
       })
-      
+
       // Add texture
       const textureIndex = this.textures.length
       this.textures.push({
         source: imageIndex,
         sampler: 0, // Use default sampler
       })
-      
+
       return textureIndex
     } catch (error) {
       console.warn("Failed to add texture:", error)
       return -1
     }
   }
-  
+
   export(binary = false): ArrayBuffer | object {
     // Finalize the GLTF structure
     this.gltf.nodes = this.nodes
@@ -356,7 +366,7 @@ export class GLTFBuilder {
     this.gltf.materials = this.materials
     this.gltf.accessors = this.accessors
     this.gltf.bufferViews = this.bufferViews
-    
+
     // Add images and textures if any
     if (this.images.length > 0) {
       // Add image data to buffer and update buffer views
@@ -373,10 +383,10 @@ export class GLTFBuilder {
           this.images[i].bufferView = bufferViewIndex
         }
       }
-      
+
       this.gltf.images = this.images
       this.gltf.textures = this.textures
-      
+
       // Add default sampler
       this.gltf.samplers = [
         {
@@ -387,10 +397,10 @@ export class GLTFBuilder {
         },
       ]
     }
-    
+
     // Get final buffer
     const bufferData = this.bufferBuilder.getBuffer()
-    
+
     if (binary) {
       // Create GLB
       return this.createGLB(this.gltf, bufferData)
@@ -400,63 +410,67 @@ export class GLTFBuilder {
         {
           byteLength: bufferData.byteLength,
           uri: `data:application/octet-stream;base64,${this.arrayBufferToBase64(
-            bufferData
+            bufferData,
           )}`,
         },
       ]
       return this.gltf
     }
   }
-  
+
   private createGLB(gltf: GLTF, bufferData: ArrayBuffer): ArrayBuffer {
     // GLB format:
     // 12-byte header
     // JSON chunk
     // Binary chunk
-    
+
     const jsonString = JSON.stringify(gltf)
     const jsonData = new TextEncoder().encode(jsonString)
-    
+
     // Pad JSON to 4-byte alignment
     const jsonPadding = (4 - (jsonData.length % 4)) % 4
     const jsonLength = jsonData.length + jsonPadding
-    
+
     // Pad binary to 4-byte alignment
     const binPadding = (4 - (bufferData.byteLength % 4)) % 4
     const binLength = bufferData.byteLength + binPadding
-    
+
     // Calculate total size
     const totalSize = 12 + 8 + jsonLength + 8 + binLength
-    
+
     // Create GLB buffer
     const glb = new ArrayBuffer(totalSize)
     const view = new DataView(glb)
-    
+
     // Header
     view.setUint32(0, 0x46546c67, true) // magic "glTF"
     view.setUint32(4, 2, true) // version
     view.setUint32(8, totalSize, true) // length
-    
+
     // JSON chunk
     view.setUint32(12, jsonLength, true) // chunk length
     view.setUint32(16, 0x4e4f534a, true) // chunk type "JSON"
-    
+
     // Copy JSON data
     const jsonArray = new Uint8Array(glb, 20, jsonData.length)
     jsonArray.set(jsonData)
-    
+
     // Binary chunk
     const binChunkOffset = 20 + jsonLength
     view.setUint32(binChunkOffset, binLength, true) // chunk length
     view.setUint32(binChunkOffset + 4, 0x004e4942, true) // chunk type "BIN\0"
-    
+
     // Copy binary data
-    const binArray = new Uint8Array(glb, binChunkOffset + 8, bufferData.byteLength)
+    const binArray = new Uint8Array(
+      glb,
+      binChunkOffset + 8,
+      bufferData.byteLength,
+    )
     binArray.set(new Uint8Array(bufferData))
-    
+
     return glb
   }
-  
+
   private arrayBufferToBase64(buffer: ArrayBuffer): string {
     const bytes = new Uint8Array(buffer)
     let binary = ""

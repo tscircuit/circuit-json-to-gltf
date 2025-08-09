@@ -5,7 +5,7 @@ import { convertSceneToGLTF } from "./converters/scene-to-gltf"
 
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
-  options: ConversionOptions = {}
+  options: ConversionOptions = {},
 ): Promise<ArrayBuffer | object> {
   const {
     format = "gltf",
@@ -61,7 +61,10 @@ export { loadOBJ, clearOBJCache } from "./loaders/obj"
 // Re-export converters
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 export { convertSceneToGLTF } from "./converters/scene-to-gltf"
-export { renderBoardLayer, renderBoardTextures } from "./converters/board-renderer"
+export {
+  renderBoardLayer,
+  renderBoardTextures,
+} from "./converters/board-renderer"
 
 // Re-export utilities (conditionally based on environment)
 // Note: svg-to-png utilities are environment-specific and not exported here

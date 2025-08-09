@@ -32,7 +32,7 @@ const DEFAULT_COMPONENT_HEIGHT = 2
 
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
-  options: any = {}
+  options: any = {},
 ): Promise<Scene3D> {
   const {
     pcbColor = "rgba(0,140,0,0.8)",
@@ -67,10 +67,12 @@ export async function convertCircuitJsonTo3D(
 
   // Add generic boxes for components
   for (const component of db.pcb_component.list()) {
-    const sourceComponent = db.source_component.get(component.source_component_id)
+    const sourceComponent = db.source_component.get(
+      component.source_component_id,
+    )
     const compHeight = Math.min(
       Math.min(component.width, component.height),
-      defaultComponentHeight
+      defaultComponentHeight,
     )
 
     boxes.push({
@@ -92,7 +94,7 @@ export async function convertCircuitJsonTo3D(
 
   // Create a default camera
   const boardDiagonal = Math.sqrt(
-    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height
+    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
   )
   const cameraDistance = boardDiagonal * 1.5
 
@@ -137,7 +139,7 @@ export async function convertCircuitJsonTo3D(
 
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
-  options: ConversionOptions = {}
+  options: ConversionOptions = {},
 ): Promise<ArrayBuffer | object> {
   const { format = "gltf" } = options
 

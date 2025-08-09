@@ -9,7 +9,7 @@ export interface SvgToPngOptions {
 
 export async function svgToPng(
   svgString: string,
-  options: SvgToPngOptions = {}
+  options: SvgToPngOptions = {},
 ): Promise<Buffer> {
   const opts = {
     background: options.background,
@@ -19,11 +19,11 @@ export async function svgToPng(
           value: options.width,
         }
       : options.height
-      ? {
-          mode: "height" as const,
-          value: options.height,
-        }
-      : undefined,
+        ? {
+            mode: "height" as const,
+            value: options.height,
+          }
+        : undefined,
     font: {
       fontFiles: options.fonts || [],
     },
@@ -38,7 +38,7 @@ export async function svgToPng(
 
 export async function svgToPngDataUrl(
   svgString: string,
-  options: SvgToPngOptions = {}
+  options: SvgToPngOptions = {},
 ): Promise<string> {
   const pngBuffer = await svgToPng(svgString, options)
   return `data:image/png;base64,${pngBuffer.toString("base64")}`

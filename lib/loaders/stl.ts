@@ -39,7 +39,7 @@ function parseASCIISTL(buffer: ArrayBuffer): STLMesh {
 
     if (line && line.startsWith("facet normal")) {
       const normalMatch = line.match(
-        /facet normal\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/
+        /facet normal\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/,
       )
       const normal: Point3 = normalMatch
         ? {
@@ -60,7 +60,7 @@ function parseASCIISTL(buffer: ArrayBuffer): STLMesh {
         const vertexLine = lines[i]!
         if (vertexLine.startsWith("vertex")) {
           const vertexMatch = vertexLine.match(
-            /vertex\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/
+            /vertex\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)\s+([-+]?\d*\.?\d+(?:[eE][-+]?\d+)?)/,
           )
           if (vertexMatch) {
             vertices.push({
