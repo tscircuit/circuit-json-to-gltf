@@ -4,6 +4,7 @@ import type { Box3D, Scene3D, CircuitTo3DOptions } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
 import { renderBoardTextures } from "./board-renderer"
+import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -31,6 +32,7 @@ export async function convertCircuitJsonTo3D(
     defaultComponentHeight = DEFAULT_COMPONENT_HEIGHT,
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
+    coordinateTransform,
   } = options
 
   const db = cju(circuitJson)
@@ -119,12 +121,13 @@ export async function convertCircuitJsonTo3D(
       box.rotation = convertRotationFromCadRotation(cad.rotation)
     }
 
-    // Try to load the mesh
+    // Try to load the mesh with default coordinate transform if none specified
+    const defaultTransform = coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
     try {
       if (model_stl_url) {
-        box.mesh = await loadSTL(model_stl_url)
+        box.mesh = await loadSTL(model_stl_url, defaultTransform)
       } else if (model_obj_url) {
-        box.mesh = await loadOBJ(model_obj_url)
+        box.mesh = await loadOBJ(model_obj_url, defaultTransform)
       }
     } catch (error) {
       console.warn(`Failed to load 3D model: ${error}`)

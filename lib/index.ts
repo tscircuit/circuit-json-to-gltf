@@ -20,6 +20,7 @@ export async function convertCircuitJsonToGltf(
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
+    coordinateTransform: options.coordinateTransform,
   })
 
   // Convert 3D scene to GLTF
@@ -52,6 +53,7 @@ export type {
   GLTFExportOptions,
   CircuitTo3DOptions,
   BoardRenderOptions,
+  CoordinateTransformConfig,
 } from "./types"
 
 // Re-export loaders
@@ -65,6 +67,13 @@ export {
   renderBoardLayer,
   renderBoardTextures,
 } from "./converters/board-renderer"
+
+// Re-export coordinate transform utilities
+export { 
+  COORDINATE_TRANSFORMS,
+  applyCoordinateTransform,
+  transformTriangles 
+} from "./utils/coordinate-transform"
 
 // Re-export utilities (conditionally based on environment)
 // Note: svg-to-png utilities are environment-specific and not exported here

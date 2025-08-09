@@ -7,6 +7,27 @@ export interface ConversionOptions {
   modelCache?: Map<string, STLMesh | OBJMesh>
   backgroundColor?: string
   showBoundingBoxes?: boolean
+  coordinateTransform?: CoordinateTransformConfig
+}
+
+export interface CoordinateTransformConfig {
+  // Flip axes: -1 to flip, 1 to keep original
+  flipX?: number
+  flipY?: number
+  flipZ?: number
+  // Axis remapping: which original axis becomes which final axis
+  // e.g., { x: "y", y: "z", z: "x" } swaps all axes
+  axisMapping?: {
+    x?: "x" | "y" | "z" | "-x" | "-y" | "-z"
+    y?: "x" | "y" | "z" | "-x" | "-y" | "-z"
+    z?: "x" | "y" | "z" | "-x" | "-y" | "-z"
+  }
+  // Additional rotation in degrees around each axis (applied after axis mapping)
+  rotation?: {
+    x?: number
+    y?: number
+    z?: number
+  }
 }
 
 export interface Point3 {
@@ -113,6 +134,7 @@ export interface CircuitTo3DOptions {
   defaultComponentHeight?: number
   renderBoardTextures?: boolean
   textureResolution?: number
+  coordinateTransform?: CoordinateTransformConfig
 }
 
 export interface BoardRenderOptions {

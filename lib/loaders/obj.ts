@@ -1,19 +1,24 @@
-import type { Point3, OBJMesh, Triangle, Color, OBJMaterial } from "../types"
+import type { Point3, OBJMesh, Triangle, Color, OBJMaterial, CoordinateTransformConfig } from "../types"
+import { transformTriangles, COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
 const objCache = new Map<string, OBJMesh>()
 
-export async function loadOBJ(url: string): Promise<OBJMesh> {
-  if (objCache.has(url)) {
-    return objCache.get(url)!
+export async function loadOBJ(
+  url: string,
+  transform?: CoordinateTransformConfig
+): Promise<OBJMesh> {
+  const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
+  if (objCache.has(cacheKey)) {
+    return objCache.get(cacheKey)!
   }
   const response = await fetch(url)
   const text = await response.text()
-  const mesh = parseOBJ(text)
-  objCache.set(url, mesh)
+  const mesh = parseOBJ(text, transform)
+  objCache.set(cacheKey, mesh)
   return mesh
 }
 
-function parseOBJ(text: string): OBJMesh {
+function parseOBJ(text: string, transform?: CoordinateTransformConfig): OBJMesh {
   const lines = text.split(/\r?\n/)
   const vertices: Point3[] = []
   const vertexColors: (Color | undefined)[] = []
@@ -171,9 +176,13 @@ function parseOBJ(text: string): OBJMesh {
     }
   }
 
+  // Apply coordinate transformation (default to identity for OBJ files)
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.IDENTITY
+  const transformedTriangles = transformTriangles(triangles, finalConfig)
+
   return {
-    triangles,
-    boundingBox: calculateBoundingBox(triangles),
+    triangles: transformedTriangles,
+    boundingBox: calculateBoundingBox(transformedTriangles),
     materials: materials.size > 0 ? materials : undefined,
   }
 }

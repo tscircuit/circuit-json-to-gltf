@@ -1,33 +1,38 @@
-import type { Point3, STLMesh, Triangle } from "../types"
+import type { Point3, STLMesh, Triangle, CoordinateTransformConfig } from "../types"
+import { transformTriangles, COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
 const stlCache = new Map<string, STLMesh>()
 
-export async function loadSTL(url: string): Promise<STLMesh> {
-  if (stlCache.has(url)) {
-    return stlCache.get(url)!
+export async function loadSTL(
+  url: string, 
+  transform?: CoordinateTransformConfig
+): Promise<STLMesh> {
+  const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
+  if (stlCache.has(cacheKey)) {
+    return stlCache.get(cacheKey)!
   }
 
   const response = await fetch(url)
   const buffer = await response.arrayBuffer()
-  const mesh = parseSTL(buffer)
-  stlCache.set(url, mesh)
+  const mesh = parseSTL(buffer, transform)
+  stlCache.set(cacheKey, mesh)
   return mesh
 }
 
-function parseSTL(buffer: ArrayBuffer): STLMesh {
+function parseSTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfig): STLMesh {
   const view = new DataView(buffer)
 
   // Check if it's binary STL (first 5 bytes should not be "solid")
   const header = new TextDecoder().decode(buffer.slice(0, 5))
 
   if (header.toLowerCase() === "solid") {
-    return parseASCIISTL(buffer)
+    return parseASCIISTL(buffer, transform)
   } else {
-    return parseBinarySTL(view)
+    return parseBinarySTL(view, transform)
   }
 }
 
-function parseASCIISTL(buffer: ArrayBuffer): STLMesh {
+function parseASCIISTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfig): STLMesh {
   const text = new TextDecoder().decode(buffer)
   const lines = text.split("\n").map((line) => line.trim())
 
@@ -83,28 +88,17 @@ function parseASCIISTL(buffer: ArrayBuffer): STLMesh {
     i++
   }
 
-  // Apply Z-up to Y-up rotation (rotate -90 degrees around X-axis)
-  const rotatedTriangles = triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((v) => ({
-      x: v.x,
-      y: -v.z,
-      z: v.y,
-    })) as [Point3, Point3, Point3],
-    normal: {
-      x: triangle.normal.x,
-      y: -triangle.normal.z,
-      z: triangle.normal.y,
-    },
-  }))
+  // Apply coordinate transformation
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+  const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {
-    triangles: rotatedTriangles,
-    boundingBox: calculateBoundingBox(rotatedTriangles),
+    triangles: transformedTriangles,
+    boundingBox: calculateBoundingBox(transformedTriangles),
   }
 }
 
-function parseBinarySTL(view: DataView): STLMesh {
+function parseBinarySTL(view: DataView, transform?: CoordinateTransformConfig): STLMesh {
   // Skip 80-byte header
   let offset = 80
 
@@ -149,24 +143,13 @@ function parseBinarySTL(view: DataView): STLMesh {
     triangles.push({ vertices, normal })
   }
 
-  // Apply Z-up to Y-up rotation (rotate -90 degrees around X-axis)
-  const rotatedTriangles = triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((v) => ({
-      x: v.x,
-      y: -v.z,
-      z: v.y,
-    })) as [Point3, Point3, Point3],
-    normal: {
-      x: triangle.normal.x,
-      y: -triangle.normal.z,
-      z: triangle.normal.y,
-    },
-  }))
+  // Apply coordinate transformation
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+  const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {
-    triangles: rotatedTriangles,
-    boundingBox: calculateBoundingBox(rotatedTriangles),
+    triangles: transformedTriangles,
+    boundingBox: calculateBoundingBox(transformedTriangles),
   }
 }
 
