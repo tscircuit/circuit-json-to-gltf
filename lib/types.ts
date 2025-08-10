@@ -61,6 +61,7 @@ export interface STLMesh {
 
 export interface OBJMesh extends STLMesh {
   materials?: Map<string, OBJMaterial>
+  materialIndexMap?: Map<string, number>
 }
 
 export interface OBJMaterial {

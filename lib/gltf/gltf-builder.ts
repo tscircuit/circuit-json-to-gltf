@@ -146,8 +146,7 @@ export class GLTFBuilder {
         const color = typeof objMaterial.color === "string" 
           ? this.parseColorString(objMaterial.color)
           : [objMaterial.color[0] / 255, objMaterial.color[1] / 255, objMaterial.color[2] / 255, alpha]
-        // Darken the color significantly to reduce brightness
-        baseColor = [color[0]! * 0.5, color[1]! * 0.5, color[2]! * 0.5, alpha]
+        baseColor = [color[0]!, color[1]!, color[2]!, alpha]
       }
       
       const gltfMaterialIndex = this.addMaterial({
@@ -160,7 +159,9 @@ export class GLTFBuilder {
         alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
       })
       
-      objMaterialIndices.set(parseInt(name), gltfMaterialIndex)
+      // Get the correct material index from the OBJ parsing
+      const materialIndex = objMesh.materialIndexMap?.get(name) ?? -1
+      objMaterialIndices.set(materialIndex, gltfMaterialIndex)
     }
 
     // Create primitives for each material group
