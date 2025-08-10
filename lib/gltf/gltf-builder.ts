@@ -68,9 +68,9 @@ export class GLTFBuilder {
     const defaultMaterialIndex = this.addMaterial({
       name: "Default",
       pbrMetallicRoughness: {
-        baseColorFactor: [0.5, 0.5, 0.5, 0.5],
-        metallicFactor: 0.1,
-        roughnessFactor: 0.8,
+        baseColorFactor: [0.35, 0.35, 0.35, 0.5],
+        metallicFactor: 0.05,
+        roughnessFactor: 0.95,
       },
       alphaMode: "BLEND",
     })
@@ -140,27 +140,28 @@ export class GLTFBuilder {
       const dissolve = objMaterial.dissolve ?? 1.0
       const alpha = 1.0 - dissolve
       
-      let baseColor: [number, number, number, number] = [0.5, 0.5, 0.5, alpha]
+      let baseColor: [number, number, number, number] = [0.3, 0.3, 0.3, alpha]
       
       if (objMaterial.color) {
         const color = typeof objMaterial.color === "string" 
           ? this.parseColorString(objMaterial.color)
           : [objMaterial.color[0] / 255, objMaterial.color[1] / 255, objMaterial.color[2] / 255, alpha]
-        baseColor = color
-        baseColor[3] = alpha
+        baseColor = [color[0]!, color[1]!, color[2]!, alpha]
       }
       
       const gltfMaterialIndex = this.addMaterial({
         name: `OBJ_${name}`,
         pbrMetallicRoughness: {
           baseColorFactor: baseColor,
-          metallicFactor: 0.1,
-          roughnessFactor: 0.8,
+          metallicFactor: 0.05,
+          roughnessFactor: 0.95,
         },
         alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
       })
       
-      objMaterialIndices.set(parseInt(name), gltfMaterialIndex)
+      // Get the correct material index from the OBJ parsing
+      const materialIndex = objMesh.materialIndexMap?.get(name) ?? -1
+      objMaterialIndices.set(materialIndex, gltfMaterialIndex)
     }
 
     // Create primitives for each material group
@@ -517,8 +518,8 @@ export class GLTFBuilder {
       name: `Material_${this.materials.length}`,
       pbrMetallicRoughness: {
         baseColorFactor: baseColor,
-        metallicFactor: 0.1,
-        roughnessFactor: 0.8,
+        metallicFactor: 0.05,
+        roughnessFactor: 0.95,
       },
       alphaMode: makeTransparent ? "BLEND" : "OPAQUE",
     })

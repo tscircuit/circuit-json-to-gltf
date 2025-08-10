@@ -190,6 +190,7 @@ function parseOBJ(text: string, transform?: CoordinateTransformConfig): OBJMesh 
     triangles: transformedTriangles,
     boundingBox: calculateBoundingBox(transformedTriangles),
     materials: materials.size > 0 ? materials : undefined,
+    materialIndexMap: materials.size > 0 ? materialIndexMap : undefined,
   }
 }
 
