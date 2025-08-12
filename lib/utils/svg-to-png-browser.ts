@@ -11,10 +11,13 @@ async function ensureWasmInitialized() {
         const { readFileSync } = await import("fs")
         const { fileURLToPath } = await import("url")
         const { dirname, join } = await import("path")
-        
+
         // Load WASM file directly from node_modules
         const currentDir = dirname(fileURLToPath(import.meta.url))
-        const wasmPath = join(currentDir, "../../node_modules/@resvg/resvg-wasm/index_bg.wasm")
+        const wasmPath = join(
+          currentDir,
+          "../../node_modules/@resvg/resvg-wasm/index_bg.wasm",
+        )
         const wasmBuffer = readFileSync(wasmPath)
         await initWasm(wasmBuffer)
       } else {
@@ -25,7 +28,9 @@ async function ensureWasmInitialized() {
           await initWasm(fetch(wasmUrl.default))
         } catch {
           // Fallback to CDN
-          await initWasm(fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"))
+          await initWasm(
+            fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"),
+          )
         }
       }
       wasmInitialized = true

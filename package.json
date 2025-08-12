@@ -2,7 +2,7 @@
   "name": "circuit-json-to-gltf",
   "main": "dist/index.js",
   "type": "module",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "scripts": {
     "test": "bun test tests/",
     "format": "biome format --write .",
@@ -35,7 +35,17 @@
     "vite": "^7.1.1"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "@resvg/resvg-wasm": "2",
+    "@resvg/resvg-js": "2",
+    "circuit-to-svg": "*",
+    "@tscircuit/circuit-json-util": "*",
+    "circuit-json": "*"
+  },
+  "peerDependenciesMeta": {
+    "@resvg/resvg-wasm": {
+      "optional": true
+    }
   },
   "dependencies": {}
 }

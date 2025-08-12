@@ -69,10 +69,10 @@ export {
 } from "./converters/board-renderer"
 
 // Re-export coordinate transform utilities
-export { 
+export {
   COORDINATE_TRANSFORMS,
   applyCoordinateTransform,
-  transformTriangles 
+  transformTriangles,
 } from "./utils/coordinate-transform"
 
 // Re-export utilities (conditionally based on environment)

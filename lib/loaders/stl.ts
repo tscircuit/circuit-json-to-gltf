@@ -1,11 +1,19 @@
-import type { Point3, STLMesh, Triangle, CoordinateTransformConfig } from "../types"
-import { transformTriangles, COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
+import type {
+  Point3,
+  STLMesh,
+  Triangle,
+  CoordinateTransformConfig,
+} from "../types"
+import {
+  transformTriangles,
+  COORDINATE_TRANSFORMS,
+} from "../utils/coordinate-transform"
 
 const stlCache = new Map<string, STLMesh>()
 
 export async function loadSTL(
-  url: string, 
-  transform?: CoordinateTransformConfig
+  url: string,
+  transform?: CoordinateTransformConfig,
 ): Promise<STLMesh> {
   const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
   if (stlCache.has(cacheKey)) {
@@ -19,7 +27,10 @@ export async function loadSTL(
   return mesh
 }
 
-function parseSTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfig): STLMesh {
+function parseSTL(
+  buffer: ArrayBuffer,
+  transform?: CoordinateTransformConfig,
+): STLMesh {
   const view = new DataView(buffer)
 
   // Check if it's binary STL (first 5 bytes should not be "solid")
@@ -32,7 +43,10 @@ function parseSTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfig): S
   }
 }
 
-function parseASCIISTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfig): STLMesh {
+function parseASCIISTL(
+  buffer: ArrayBuffer,
+  transform?: CoordinateTransformConfig,
+): STLMesh {
   const text = new TextDecoder().decode(buffer)
   const lines = text.split("\n").map((line) => line.trim())
 
@@ -98,7 +112,10 @@ function parseASCIISTL(buffer: ArrayBuffer, transform?: CoordinateTransformConfi
   }
 }
 
-function parseBinarySTL(view: DataView, transform?: CoordinateTransformConfig): STLMesh {
+function parseBinarySTL(
+  view: DataView,
+  transform?: CoordinateTransformConfig,
+): STLMesh {
   // Skip 80-byte header
   let offset = 80
 
