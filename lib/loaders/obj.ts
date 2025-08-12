@@ -1,11 +1,21 @@
-import type { Point3, OBJMesh, Triangle, Color, OBJMaterial, CoordinateTransformConfig } from "../types"
-import { transformTriangles, COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
+import type {
+  Point3,
+  OBJMesh,
+  Triangle,
+  Color,
+  OBJMaterial,
+  CoordinateTransformConfig,
+} from "../types"
+import {
+  transformTriangles,
+  COORDINATE_TRANSFORMS,
+} from "../utils/coordinate-transform"
 
 const objCache = new Map<string, OBJMesh>()
 
 export async function loadOBJ(
   url: string,
-  transform?: CoordinateTransformConfig
+  transform?: CoordinateTransformConfig,
 ): Promise<OBJMesh> {
   const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
   if (objCache.has(cacheKey)) {
@@ -18,7 +28,10 @@ export async function loadOBJ(
   return mesh
 }
 
-function parseOBJ(text: string, transform?: CoordinateTransformConfig): OBJMesh {
+function parseOBJ(
+  text: string,
+  transform?: CoordinateTransformConfig,
+): OBJMesh {
   const lines = text.split(/\r?\n/)
   const vertices: Point3[] = []
   const vertexColors: (Color | undefined)[] = []

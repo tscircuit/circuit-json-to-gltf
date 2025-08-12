@@ -92,7 +92,7 @@ export class GLTFBuilder {
     }
 
     // Handle OBJ meshes with materials
-    if (box.mesh && 'materials' in box.mesh && box.mesh.materials) {
+    if (box.mesh && "materials" in box.mesh && box.mesh.materials) {
       await this.addOBJMeshWithMaterials(box, box.mesh as OBJMesh)
       return
     }
@@ -130,25 +130,34 @@ export class GLTFBuilder {
     this.gltf.scenes![0].nodes!.push(nodeIndex)
   }
 
-  private async addOBJMeshWithMaterials(box: Box3D, objMesh: OBJMesh): Promise<void> {
+  private async addOBJMeshWithMaterials(
+    box: Box3D,
+    objMesh: OBJMesh,
+  ): Promise<void> {
     const meshDataArray = createMeshFromOBJ(objMesh)
-    
+
     // Create materials from OBJ materials
     const objMaterialIndices = new Map<number, number>()
-    
+
     for (const [name, objMaterial] of objMesh.materials!) {
       const dissolve = objMaterial.dissolve ?? 1.0
       const alpha = 1.0 - dissolve
-      
+
       let baseColor: [number, number, number, number] = [0.3, 0.3, 0.3, alpha]
-      
+
       if (objMaterial.color) {
-        const color = typeof objMaterial.color === "string" 
-          ? this.parseColorString(objMaterial.color)
-          : [objMaterial.color[0] / 255, objMaterial.color[1] / 255, objMaterial.color[2] / 255, alpha]
+        const color =
+          typeof objMaterial.color === "string"
+            ? this.parseColorString(objMaterial.color)
+            : [
+                objMaterial.color[0] / 255,
+                objMaterial.color[1] / 255,
+                objMaterial.color[2] / 255,
+                alpha,
+              ]
         baseColor = [color[0]!, color[1]!, color[2]!, alpha]
       }
-      
+
       const gltfMaterialIndex = this.addMaterial({
         name: `OBJ_${name}`,
         pbrMetallicRoughness: {
@@ -158,7 +167,7 @@ export class GLTFBuilder {
         },
         alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
       })
-      
+
       // Get the correct material index from the OBJ parsing
       const materialIndex = objMesh.materialIndexMap?.get(name) ?? -1
       objMaterialIndices.set(materialIndex, gltfMaterialIndex)
@@ -166,10 +175,14 @@ export class GLTFBuilder {
 
     // Create primitives for each material group
     const primitives: any[] = []
-    
+
     for (const { meshData, materialIndex } of meshDataArray) {
-      const transformedMeshData = transformMesh(meshData, box.center, box.rotation)
-      
+      const transformedMeshData = transformMesh(
+        meshData,
+        box.center,
+        box.rotation,
+      )
+
       const positionAccessorIndex = this.addAccessor(
         transformedMeshData.positions,
         "VEC3",
@@ -198,7 +211,10 @@ export class GLTFBuilder {
         TARGET.ELEMENT_ARRAY_BUFFER,
       )
 
-      const gltfMaterialIndex = objMaterialIndices.get(materialIndex) ?? objMaterialIndices.values().next().value ?? this.materials.length - 1
+      const gltfMaterialIndex =
+        objMaterialIndices.get(materialIndex) ??
+        objMaterialIndices.values().next().value ??
+        this.materials.length - 1
 
       primitives.push({
         attributes: {
@@ -251,7 +267,7 @@ export class GLTFBuilder {
         },
         alphaMode: "OPAQUE",
       })
-      
+
       const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
       if (textureIndex !== -1) {
         const material = this.materials[topMaterialIndex]
@@ -277,7 +293,7 @@ export class GLTFBuilder {
         },
         alphaMode: "OPAQUE",
       })
-      
+
       const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
       if (textureIndex !== -1) {
         const material = this.materials[bottomMaterialIndex]
@@ -313,8 +329,12 @@ export class GLTFBuilder {
 
     for (const [faceName, faceData] of Object.entries(faceMeshes)) {
       // Apply transformations to each face
-      const transformedFaceData = transformMesh(faceData, box.center, box.rotation)
-      
+      const transformedFaceData = transformMesh(
+        faceData,
+        box.center,
+        box.rotation,
+      )
+
       // Create accessors for this face
       const positionAccessorIndex = this.addAccessor(
         transformedFaceData.positions,
