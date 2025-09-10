@@ -674,20 +674,27 @@ export class GLTFBuilder {
     const bufferData = this.bufferBuilder.getBuffer()
 
     if (binary) {
-      // Create GLB
-      return this.createGLB(this.gltf, bufferData)
-    } else {
-      // Create GLTF with embedded buffer
+      // Include buffer reference for GLB
       this.gltf.buffers = [
         {
           byteLength: bufferData.byteLength,
-          uri: `data:application/octet-stream;base64,${this.arrayBufferToBase64(
-            bufferData,
-          )}`,
         },
       ]
-      return this.gltf
+
+      // Create GLB
+      return this.createGLB(this.gltf, bufferData)
     }
+
+    // Create GLTF with embedded buffer
+    this.gltf.buffers = [
+      {
+        byteLength: bufferData.byteLength,
+        uri: `data:application/octet-stream;base64,${this.arrayBufferToBase64(
+          bufferData,
+        )}`,
+      },
+    ]
+    return this.gltf
   }
 
   private createGLB(gltf: GLTF, bufferData: ArrayBuffer): ArrayBuffer {

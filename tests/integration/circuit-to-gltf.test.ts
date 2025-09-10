@@ -30,7 +30,19 @@ test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {
 
   // GLB format returns an ArrayBuffer
   expect(result).toBeInstanceOf(ArrayBuffer)
-  expect((result as ArrayBuffer).byteLength).toBeGreaterThan(0)
+  const arrayBuffer = result as ArrayBuffer
+  expect(arrayBuffer.byteLength).toBeGreaterThan(0)
+
+  // Parse JSON chunk to ensure buffer reference exists
+  const view = new DataView(arrayBuffer)
+  const jsonChunkLength = view.getUint32(12, true)
+  const jsonBytes = new Uint8Array(arrayBuffer, 20, jsonChunkLength)
+  const jsonText = new TextDecoder().decode(jsonBytes).replace(/\u0000+$/, "")
+  const gltf = JSON.parse(jsonText)
+
+  expect(Array.isArray(gltf.buffers)).toBe(true)
+  expect(gltf.buffers.length).toBe(1)
+  expect(gltf.buffers[0].byteLength).toBeGreaterThan(0)
 })
 
 test("convertCircuitJsonTo3D should create 3D scene", async () => {
