@@ -56,8 +56,8 @@ async function convertSvgToPng(
     // Browser: Use Canvas API (works better for complex SVGs)
     return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
   } else {
-    // Node.js/Bun: Use WASM for high-quality rendering
-    const { svgToPngDataUrl } = await import("../utils/svg-to-png-browser")
+    // Node.js/Bun: Use JS implementation for stability
+    const { svgToPngDataUrl } = await import("../utils/svg-to-png")
     return await svgToPngDataUrl(svgString, {
       width: resolution,
       background: backgroundColor,
@@ -109,8 +109,6 @@ export async function renderBoardTextures(
   top: string
   bottom: string
 }> {
-  console.log("Generating PCB texture...")
-
   const [top, bottom] = await Promise.all([
     renderBoardLayer(circuitJson, {
       layer: "top",
@@ -123,11 +121,5 @@ export async function renderBoardTextures(
       backgroundColor: "#006600", // Darker green for bottom layer
     }),
   ])
-
-  console.log("PCB texture generated:", {
-    topLength: top.length,
-    bottomLength: bottom.length,
-  })
-
   return { top, bottom }
 }
