@@ -72,7 +72,7 @@ test("board texture generation pipeline", async () => {
     console.log("Number of boxes:", scene.boxes.length)
 
     // Find the PCB board box (should be first)
-    const boardBox = scene.boxes[0]
+    const boardBox = scene.boxes[0]!
     console.log("Board box center:", boardBox.center)
     console.log("Board box size:", boardBox.size)
     console.log("Board box has texture:", !!boardBox.texture)

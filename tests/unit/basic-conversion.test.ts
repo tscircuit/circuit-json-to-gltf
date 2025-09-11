@@ -19,7 +19,7 @@ test("convertCircuitJsonTo3D should work without textures", async () => {
 
   expect(scene).toBeDefined()
   expect(scene.boxes).toHaveLength(1)
-  expect(scene.boxes[0].size.x).toBe(50)
-  expect(scene.boxes[0].size.z).toBe(30)
-  expect(scene.boxes[0].size.y).toBe(1.6)
+  expect(scene.boxes[0]!.size.x).toBe(50)
+  expect(scene.boxes[0]!.size.z).toBe(30)
+  expect(scene.boxes[0]!.size.y).toBe(1.6)
 })
