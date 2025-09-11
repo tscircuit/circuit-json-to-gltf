@@ -63,7 +63,10 @@ async function convertSvgToPng(
         background: backgroundColor,
       })
     } catch (error) {
-      console.warn("Failed to load native svg-to-png, falling back to browser method:", error)
+      console.warn(
+        "Failed to load native svg-to-png, falling back to browser method:",
+        error,
+      )
       // Fallback to canvas method if native import fails
       return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
     }
