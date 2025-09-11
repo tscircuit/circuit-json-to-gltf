@@ -49,5 +49,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@resvg/resvg-js", "@resvg/resvg-wasm"],
   },
-  assetsInclude: ["**/*.wasm"]
+  assetsInclude: ["**/*.wasm"],
 })
