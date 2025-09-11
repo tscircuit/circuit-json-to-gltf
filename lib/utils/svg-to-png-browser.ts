@@ -9,14 +9,31 @@ async function ensureWasmInitialized() {
       if (typeof process !== "undefined" && process.versions?.node) {
         // Dynamically import Node.js modules only in Node.js environment
         const { readFileSync } = await import("fs")
+        const { dirname, join } = await import("path")
 
-        // Load WASM file directly from node_modules
-        const wasmPath = await import("@resvg/resvg-wasm/index_bg.wasm")
-        const wasmBuffer = readFileSync(wasmPath)
-        await initWasm(wasmBuffer)
+        // Try to resolve the WASM file path relative to the package
+        try {
+          const packagePath = require.resolve("@resvg/resvg-wasm/package.json")
+          const wasmPath = join(dirname(packagePath), "index_bg.wasm")
+          const wasmBuffer = readFileSync(wasmPath)
+          await initWasm(wasmBuffer)
+        } catch (pathError) {
+          // Fallback: try relative to the module's main file
+          try {
+            const modulePath = require.resolve("@resvg/resvg-wasm")
+            const wasmPath = join(dirname(modulePath), "index_bg.wasm")
+            const wasmBuffer = readFileSync(wasmPath)
+            await initWasm(wasmBuffer)
+          } catch (fallbackError) {
+            throw new Error(
+              `Failed to locate WASM file: ${(pathError as Error).message}, ${(fallbackError as Error).message}`,
+            )
+          }
+        }
       } else {
         // Browser environment - try to load from URL
         try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
           // @ts-ignore - Vite will handle this import
           const wasmUrl = await import("@resvg/resvg-wasm/index_bg.wasm?url")
           await initWasm(fetch(wasmUrl.default))

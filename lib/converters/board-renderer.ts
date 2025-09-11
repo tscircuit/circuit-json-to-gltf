@@ -12,7 +12,6 @@ export async function renderBoardLayer(
     backgroundColor = "transparent",
     copperColor = "#ffe066",
     silkscreenColor = "#ffffff",
-    padColor = "#ffe066",
     drillColor = "rgba(0,0,0,0.5)",
   } = options
 
@@ -56,8 +55,8 @@ async function convertSvgToPng(
     // Browser: Use Canvas API (works better for complex SVGs)
     return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
   } else {
-    // Node.js/Bun: Use WASM for high-quality rendering
-    const { svgToPngDataUrl } = await import("../utils/svg-to-png-browser")
+    // Node.js/Bun: Use native Resvg for high-quality rendering
+    const { svgToPngDataUrl } = await import("../utils/svg-to-png")
     return await svgToPngDataUrl(svgString, {
       width: resolution,
       background: backgroundColor,

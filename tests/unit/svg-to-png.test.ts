@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { svgToPng, svgToPngDataUrl } from "../../lib"
+import { svgToPng, svgToPngDataUrl } from "../../lib/utils/svg-to-png"
 
 test("svgToPng should convert SVG to PNG buffer", async () => {
   const simpleSvg = `<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg">
