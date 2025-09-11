@@ -49,11 +49,5 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["@resvg/resvg-js", "@resvg/resvg-wasm"],
   },
-  assetsInclude: ["**/*.wasm"],
-  define: {
-    // Define environment variables to help with conditional imports
-    "process.env.VITE_BROWSER_BUILD": JSON.stringify("true"),
-    // Mock Node.js globals for browser
-    global: "globalThis",
-  },
+  assetsInclude: ["**/*.wasm"]
 })

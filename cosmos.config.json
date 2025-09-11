@@ -4,6 +4,6 @@
   "fixturesDir": "./",
   "fixtureFileSuffix": "fixture",
   "vite": {
-    "configFile": "./vite.config.ts"
+    "configFile": "../vite.config.ts"
   }
 }
