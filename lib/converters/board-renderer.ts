@@ -56,11 +56,17 @@ async function convertSvgToPng(
     return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
   } else {
     // Node.js/Bun: Use native Resvg for high-quality rendering
-    const { svgToPngDataUrl } = await import("../utils/svg-to-png")
-    return await svgToPngDataUrl(svgString, {
-      width: resolution,
-      background: backgroundColor,
-    })
+    try {
+      const { svgToPngDataUrl } = await import("../utils/svg-to-png")
+      return await svgToPngDataUrl(svgString, {
+        width: resolution,
+        background: backgroundColor,
+      })
+    } catch (error) {
+      console.warn("Failed to load native svg-to-png, falling back to browser method:", error)
+      // Fallback to canvas method if native import fails
+      return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
+    }
   }
 }
 

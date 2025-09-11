@@ -21,7 +21,6 @@ const excludeNativeModulesPlugin = () => ({
 
 export default defineConfig({
   plugins: [react(), excludeNativeModulesPlugin()],
-  root: "site",
   build: {
     outDir: "../dist",
     rollupOptions: {
@@ -36,9 +35,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "../lib": resolve(__dirname, "./lib/index"),
+      "../lib": resolve(__dirname, "../lib/index"),
       // Always use browser version for site builds to avoid native dependency issues
-      "../lib/utils/svg-to-png": resolve(__dirname, "./lib/utils/svg-to-png-browser"),
+      "../lib/utils/svg-to-png": resolve(__dirname, "../lib/utils/svg-to-png-browser"),
     },
   },
   optimizeDeps: {
