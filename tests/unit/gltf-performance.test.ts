@@ -225,8 +225,8 @@ test("should handle createTriangles with large vertex arrays efficiently", () =>
   // Verify triangle quality
   expect(triangles[0]!.vertices.length).toBe(3)
   expect(triangles[triangles.length - 1]!.vertices.length).toBe(3)
-  expect(triangles[0].normal).toBeDefined()
-  expect(triangles[triangles.length - 1].normal).toBeDefined()
+  expect(triangles[0]!.normal).toBeDefined()
+  expect(triangles[triangles.length - 1]!.normal).toBeDefined()
 
   // Performance metrics
   const processingTime = endTime - startTime
@@ -283,7 +283,7 @@ test("should handle indexed geometry efficiently", () => {
 
   // Verify triangle quality
   for (let i = 0; i < Math.min(50, triangles.length); i += 10) {
-    const triangle = triangles[i]
+    const triangle = triangles[i]!
     expect(triangle.vertices.length).toBe(3)
     expect(triangle.normal).toBeDefined()
   }

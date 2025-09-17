@@ -102,10 +102,10 @@ test("loadGLTF should cache results", async () => {
   ], async () => {
     // Override fetch to track calls
     const originalFetch = globalThis.fetch
-    globalThis.fetch = async (url: string) => {
+    globalThis.fetch = (async (url: string) => {
       fetchCount++
       return await originalFetch(url)
-    }
+    }) as typeof fetch
 
     // First call should fetch
     const mesh1 = await loadGLTF(TestURLs.VALID)
