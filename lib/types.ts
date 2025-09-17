@@ -4,7 +4,7 @@ export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   includeModels?: boolean
-  modelCache?: Map<string, STLMesh | OBJMesh>
+  modelCache?: Map<string, STLMesh | OBJMesh | GLTFMesh>
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
@@ -64,6 +64,10 @@ export interface OBJMesh extends STLMesh {
   materialIndexMap?: Map<string, number>
 }
 
+export interface GLTFMesh extends STLMesh {
+  // Same structure as STLMesh for consistency
+}
+
 export interface OBJMaterial {
   name: string
   color?: Color
@@ -88,9 +92,9 @@ export interface Box3D {
     left?: string
     right?: string
   }
-  mesh?: STLMesh | OBJMesh
+  mesh?: STLMesh | OBJMesh | GLTFMesh
   meshUrl?: string
-  meshType?: "stl" | "obj"
+  meshType?: "stl" | "obj" | "gltf"
   label?: string
   labelColor?: Color
 }

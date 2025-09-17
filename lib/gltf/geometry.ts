@@ -1,4 +1,4 @@
-import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
+import type { Point3, Size3, STLMesh, OBJMesh, GLTFMesh, Triangle } from "../types"
 
 export interface MeshData {
   positions: number[]
@@ -358,6 +358,31 @@ export function createMeshFromOBJ(
   return result.length > 0
     ? result
     : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
+}
+
+export function createMeshFromGLTF(gltfMesh: GLTFMesh): MeshData {
+  const positions: number[] = []
+  const normals: number[] = []
+  const texcoords: number[] = []
+  const indices: number[] = []
+
+  let vertexIndex = 0
+
+  for (const triangle of gltfMesh.triangles) {
+    // Add vertices
+    for (const vertex of triangle.vertices) {
+      positions.push(vertex.x, vertex.y, vertex.z)
+      normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
+      // Simple planar UV mapping
+      texcoords.push(vertex.x, vertex.z)
+    }
+
+    // Add indices (reverse winding for correct face orientation)
+    indices.push(vertexIndex, vertexIndex + 2, vertexIndex + 1)
+    vertexIndex += 3
+  }
+
+  return { positions, normals, texcoords, indices }
 }
 
 export function transformMesh(

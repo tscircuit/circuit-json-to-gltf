@@ -44,6 +44,7 @@ export type {
   BoundingBox,
   STLMesh,
   OBJMesh,
+  GLTFMesh,
   OBJMaterial,
   Color,
   Box3D,
@@ -59,6 +60,7 @@ export type {
 // Re-export loaders
 export { loadSTL, clearSTLCache } from "./loaders/stl"
 export { loadOBJ, clearOBJCache } from "./loaders/obj"
+export { loadGLTF, clearGLTFCache } from "./loaders/gltf"
 
 // Re-export converters
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
