@@ -226,12 +226,13 @@ test("should fallback gracefully when GLTF loading fails", async () => {
   clearGLTFCache()
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = (async (url: string) => {
-    if (url === "test://mock-model.gltf") {
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    const urlStr = typeof url === 'string' ? url : url.toString()
+    if (urlStr === "test://mock-model.gltf") {
       throw new Error("Network error - GLTF not found")
     }
-    throw new Error(`Unexpected URL: ${url}`)
-  }) as typeof fetch
+    throw new Error(`Unexpected URL: ${urlStr}`)
+  }) as unknown as typeof fetch
 
   try {
     const scene = await convertCircuitJsonTo3D(circuitWithGltf as any)

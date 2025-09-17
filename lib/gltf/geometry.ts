@@ -417,9 +417,9 @@ export function transformMesh(
 
     // Apply scale
     if (scale) {
-      x *= scale.x!
-      y *= scale.y!
-      z *= scale.z!
+      x = (x ?? 0) * scale.x!
+      y = (y ?? 0) * scale.y!
+      z = (z ?? 0) * scale.z!
     }
 
     // Apply rotation (simplified - proper rotation would use quaternions)
@@ -450,9 +450,9 @@ export function transformMesh(
     }
 
     // Apply translation
-    result.positions[i] = x + translation.x!
-    result.positions[i + 1] = y + translation.y!
-    result.positions[i + 2] = z + translation.z!
+    result.positions[i] = (x ?? 0) + translation.x!
+    result.positions[i + 1] = (y ?? 0) + translation.y!
+    result.positions[i + 2] = (z ?? 0) + translation.z!
   }
 
   // Also transform normals if there was rotation

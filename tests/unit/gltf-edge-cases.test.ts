@@ -294,8 +294,8 @@ test("loadGLTF should handle large triangle counts efficiently", () => {
       expect(Array.isArray(mesh.triangles)).toBe(true)
 
       // Verify first and last triangles are valid
-      expect(mesh.triangles[0].vertices.length).toBe(3)
-      expect(mesh.triangles[499].vertices.length).toBe(3)
+      expect(mesh.triangles[0]!.vertices.length).toBe(3)
+      expect(mesh.triangles[499]!.vertices.length).toBe(3)
     },
   )
 })
