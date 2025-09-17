@@ -1,4 +1,11 @@
-import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
+import type {
+  Point3,
+  Size3,
+  STLMesh,
+  OBJMesh,
+  GLTFMesh,
+  Triangle,
+} from "../types"
 
 export interface MeshData {
   positions: number[]
@@ -132,10 +139,10 @@ export function createBoxMesh(size: Size3): MeshData {
   for (const face of faces) {
     // Add vertices for this face
     for (let i = 0; i < 4; i++) {
-      const vertex = face.vertices[i]
-      positions.push(vertex[0], vertex[1], vertex[2])
-      normals.push(face.normal[0], face.normal[1], face.normal[2])
-      texcoords.push(face.uvs[i][0], face.uvs[i][1])
+      const vertex = face.vertices[i]!
+      positions.push(vertex[0]!, vertex[1]!, vertex[2]!)
+      normals.push(face.normal[0]!, face.normal[1]!, face.normal[2]!)
+      texcoords.push(face.uvs[i]![0]!, face.uvs[i]![1]!)
     }
 
     // Add two triangles for the quad
@@ -268,10 +275,10 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
 
     // Add vertices for this face
     for (let i = 0; i < 4; i++) {
-      const vertex = face.vertices[i]
-      positions.push(vertex[0], vertex[1], vertex[2])
-      normals.push(face.normal[0], face.normal[1], face.normal[2])
-      texcoords.push(face.uvs[i][0], face.uvs[i][1])
+      const vertex = face.vertices[i]!
+      positions.push(vertex[0]!, vertex[1]!, vertex[2]!)
+      normals.push(face.normal[0]!, face.normal[1]!, face.normal[2]!)
+      texcoords.push(face.uvs[i]![0]!, face.uvs[i]![1]!)
     }
 
     result[faceName as keyof FaceMeshData] = {
@@ -360,6 +367,31 @@ export function createMeshFromOBJ(
     : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
 }
 
+export function createMeshFromGLTF(gltfMesh: GLTFMesh): MeshData {
+  const positions: number[] = []
+  const normals: number[] = []
+  const texcoords: number[] = []
+  const indices: number[] = []
+
+  let vertexIndex = 0
+
+  for (const triangle of gltfMesh.triangles) {
+    // Add vertices
+    for (const vertex of triangle.vertices) {
+      positions.push(vertex.x, vertex.y, vertex.z)
+      normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
+      // Simple planar UV mapping
+      texcoords.push(vertex.x, vertex.z)
+    }
+
+    // Add indices (reverse winding for correct face orientation)
+    indices.push(vertexIndex, vertexIndex + 2, vertexIndex + 1)
+    vertexIndex += 3
+  }
+
+  return { positions, normals, texcoords, indices }
+}
+
 export function transformMesh(
   mesh: MeshData,
   translation: Point3,
@@ -385,32 +417,32 @@ export function transformMesh(
 
     // Apply scale
     if (scale) {
-      x *= scale.x
-      y *= scale.y
-      z *= scale.z
+      x = (x ?? 0) * scale.x!
+      y = (y ?? 0) * scale.y!
+      z = (z ?? 0) * scale.z!
     }
 
     // Apply rotation (simplified - proper rotation would use quaternions)
     if (rotation) {
       // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rx = x * cosY - z * sinY
-      const rz = x * sinY + z * cosY
+      const cosY = Math.cos(rotation.y!)
+      const sinY = Math.sin(rotation.y!)
+      const rx = x! * cosY - z! * sinY
+      const rz = x! * sinY + z! * cosY
       x = rx
       z = rz
 
       // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const ry = y * cosX - z * sinX
-      const rz2 = y * sinX + z * cosX
+      const cosX = Math.cos(rotation.x!)
+      const sinX = Math.sin(rotation.x!)
+      const ry = y! * cosX - z * sinX
+      const rz2 = y! * sinX + z * cosX
       y = ry
       z = rz2
 
       // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
+      const cosZ = Math.cos(rotation.z!)
+      const sinZ = Math.sin(rotation.z!)
       const rx2 = x * cosZ - y * sinZ
       const ry2 = x * sinZ + y * cosZ
       x = rx2
@@ -418,9 +450,9 @@ export function transformMesh(
     }
 
     // Apply translation
-    result.positions[i] = x + translation.x
-    result.positions[i + 1] = y + translation.y
-    result.positions[i + 2] = z + translation.z
+    result.positions[i] = (x ?? 0) + translation.x!
+    result.positions[i + 1] = (y ?? 0) + translation.y!
+    result.positions[i + 2] = (z ?? 0) + translation.z!
   }
 
   // Also transform normals if there was rotation
@@ -432,24 +464,24 @@ export function transformMesh(
 
       // Apply same rotations to normals
       // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rnx = nx * cosY - nz * sinY
-      const rnz = nx * sinY + nz * cosY
+      const cosY = Math.cos(rotation.y!)
+      const sinY = Math.sin(rotation.y!)
+      const rnx = nx! * cosY - nz! * sinY
+      const rnz = nx! * sinY + nz! * cosY
       nx = rnx
       nz = rnz
 
       // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const rny = ny * cosX - nz * sinX
-      const rnz2 = ny * sinX + nz * cosX
+      const cosX = Math.cos(rotation.x!)
+      const sinX = Math.sin(rotation.x!)
+      const rny = ny! * cosX - nz * sinX
+      const rnz2 = ny! * sinX + nz * cosX
       ny = rny
       nz = rnz2
 
       // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
+      const cosZ = Math.cos(rotation.z!)
+      const sinZ = Math.sin(rotation.z!)
       const rnx2 = nx * cosZ - ny * sinZ
       const rny2 = nx * sinZ + ny * cosZ
       nx = rnx2
@@ -480,9 +512,9 @@ export function getBounds(positions: number[]): { min: Point3; max: Point3 } {
     maxZ = -Infinity
 
   for (let i = 0; i < positions.length; i += 3) {
-    const x = positions[i]
-    const y = positions[i + 1]
-    const z = positions[i + 2]
+    const x = positions[i]!
+    const y = positions[i + 1]!
+    const z = positions[i + 2]!
 
     minX = Math.min(minX, x)
     minY = Math.min(minY, y)
