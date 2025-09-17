@@ -16,7 +16,7 @@ test("createTriangles should handle exactly 3 vertices (minimum triangle)", () =
 
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(1)
-  expect(triangles[0].vertices.length).toBe(3)
+  expect(triangles[0]!.vertices.length).toBe(3)
 })
 
 test("createTriangles should handle exactly 2 vertices (insufficient data)", () => {
@@ -112,8 +112,8 @@ test("createTriangles should handle zero-length normals array", () => {
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(1)
   // Should calculate normals instead of using empty array
-  expect(triangles[0].normal).toBeDefined()
-  expect(typeof triangles[0].normal.x).toBe("number")
+  expect(triangles[0]!.normal).toBeDefined()
+  expect(typeof triangles[0]!.normal.x).toBe("number")
 })
 
 test("decodeBase64Buffer should handle minimum valid base64", () => {
@@ -319,10 +319,10 @@ test("createTriangles should handle triangles with zero area (degenerate)", () =
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(1)
   // Should handle degenerate triangle gracefully
-  expect(triangles[0].normal).toBeDefined()
-  expect(isFinite(triangles[0].normal.x)).toBe(true)
-  expect(isFinite(triangles[0].normal.y)).toBe(true)
-  expect(isFinite(triangles[0].normal.z)).toBe(true)
+  expect(triangles[0]!.normal).toBeDefined()
+  expect(isFinite(triangles[0]!.normal.x)).toBe(true)
+  expect(isFinite(triangles[0]!.normal.y)).toBe(true)
+  expect(isFinite(triangles[0]!.normal.z)).toBe(true)
 })
 
 test("createTriangles should handle collinear vertices", () => {
@@ -344,7 +344,7 @@ test("createTriangles should handle collinear vertices", () => {
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(1)
   // Normal calculation should handle collinear case
-  expect(triangles[0].normal).toBeDefined()
+  expect(triangles[0]!.normal).toBeDefined()
 })
 
 test("createTriangles should handle Uint32Array indices", () => {
@@ -356,7 +356,7 @@ test("createTriangles should handle Uint32Array indices", () => {
 
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(1)
-  expect(triangles[0].vertices.length).toBe(3)
+  expect(triangles[0]!.vertices.length).toBe(3)
 })
 
 test("createTriangles should handle mixed vertex counts in non-indexed mode", () => {
@@ -386,8 +386,8 @@ test("createTriangles should handle mixed vertex counts in non-indexed mode", ()
 
   expect(triangles).toBeDefined()
   expect(triangles.length).toBe(2) // Creates 2 triangles from 6 vertices
-  expect(triangles[0].vertices[0].x).toBeCloseTo(0)
-  expect(triangles[0].vertices[1].x).toBeCloseTo(1)
+  expect(triangles[0]!.vertices[0]!.x).toBeCloseTo(0)
+  expect(triangles[0]!.vertices[1]!.x).toBeCloseTo(1)
   expect(triangles[0].vertices[2].x).toBeCloseTo(0)
   expect(triangles[1].vertices[0].x).toBeCloseTo(2)
   expect(triangles[1].vertices[1].x).toBeCloseTo(3)

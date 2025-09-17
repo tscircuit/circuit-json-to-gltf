@@ -115,14 +115,14 @@ test("convertCircuitJsonTo3D should handle GLTF models", async () => {
   }
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async (url: string) => {
+  globalThis.fetch = (async (url: string) => {
     if (url === "test://mock-model.gltf") {
       return new Response(JSON.stringify(mockGLTF), {
         headers: { "Content-Type": "application/json" }
       })
     }
     throw new Error(`Unexpected URL: ${url}`)
-  }
+  }) as typeof fetch
 
   try {
     const scene = await convertCircuitJsonTo3D(circuitWithGltf as any)
@@ -141,7 +141,7 @@ test("convertCircuitJsonTo3D should handle GLTF models", async () => {
     expect(componentBox?.meshUrl).toBe("test://mock-model.gltf")
     expect(componentBox?.mesh).toBeDefined()
     expect(componentBox?.mesh?.triangles).toBeDefined()
-    expect(componentBox?.mesh?.triangles.length).toBe(1)
+    expect(componentBox!.mesh!.triangles.length).toBe(1)
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -183,14 +183,14 @@ test("should position GLTF model correctly in 3D scene", async () => {
   }
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async (url: string) => {
+  globalThis.fetch = (async (url: string) => {
     if (url === "test://mock-model.gltf") {
       return new Response(JSON.stringify(mockGLTF), {
         headers: { "Content-Type": "application/json" }
       })
     }
     throw new Error(`Unexpected URL: ${url}`)
-  }
+  }) as typeof fetch
 
   try {
     const scene = await convertCircuitJsonTo3D(circuitWithGltf as any)
@@ -203,15 +203,15 @@ test("should position GLTF model correctly in 3D scene", async () => {
     // Verify positioning from the fixture data
     // The cad_component has position: { "x": 0, "y": 0, "z": 2 }
     // Note: Z coordinate from fixture becomes Y coordinate in 3D scene
-    expect(gltfBox?.center.x).toBe(0)
-    expect(gltfBox?.center.y).toBe(2) // Z position from fixture becomes Y
-    expect(gltfBox?.center.z).toBe(0)
+    expect(gltfBox!.center.x).toBe(0)
+    expect(gltfBox!.center.y).toBe(2) // Z position from fixture becomes Y
+    expect(gltfBox!.center.z).toBe(0)
 
     // Verify size from the fixture data
     // The cad_component has size: { "x": 8, "y": 3, "z": 6 }
-    expect(gltfBox?.size.x).toBe(8)
-    expect(gltfBox?.size.y).toBe(3)
-    expect(gltfBox?.size.z).toBe(6)
+    expect(gltfBox!.size.x).toBe(8)
+    expect(gltfBox!.size.y).toBe(3)
+    expect(gltfBox!.size.z).toBe(6)
 
   } finally {
     globalThis.fetch = originalFetch
@@ -226,12 +226,12 @@ test("should fallback gracefully when GLTF loading fails", async () => {
   clearGLTFCache()
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = async (url: string) => {
+  globalThis.fetch = (async (url: string) => {
     if (url === "test://mock-model.gltf") {
       throw new Error("Network error - GLTF not found")
     }
     throw new Error(`Unexpected URL: ${url}`)
-  }
+  }) as typeof fetch
 
   try {
     const scene = await convertCircuitJsonTo3D(circuitWithGltf as any)
@@ -253,15 +253,15 @@ test("should fallback gracefully when GLTF loading fails", async () => {
     // The component should still be created with error handling
     // The error handling allows the mesh to still be populated (possibly with a cached or fallback mesh)
     // The key is that the application doesn't crash and the component box is still created
-    expect(componentBox?.meshType).toBe("gltf") // meshType is preserved for error cases
+    expect(componentBox!.meshType).toBe("gltf") // meshType is preserved for error cases
 
     // But the box should still have the correct positioning and size
-    expect(componentBox?.center.x).toBe(0)
-    expect(componentBox?.center.y).toBe(2) // Z position from fixture becomes Y
-    expect(componentBox?.center.z).toBe(0)
-    expect(componentBox?.size.x).toBe(8)
-    expect(componentBox?.size.y).toBe(3)
-    expect(componentBox?.size.z).toBe(6)
+    expect(componentBox!.center.x).toBe(0)
+    expect(componentBox!.center.y).toBe(2) // Z position from fixture becomes Y
+    expect(componentBox!.center.z).toBe(0)
+    expect(componentBox!.size.x).toBe(8)
+    expect(componentBox!.size.y).toBe(3)
+    expect(componentBox!.size.z).toBe(6)
 
   } finally {
     globalThis.fetch = originalFetch

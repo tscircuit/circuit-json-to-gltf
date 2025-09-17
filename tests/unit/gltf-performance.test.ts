@@ -48,7 +48,7 @@ test("should handle moderate triangle counts efficiently", async () => {
 
     // Verify triangle quality
     for (let i = 0; i < Math.min(10, mesh.triangles.length); i++) {
-      const triangle = mesh.triangles[i]
+      const triangle = mesh.triangles[i]!
       expect(triangle.vertices).toBeDefined()
       expect(triangle.vertices.length).toBe(3)
       expect(triangle.normal).toBeDefined()
@@ -223,8 +223,8 @@ test("should handle createTriangles with large vertex arrays efficiently", () =>
   expect(triangles.length).toBe(triangleCount)
 
   // Verify triangle quality
-  expect(triangles[0].vertices.length).toBe(3)
-  expect(triangles[triangles.length - 1].vertices.length).toBe(3)
+  expect(triangles[0]!.vertices.length).toBe(3)
+  expect(triangles[triangles.length - 1]!.vertices.length).toBe(3)
   expect(triangles[0].normal).toBeDefined()
   expect(triangles[triangles.length - 1].normal).toBeDefined()
 

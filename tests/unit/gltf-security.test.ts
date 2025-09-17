@@ -347,7 +347,7 @@ test("loadGLTF should handle malicious component types", () => {
       } catch (error) {
         // Controlled error is acceptable
         expect(error).toBeInstanceOf(Error)
-        expect(typeof error.message).toBe("string")
+        expect(typeof (error as Error).message).toBe("string")
       }
     })
   }

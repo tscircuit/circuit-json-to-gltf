@@ -238,7 +238,8 @@ export function setupMockFetch(
   options?: MockFetchOptions,
 ): () => void {
   const originalFetch = globalThis.fetch
-  globalThis.fetch = createMockFetch(url, gltfData, options)
+  const mockFetch = createMockFetch(url, gltfData, options) as typeof fetch
+  globalThis.fetch = mockFetch
 
   // Return cleanup function
   return () => {
@@ -259,7 +260,8 @@ export async function withMockFetch<T>(
   const originalFetch = globalThis.fetch
 
   try {
-    globalThis.fetch = createMockFetch(url, gltfData, options)
+    const mockFetch = createMockFetch(url, gltfData, options) as typeof fetch
+    globalThis.fetch = mockFetch
     return await testFn()
   } finally {
     globalThis.fetch = originalFetch
@@ -277,7 +279,7 @@ export async function withMultipleMockFetch<T>(
   const originalFetch = globalThis.fetch
 
   try {
-    globalThis.fetch = async (input: string): Promise<Response> => {
+    const mockFetch = async (input: string): Promise<Response> => {
       for (const mock of urlMocks) {
         const mockFetch = createMockFetch(mock.url, mock.gltfData, mock.options)
         try {
@@ -295,6 +297,7 @@ export async function withMultipleMockFetch<T>(
       }
       throw new Error(`No mock found for URL: ${input}`)
     }
+    globalThis.fetch = mockFetch as typeof fetch
 
     return await testFn()
   } finally {
