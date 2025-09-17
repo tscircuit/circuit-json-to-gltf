@@ -161,17 +161,20 @@ export default function CircuitToGltfDemo() {
             }}
           >
             {gltfUrl ? (
-              <model-viewer
-                src={gltfUrl}
-                alt="Circuit 3D Model"
-                auto-rotate
-                camera-controls
-                shadow-intensity="1"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                }}
-              />
+              <>
+                {/* @ts-ignore - model-viewer is a web component */}
+                <model-viewer
+                  src={gltfUrl}
+                  alt="Circuit 3D Model"
+                  auto-rotate
+                  camera-controls
+                  shadow-intensity="1"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                  }}
+                />
+              </>
             ) : (
               <div
                 style={{
