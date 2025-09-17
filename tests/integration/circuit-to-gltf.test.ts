@@ -67,58 +67,68 @@ test("convertCircuitJsonTo3D should handle GLTF models", async () => {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [{
-        attributes: { POSITION: 0, NORMAL: 1 },
-        mode: 4 // TRIANGLES
-      }]
-    }],
+    meshes: [
+      {
+        primitives: [
+          {
+            attributes: { POSITION: 0, NORMAL: 1 },
+            mode: 4, // TRIANGLES
+          },
+        ],
+      },
+    ],
     accessors: [
       {
         bufferView: 0,
         componentType: 5126, // FLOAT
         count: 3,
-        type: "VEC3"
+        type: "VEC3",
       },
       {
         bufferView: 1,
         componentType: 5126, // FLOAT
         count: 3,
-        type: "VEC3"
-      }
+        type: "VEC3",
+      },
     ],
     bufferViews: [
       {
         buffer: 0,
         byteOffset: 0,
-        byteLength: 36
+        byteLength: 36,
       },
       {
         buffer: 0,
         byteOffset: 36,
-        byteLength: 36
-      }
+        byteLength: 36,
+      },
     ],
-    buffers: [{
-      byteLength: 72,
-      uri: "data:application/octet-stream;base64," + btoa(
-        String.fromCharCode(...new Uint8Array(
-          new Float32Array([
-            // Triangle positions
-            0, 0, 0, 1, 0, 0, 0.5, 1, 0,
-            // Triangle normals
-            0, 0, 1, 0, 0, 1, 0, 0, 1
-          ]).buffer
-        ))
-      )
-    }]
+    buffers: [
+      {
+        byteLength: 72,
+        uri:
+          "data:application/octet-stream;base64," +
+          btoa(
+            String.fromCharCode(
+              ...new Uint8Array(
+                new Float32Array([
+                  // Triangle positions
+                  0, 0, 0, 1, 0, 0, 0.5, 1, 0,
+                  // Triangle normals
+                  0, 0, 1, 0, 0, 1, 0, 0, 1,
+                ]).buffer,
+              ),
+            ),
+          ),
+      },
+    ],
   }
 
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (url: string) => {
     if (url === "test://mock-model.gltf") {
       return new Response(JSON.stringify(mockGLTF), {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       })
     }
     throw new Error(`Unexpected URL: ${url}`)
@@ -155,38 +165,52 @@ test("should position GLTF model correctly in 3D scene", async () => {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [{
-        attributes: { POSITION: 0 },
-        mode: 4
-      }]
-    }],
-    accessors: [{
-      bufferView: 0,
-      componentType: 5126,
-      count: 3,
-      type: "VEC3"
-    }],
-    bufferViews: [{
-      buffer: 0,
-      byteOffset: 0,
-      byteLength: 36
-    }],
-    buffers: [{
-      byteLength: 36,
-      uri: "data:application/octet-stream;base64," + btoa(
-        String.fromCharCode(...new Uint8Array(
-          new Float32Array([0, 0, 0, 1, 0, 0, 0.5, 1, 0]).buffer
-        ))
-      )
-    }]
+    meshes: [
+      {
+        primitives: [
+          {
+            attributes: { POSITION: 0 },
+            mode: 4,
+          },
+        ],
+      },
+    ],
+    accessors: [
+      {
+        bufferView: 0,
+        componentType: 5126,
+        count: 3,
+        type: "VEC3",
+      },
+    ],
+    bufferViews: [
+      {
+        buffer: 0,
+        byteOffset: 0,
+        byteLength: 36,
+      },
+    ],
+    buffers: [
+      {
+        byteLength: 36,
+        uri:
+          "data:application/octet-stream;base64," +
+          btoa(
+            String.fromCharCode(
+              ...new Uint8Array(
+                new Float32Array([0, 0, 0, 1, 0, 0, 0.5, 1, 0]).buffer,
+              ),
+            ),
+          ),
+      },
+    ],
   }
 
   const originalFetch = globalThis.fetch
   globalThis.fetch = (async (url: string) => {
     if (url === "test://mock-model.gltf") {
       return new Response(JSON.stringify(mockGLTF), {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       })
     }
     throw new Error(`Unexpected URL: ${url}`)
@@ -194,7 +218,6 @@ test("should position GLTF model correctly in 3D scene", async () => {
 
   try {
     const scene = await convertCircuitJsonTo3D(circuitWithGltf as any)
-
 
     // Find the GLTF component box
     const gltfBox = scene.boxes.find((box) => box.meshType === "gltf")
@@ -212,7 +235,6 @@ test("should position GLTF model correctly in 3D scene", async () => {
     expect(gltfBox!.size.x).toBe(8)
     expect(gltfBox!.size.y).toBe(3)
     expect(gltfBox!.size.z).toBe(6)
-
   } finally {
     globalThis.fetch = originalFetch
   }
@@ -226,8 +248,11 @@ test("should fallback gracefully when GLTF loading fails", async () => {
   clearGLTFCache()
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
-    const urlStr = typeof url === 'string' ? url : url.toString()
+  globalThis.fetch = (async (
+    url: string | URL | Request,
+    init?: RequestInit,
+  ) => {
+    const urlStr = typeof url === "string" ? url : url.toString()
     if (urlStr === "test://mock-model.gltf") {
       throw new Error("Network error - GLTF not found")
     }
@@ -240,7 +265,6 @@ test("should fallback gracefully when GLTF loading fails", async () => {
     expect(scene).toBeDefined()
     expect(scene.boxes).toBeInstanceOf(Array)
     expect(scene.boxes.length).toBeGreaterThan(0)
-
 
     // Should have the board box (unaffected by GLTF error)
     const boardBox = scene.boxes.find((box) => box.size.y === 1.6)
@@ -263,7 +287,6 @@ test("should fallback gracefully when GLTF loading fails", async () => {
     expect(componentBox!.size.x).toBe(8)
     expect(componentBox!.size.y).toBe(3)
     expect(componentBox!.size.z).toBe(6)
-
   } finally {
     globalThis.fetch = originalFetch
   }
