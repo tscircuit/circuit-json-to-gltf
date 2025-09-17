@@ -1,5 +1,10 @@
 import { test, expect } from "bun:test"
-import { loadGLTF, createTriangles, decodeBase64Buffer, clearGLTFCache } from "../../lib/loaders/gltf"
+import {
+  loadGLTF,
+  createTriangles,
+  decodeBase64Buffer,
+  clearGLTFCache,
+} from "../../lib/loaders/gltf"
 import { createMockGLTF, withMockFetch } from "../helpers/gltf-test-utils"
 
 // Performance Tests: Memory Usage and Large File Handling
@@ -33,7 +38,9 @@ test("should handle moderate triangle counts efficiently", async () => {
     console.log(`  - Triangles: ${triangleCount.toLocaleString()}`)
     console.log(`  - Processing time: ${processingTime.toFixed(1)}ms`)
     console.log(`  - Memory increase: ${memoryIncreaseMB.toFixed(1)}MB`)
-    console.log(`  - Triangles/ms: ${(triangleCount / processingTime).toFixed(0)}`)
+    console.log(
+      `  - Triangles/ms: ${(triangleCount / processingTime).toFixed(0)}`,
+    )
 
     // Performance assertions (reasonable thresholds)
     expect(processingTime).toBeLessThan(1000) // Should complete in under 1 second
@@ -101,7 +108,7 @@ test("should handle multiple mesh GLTF structures efficiently", async () => {
   // Create multiple mesh GLTF using existing utility
   const multiMeshGLTF = createMockGLTF({
     triangleCount: totalTriangles,
-    includeNormals: true
+    includeNormals: true,
   })
 
   await withMockFetch("test://multi-mesh.gltf", multiMeshGLTF, async () => {
@@ -165,7 +172,8 @@ test("should maintain performance with repeated loads (caching)", async () => {
 
     // Performance metrics
     const averageCachedTime = (secondTime + thirdTime) / 2
-    const speedupRatio = averageCachedTime > 0 ? firstTime / averageCachedTime : firstTime
+    const speedupRatio =
+      averageCachedTime > 0 ? firstTime / averageCachedTime : firstTime
 
     console.log(`📊 Caching performance:`)
     console.log(`  - First load (cold): ${firstTime.toFixed(1)}ms`)
@@ -194,9 +202,9 @@ test("should handle createTriangles with large vertex arrays efficiently", () =>
   // Fill with test data
   for (let i = 0; i < vertexCount; i++) {
     const baseIndex = i * 3
-    positions[baseIndex] = Math.random() * 20 - 10     // x: -10 to +10
+    positions[baseIndex] = Math.random() * 20 - 10 // x: -10 to +10
     positions[baseIndex + 1] = Math.random() * 20 - 10 // y: -10 to +10
-    positions[baseIndex + 2] = Math.random() * 5       // z: 0 to +5
+    positions[baseIndex + 2] = Math.random() * 5 // z: 0 to +5
     normals[baseIndex] = 0
     normals[baseIndex + 1] = 0
     normals[baseIndex + 2] = 1
@@ -236,7 +244,7 @@ test("should handle createTriangles with large vertex arrays efficiently", () =>
   // Performance assertions
   expect(processingTime).toBeLessThan(500) // Should complete in under 500ms
   expect(memoryIncreaseMB).toBeLessThan(50) // Should not use excessive memory
-  expect(trianglesPerMs).toBeGreaterThan(2)  // Should process at least 2 triangles/ms
+  expect(trianglesPerMs).toBeGreaterThan(2) // Should process at least 2 triangles/ms
 })
 
 test("should handle indexed geometry efficiently", () => {
@@ -251,9 +259,9 @@ test("should handle indexed geometry efficiently", () => {
   // Fill positions with test data
   for (let i = 0; i < vertexCount; i++) {
     const baseIndex = i * 3
-    positions[baseIndex] = Math.random() * 30 - 15     // x: -15 to +15
+    positions[baseIndex] = Math.random() * 30 - 15 // x: -15 to +15
     positions[baseIndex + 1] = Math.random() * 30 - 15 // y: -15 to +15
-    positions[baseIndex + 2] = Math.random() * 8       // z: 0 to +8
+    positions[baseIndex + 2] = Math.random() * 8 // z: 0 to +8
   }
 
   // Fill indices with valid references
@@ -297,7 +305,7 @@ test("should handle indexed geometry efficiently", () => {
   // Performance assertions
   expect(processingTime).toBeLessThan(300) // Should complete in under 300ms
   expect(memoryIncreaseMB).toBeLessThan(30) // Should not use excessive memory
-  expect(trianglesPerMs).toBeGreaterThan(5)   // Should process at least 5 triangles/ms
+  expect(trianglesPerMs).toBeGreaterThan(5) // Should process at least 5 triangles/ms
 })
 
 test("should maintain reasonable memory usage patterns", async () => {
@@ -317,15 +325,20 @@ test("should maintain reasonable memory usage patterns", async () => {
       memoryReadings.push(currentMemory.heapUsed)
 
       // Small delay to allow GC if needed
-      await new Promise(resolve => setTimeout(resolve, 10))
+      await new Promise((resolve) => setTimeout(resolve, 10))
     }
 
     const finalMemory = process.memoryUsage()
-    const totalIncrease = (finalMemory.heapUsed - baseMemory.heapUsed) / (1024 * 1024)
+    const totalIncrease =
+      (finalMemory.heapUsed - baseMemory.heapUsed) / (1024 * 1024)
 
     console.log(`📊 Memory usage pattern:`)
-    console.log(`  - Base memory: ${(baseMemory.heapUsed / (1024 * 1024)).toFixed(1)}MB`)
-    console.log(`  - Final memory: ${(finalMemory.heapUsed / (1024 * 1024)).toFixed(1)}MB`)
+    console.log(
+      `  - Base memory: ${(baseMemory.heapUsed / (1024 * 1024)).toFixed(1)}MB`,
+    )
+    console.log(
+      `  - Final memory: ${(finalMemory.heapUsed / (1024 * 1024)).toFixed(1)}MB`,
+    )
     console.log(`  - Total increase: ${totalIncrease.toFixed(1)}MB`)
 
     // Memory should not grow excessively with caching

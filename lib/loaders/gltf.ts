@@ -21,7 +21,7 @@ export function decodeBase64Buffer(dataUri: string): ArrayBuffer {
     throw new Error("Data URI cannot be null or undefined")
   }
 
-  if (typeof dataUri !== 'string') {
+  if (typeof dataUri !== "string") {
     throw new Error("Data URI must be a string")
   }
 
@@ -58,7 +58,8 @@ export function decodeBase64Buffer(dataUri: string): ArrayBuffer {
     const binaryString = atob(base64String)
 
     // Security: Validate decoded size is reasonable
-    if (binaryString.length > 100 * 1024 * 1024) { // 100MB max
+    if (binaryString.length > 100 * 1024 * 1024) {
+      // 100MB max
       throw new Error("Base64 data too large")
     }
 
@@ -70,7 +71,9 @@ export function decodeBase64Buffer(dataUri: string): ArrayBuffer {
 
     return bytes.buffer
   } catch (error) {
-    throw new Error(`Invalid base64 content: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Invalid base64 content: ${error instanceof Error ? error.message : "Unknown error"}`,
+    )
   }
 }
 
@@ -118,16 +121,19 @@ async function parseGLTF(
   }
 }
 
-async function loadBuffers(gltfJson: any, baseUrl: string): Promise<ArrayBuffer[]> {
+async function loadBuffers(
+  gltfJson: any,
+  baseUrl: string,
+): Promise<ArrayBuffer[]> {
   const buffers: ArrayBuffer[] = []
 
   if (!gltfJson.buffers) return buffers
 
   for (const buffer of gltfJson.buffers) {
     if (buffer.uri) {
-      if (buffer.uri.startsWith('data:')) {
+      if (buffer.uri.startsWith("data:")) {
         // Embedded base64 buffer
-        const base64Data = buffer.uri.split(',')[1]
+        const base64Data = buffer.uri.split(",")[1]
         const binaryString = atob(base64Data)
         const arrayBuffer = new ArrayBuffer(binaryString.length)
         const uint8Array = new Uint8Array(arrayBuffer)
@@ -167,19 +173,31 @@ function extractMeshData(
     }
 
     // Extract position data
-    const positions = extractAccessorData(attributes.POSITION, gltfJson, buffers) as Float32Array
+    const positions = extractAccessorData(
+      attributes.POSITION,
+      gltfJson,
+      buffers,
+    ) as Float32Array
 
     // Extract normal data if available
     let normals: Float32Array | null = null
     if (attributes.NORMAL) {
-      const normalData = extractAccessorData(attributes.NORMAL, gltfJson, buffers)
+      const normalData = extractAccessorData(
+        attributes.NORMAL,
+        gltfJson,
+        buffers,
+      )
       normals = normalData as Float32Array // Normals are always FLOAT
     }
 
     // Extract indices if available
     let indices: Uint16Array | Uint32Array | null = null
     if (primitive.indices !== undefined) {
-      const indexData = extractAccessorData(primitive.indices, gltfJson, buffers)
+      const indexData = extractAccessorData(
+        primitive.indices,
+        gltfJson,
+        buffers,
+      )
       indices = indexData as Uint16Array | Uint32Array // Indices are UNSIGNED_SHORT or UNSIGNED_INT
     }
 
@@ -212,7 +230,9 @@ function extractAccessorData(
     throw new Error(`Accessor byteOffset cannot be negative: ${accessorOffset}`)
   }
   if (bufferViewOffset < 0) {
-    throw new Error(`BufferView byteOffset cannot be negative: ${bufferViewOffset}`)
+    throw new Error(
+      `BufferView byteOffset cannot be negative: ${bufferViewOffset}`,
+    )
   }
 
   const byteOffset = accessorOffset + bufferViewOffset
@@ -220,7 +240,11 @@ function extractAccessorData(
   const typeSize = getTypeSize(accessor.type)
 
   // Security: Validate component type is supported
-  if (componentSize === 4 && accessor.componentType !== 5126 && accessor.componentType !== 5125) {
+  if (
+    componentSize === 4 &&
+    accessor.componentType !== 5126 &&
+    accessor.componentType !== 5125
+  ) {
     throw new Error(`Unsupported component type: ${accessor.componentType}`)
   }
 
@@ -228,7 +252,8 @@ function extractAccessorData(
   if (accessor.count < 0) {
     throw new Error(`Accessor count cannot be negative: ${accessor.count}`)
   }
-  if (accessor.count > 10000000) { // 10M vertices max
+  if (accessor.count > 10000000) {
+    // 10M vertices max
     throw new Error(`Accessor count too large: ${accessor.count}`)
   }
 
@@ -239,7 +264,9 @@ function extractAccessorData(
     throw new Error(`Combined byteOffset cannot be negative: ${byteOffset}`)
   }
   if (byteOffset >= buffer.byteLength) {
-    throw new Error(`ByteOffset ${byteOffset} exceeds buffer size ${buffer.byteLength}`)
+    throw new Error(
+      `ByteOffset ${byteOffset} exceeds buffer size ${buffer.byteLength}`,
+    )
   }
   if (byteOffset + byteLength > buffer.byteLength) {
     throw new Error(`Accessor data extends beyond buffer bounds`)
@@ -257,7 +284,9 @@ function extractAccessorData(
         throw new Error(`Unsupported component type: ${accessor.componentType}`)
     }
   } catch (error) {
-    throw new Error(`Failed to create typed array: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    throw new Error(
+      `Failed to create typed array: ${error instanceof Error ? error.message : "Unknown error"}`,
+    )
   }
 }
 
@@ -279,14 +308,22 @@ function getComponentSize(componentType: number): number {
 
 function getTypeSize(type: string): number {
   switch (type) {
-    case "SCALAR": return 1
-    case "VEC2": return 2
-    case "VEC3": return 3
-    case "VEC4": return 4
-    case "MAT2": return 4
-    case "MAT3": return 9
-    case "MAT4": return 16
-    default: return 1
+    case "SCALAR":
+      return 1
+    case "VEC2":
+      return 2
+    case "VEC3":
+      return 3
+    case "VEC4":
+      return 4
+    case "MAT2":
+      return 4
+    case "MAT3":
+      return 9
+    case "MAT4":
+      return 16
+    default:
+      return 1
   }
 }
 
@@ -311,7 +348,6 @@ export function createTriangles(
   if (positions.length === 0 || vertexCount < 3) {
     return triangles
   }
-
 
   if (indices) {
     // Indexed geometry
@@ -351,8 +387,16 @@ export function createTriangles(
         // Use provided normal (average of vertex normals)
         normal = {
           x: (normals[i0 * 3]! + normals[i1 * 3]! + normals[i2 * 3]!) / 3,
-          y: (normals[i0 * 3 + 1]! + normals[i1 * 3 + 1]! + normals[i2 * 3 + 1]!) / 3,
-          z: (normals[i0 * 3 + 2]! + normals[i1 * 3 + 2]! + normals[i2 * 3 + 2]!) / 3,
+          y:
+            (normals[i0 * 3 + 1]! +
+              normals[i1 * 3 + 1]! +
+              normals[i2 * 3 + 1]!) /
+            3,
+          z:
+            (normals[i0 * 3 + 2]! +
+              normals[i1 * 3 + 2]! +
+              normals[i2 * 3 + 2]!) /
+            3,
         }
       } else {
         // Calculate normal from triangle vertices
@@ -387,9 +431,19 @@ export function createTriangles(
       if (normals) {
         // Use provided normal (average of vertex normals)
         normal = {
-          x: (normals[i * 3]! + normals[(i + 1) * 3]! + normals[(i + 2) * 3]!) / 3,
-          y: (normals[i * 3 + 1]! + normals[(i + 1) * 3 + 1]! + normals[(i + 2) * 3 + 1]!) / 3,
-          z: (normals[i * 3 + 2]! + normals[(i + 1) * 3 + 2]! + normals[(i + 2) * 3 + 2]!) / 3,
+          x:
+            (normals[i * 3]! + normals[(i + 1) * 3]! + normals[(i + 2) * 3]!) /
+            3,
+          y:
+            (normals[i * 3 + 1]! +
+              normals[(i + 1) * 3 + 1]! +
+              normals[(i + 2) * 3 + 1]!) /
+            3,
+          z:
+            (normals[i * 3 + 2]! +
+              normals[(i + 1) * 3 + 2]! +
+              normals[(i + 2) * 3 + 2]!) /
+            3,
         }
       } else {
         // Calculate normal from triangle vertices
@@ -425,7 +479,9 @@ function calculateNormal(v0: Point3, v1: Point3, v2: Point3): Point3 {
   }
 
   // Normalize
-  const length = Math.sqrt(normal.x * normal.x + normal.y * normal.y + normal.z * normal.z)
+  const length = Math.sqrt(
+    normal.x * normal.x + normal.y * normal.y + normal.z * normal.z,
+  )
   if (length > 0) {
     normal.x /= length
     normal.y /= length

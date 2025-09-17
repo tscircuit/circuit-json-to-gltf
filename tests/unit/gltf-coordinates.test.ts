@@ -1,8 +1,16 @@
 import { test, expect } from "bun:test"
-import type { Triangle, GLTFMesh, CoordinateTransformConfig } from "../../lib/types"
+import type {
+  Triangle,
+  GLTFMesh,
+  CoordinateTransformConfig,
+} from "../../lib/types"
 import { loadGLTF } from "../../lib/loaders/gltf"
 import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
-import { createMockGLTF, setupMockFetch, TestURLs } from "../helpers/gltf-test-utils"
+import {
+  createMockGLTF,
+  setupMockFetch,
+  TestURLs,
+} from "../helpers/gltf-test-utils"
 
 test("should transform GLTF Y-up coordinates to Z-up", async () => {
   // Test 3.1: Y-up to Z-up Conversion using simplified test utilities
@@ -11,7 +19,10 @@ test("should transform GLTF Y-up coordinates to Z-up", async () => {
 
   try {
     // Test with Z_UP_TO_Y_UP transform (the STL default)
-    const meshWithTransform = await loadGLTF(TestURLs.VALID, COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP)
+    const meshWithTransform = await loadGLTF(
+      TestURLs.VALID,
+      COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP,
+    )
 
     expect(meshWithTransform).toBeDefined()
     expect(meshWithTransform.triangles).toBeDefined()
@@ -35,13 +46,15 @@ test("should transform GLTF Y-up coordinates to Z-up", async () => {
     expect(triangle.vertices[2].z).toBeCloseTo(1) // y from original = 1
 
     // Test with IDENTITY transform (should preserve original coordinates)
-    const meshWithoutTransform = await loadGLTF(TestURLs.VALID, COORDINATE_TRANSFORMS.IDENTITY)
+    const meshWithoutTransform = await loadGLTF(
+      TestURLs.VALID,
+      COORDINATE_TRANSFORMS.IDENTITY,
+    )
     const originalTriangle = meshWithoutTransform.triangles[0]!
 
     expect(originalTriangle.vertices[2].x).toBeCloseTo(0.5)
     expect(originalTriangle.vertices[2].y).toBeCloseTo(1) // Y should be preserved
     expect(originalTriangle.vertices[2].z).toBeCloseTo(0)
-
   } finally {
     cleanup()
   }
@@ -49,7 +62,7 @@ test("should transform GLTF Y-up coordinates to Z-up", async () => {
 
 test("should calculate correct bounding box after transformation", async () => {
   // Test 3.2: Bounding Box Calculation using extreme coordinates
-  const extremeGLTF = createMockGLTF({ coordinateSystem: 'extreme' })
+  const extremeGLTF = createMockGLTF({ coordinateSystem: "extreme" })
   const cleanup = setupMockFetch(TestURLs.VALID, extremeGLTF)
 
   try {
@@ -74,7 +87,10 @@ test("should calculate correct bounding box after transformation", async () => {
     expect(isFinite(mesh.boundingBox.max.z)).toBe(true)
 
     // Test with coordinate transformation
-    const transformedMesh = await loadGLTF(TestURLs.VALID, COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP)
+    const transformedMesh = await loadGLTF(
+      TestURLs.VALID,
+      COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP,
+    )
 
     expect(transformedMesh.boundingBox).toBeDefined()
     // After transformation, coordinates will change but should still be finite
@@ -84,7 +100,6 @@ test("should calculate correct bounding box after transformation", async () => {
     expect(isFinite(transformedMesh.boundingBox.max.x)).toBe(true)
     expect(isFinite(transformedMesh.boundingBox.max.y)).toBe(true)
     expect(isFinite(transformedMesh.boundingBox.max.z)).toBe(true)
-
   } finally {
     cleanup()
   }

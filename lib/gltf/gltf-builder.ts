@@ -696,7 +696,17 @@ export class GLTFBuilder {
     // JSON chunk
     // Binary chunk
 
-    const jsonString = JSON.stringify(gltf)
+    // For GLB format, we need to add a buffer reference to the embedded binary data
+    const gltfWithBuffer = {
+      ...gltf,
+      buffers: [
+        {
+          byteLength: bufferData.byteLength,
+        },
+      ],
+    }
+
+    const jsonString = JSON.stringify(gltfWithBuffer)
     const jsonData = new TextEncoder().encode(jsonString)
 
     // Pad JSON to 4-byte alignment
@@ -723,9 +733,13 @@ export class GLTFBuilder {
     view.setUint32(12, jsonLength, true) // chunk length
     view.setUint32(16, 0x4e4f534a, true) // chunk type "JSON"
 
-    // Copy JSON data
-    const jsonArray = new Uint8Array(glb, 20, jsonData.length)
+    // Copy JSON data and pad with spaces
+    const jsonArray = new Uint8Array(glb, 20, jsonLength)
     jsonArray.set(jsonData)
+    // Fill padding bytes with spaces (0x20) as required by GLB spec
+    for (let i = jsonData.length; i < jsonLength; i++) {
+      jsonArray[i] = 0x20
+    }
 
     // Binary chunk
     const binChunkOffset = 20 + jsonLength

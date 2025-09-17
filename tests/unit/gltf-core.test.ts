@@ -43,19 +43,27 @@ test("should throw error for empty string input", () => {
 })
 
 test("should throw error for non-data URI", () => {
-  expect(() => decodeBase64Buffer("http://example.com/file.bin")).toThrow("Invalid base64 data URI")
+  expect(() => decodeBase64Buffer("http://example.com/file.bin")).toThrow(
+    "Invalid base64 data URI",
+  )
 })
 
 test("should throw error for data URI without base64", () => {
-  expect(() => decodeBase64Buffer("data:application/octet-stream,notbase64")).toThrow("Invalid base64 data URI")
+  expect(() =>
+    decodeBase64Buffer("data:application/octet-stream,notbase64"),
+  ).toThrow("Invalid base64 data URI")
 })
 
 test("should throw error for invalid base64 content", () => {
-  expect(() => decodeBase64Buffer("data:application/octet-stream;base64,invalid@#$%")).toThrow()
+  expect(() =>
+    decodeBase64Buffer("data:application/octet-stream;base64,invalid@#$%"),
+  ).toThrow()
 })
 
 test("should throw error for malformed data URI", () => {
-  expect(() => decodeBase64Buffer("data:;base64,")).toThrow("Invalid base64 data URI")
+  expect(() => decodeBase64Buffer("data:;base64,")).toThrow(
+    "Invalid base64 data URI",
+  )
 })
 
 test("should handle empty base64 content", () => {
@@ -69,8 +77,12 @@ test("should handle different media types", () => {
   const base64String = btoa(String.fromCharCode(...testData))
 
   // Test different valid media types
-  const result1 = decodeBase64Buffer(`data:application/octet-stream;base64,${base64String}`)
-  const result2 = decodeBase64Buffer(`data:model/gltf-buffer;base64,${base64String}`)
+  const result1 = decodeBase64Buffer(
+    `data:application/octet-stream;base64,${base64String}`,
+  )
+  const result2 = decodeBase64Buffer(
+    `data:model/gltf-buffer;base64,${base64String}`,
+  )
 
   expect(result1.byteLength).toBe(3)
   expect(result2.byteLength).toBe(3)

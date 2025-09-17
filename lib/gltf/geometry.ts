@@ -1,4 +1,11 @@
-import type { Point3, Size3, STLMesh, OBJMesh, GLTFMesh, Triangle } from "../types"
+import type {
+  Point3,
+  Size3,
+  STLMesh,
+  OBJMesh,
+  GLTFMesh,
+  Triangle,
+} from "../types"
 
 export interface MeshData {
   positions: number[]

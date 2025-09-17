@@ -75,7 +75,9 @@ test("should generate valid mesh data with triangles", async () => {
         expect(primitive.attributes).toBeDefined()
         expect(primitive.attributes.POSITION).toBeDefined()
         expect(typeof primitive.attributes.POSITION).toBe("number")
-        expect(primitive.attributes.POSITION).toBeLessThan(gltf.accessors.length)
+        expect(primitive.attributes.POSITION).toBeLessThan(
+          gltf.accessors.length,
+        )
       }
     }
   })
@@ -161,12 +163,19 @@ test("should incorporate GLTF components from circuit data", async () => {
     expect(gltf.meshes.length).toBeGreaterThanOrEqual(2)
 
     // Verify we have sufficient geometry data to represent both board and components
-    const totalTriangleCount = gltf.meshes.reduce((count: number, mesh: any) => {
-      return count + mesh.primitives.reduce((primCount: number, primitive: any) => {
-        const positionAccessor = gltf.accessors[primitive.attributes.POSITION]
-        return primCount + Math.floor(positionAccessor.count / 3) // 3 vertices per triangle
-      }, 0)
-    }, 0)
+    const totalTriangleCount = gltf.meshes.reduce(
+      (count: number, mesh: any) => {
+        return (
+          count +
+          mesh.primitives.reduce((primCount: number, primitive: any) => {
+            const positionAccessor =
+              gltf.accessors[primitive.attributes.POSITION]
+            return primCount + Math.floor(positionAccessor.count / 3) // 3 vertices per triangle
+          }, 0)
+        )
+      },
+      0,
+    )
 
     expect(totalTriangleCount).toBeGreaterThan(0)
   })

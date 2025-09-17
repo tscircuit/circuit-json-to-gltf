@@ -7,7 +7,7 @@ export interface MockGLTFOptions {
   triangleCount?: number
   includeNormals?: boolean
   useIndices?: boolean
-  coordinateSystem?: 'origin' | 'offset' | 'extreme'
+  coordinateSystem?: "origin" | "offset" | "extreme"
 }
 
 export interface MockFetchOptions {
@@ -24,7 +24,7 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
     triangleCount = 1,
     includeNormals = true,
     useIndices = false,
-    coordinateSystem = 'origin'
+    coordinateSystem = "origin",
   } = options
 
   // Generate vertex positions based on coordinate system
@@ -32,15 +32,17 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
   const normals: number[] = []
 
   for (let t = 0; t < triangleCount; t++) {
-    let baseX = 0, baseY = 0, baseZ = 0
+    let baseX = 0,
+      baseY = 0,
+      baseZ = 0
 
     switch (coordinateSystem) {
-      case 'offset':
+      case "offset":
         baseX = t * 2
         baseY = t * 2
         baseZ = t * 2
         break
-      case 'extreme':
+      case "extreme":
         baseX = t * 1e6
         baseY = t * 1e6
         baseZ = t * 1e6
@@ -49,17 +51,29 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
 
     // Triangle vertices (triangle fan pattern)
     positions.push(
-      baseX + 0, baseY + 0, baseZ + 0,    // vertex 0
-      baseX + 1, baseY + 0, baseZ + 0,    // vertex 1
-      baseX + 0.5, baseY + 1, baseZ + 0  // vertex 2
+      baseX + 0,
+      baseY + 0,
+      baseZ + 0, // vertex 0
+      baseX + 1,
+      baseY + 0,
+      baseZ + 0, // vertex 1
+      baseX + 0.5,
+      baseY + 1,
+      baseZ + 0, // vertex 2
     )
 
     if (includeNormals) {
       // Normal pointing in +Z direction for all vertices
       normals.push(
-        0, 0, 1,  // normal 0
-        0, 0, 1,  // normal 1
-        0, 0, 1   // normal 2
+        0,
+        0,
+        1, // normal 0
+        0,
+        0,
+        1, // normal 1
+        0,
+        0,
+        1, // normal 2
       )
     }
   }
@@ -77,7 +91,10 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
   const combinedBuffer = new ArrayBuffer(totalBufferLength)
   new Uint8Array(combinedBuffer).set(new Uint8Array(positionArray.buffer), 0)
   if (normalArray) {
-    new Uint8Array(combinedBuffer).set(new Uint8Array(normalArray.buffer), positionBufferLength)
+    new Uint8Array(combinedBuffer).set(
+      new Uint8Array(normalArray.buffer),
+      positionBufferLength,
+    )
   }
 
   // Build accessors array
@@ -86,8 +103,8 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
       bufferView: 0,
       componentType: 5126, // FLOAT
       count: positions.length / 3,
-      type: "VEC3"
-    }
+      type: "VEC3",
+    },
   ]
 
   // Build buffer views array
@@ -95,8 +112,8 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
     {
       buffer: 0,
       byteOffset: 0,
-      byteLength: positionBufferLength
-    }
+      byteLength: positionBufferLength,
+    },
   ]
 
   // Add normal accessor and buffer view if needed
@@ -105,13 +122,13 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
       bufferView: 1,
       componentType: 5126, // FLOAT
       count: normals.length / 3,
-      type: "VEC3"
+      type: "VEC3",
     })
 
     bufferViews.push({
       buffer: 0,
       byteOffset: positionBufferLength,
-      byteLength: normalBufferLength
+      byteLength: normalBufferLength,
     })
   }
 
@@ -124,7 +141,7 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
   // Build indices if requested
   let primitiveData: any = {
     attributes,
-    mode: 4 // TRIANGLES
+    mode: 4, // TRIANGLES
   }
 
   if (useIndices) {
@@ -144,27 +161,34 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
   let base64Data: string
 
   // For reasonable sizes, use direct conversion
-  if (uint8Array.length <= 65536) { // 64KB limit to avoid stack overflow
+  if (uint8Array.length <= 65536) {
+    // 64KB limit to avoid stack overflow
     base64Data = btoa(String.fromCharCode(...uint8Array))
   } else {
     // For very large buffers, we need a different approach
     // But for our test cases, we'll keep data sizes reasonable
-    throw new Error(`Buffer size ${uint8Array.length} too large for test utility. Use smaller triangle counts.`)
+    throw new Error(
+      `Buffer size ${uint8Array.length} too large for test utility. Use smaller triangle counts.`,
+    )
   }
 
   return {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [primitiveData]
-    }],
+    meshes: [
+      {
+        primitives: [primitiveData],
+      },
+    ],
     accessors,
     bufferViews,
-    buffers: [{
-      byteLength: totalBufferLength,
-      uri: `data:application/octet-stream;base64,${base64Data}`
-    }]
+    buffers: [
+      {
+        byteLength: totalBufferLength,
+        uri: `data:application/octet-stream;base64,${base64Data}`,
+      },
+    ],
   }
 }
 
@@ -174,13 +198,17 @@ export function createMockGLTF(options: MockGLTFOptions = {}): any {
 export function createMockFetch(
   url: string,
   gltfData: any,
-  options: MockFetchOptions = {}
+  options: MockFetchOptions = {},
 ): (input: string) => Promise<Response> {
-  const { shouldFail = false, errorMessage = "Network error", delay = 0 } = options
+  const {
+    shouldFail = false,
+    errorMessage = "Network error",
+    delay = 0,
+  } = options
 
   return async (input: string): Promise<Response> => {
     if (delay > 0) {
-      await new Promise(resolve => setTimeout(resolve, delay))
+      await new Promise((resolve) => setTimeout(resolve, delay))
     }
 
     if (input === url) {
@@ -189,10 +217,11 @@ export function createMockFetch(
       }
 
       // If gltfData is a string (not an object), return it as-is (for invalid JSON testing)
-      const responseBody = typeof gltfData === 'string' ? gltfData : JSON.stringify(gltfData)
+      const responseBody =
+        typeof gltfData === "string" ? gltfData : JSON.stringify(gltfData)
 
       return new Response(responseBody, {
-        headers: { "Content-Type": "application/json" }
+        headers: { "Content-Type": "application/json" },
       })
     }
     throw new Error(`Unexpected URL: ${input}`)
@@ -203,7 +232,11 @@ export function createMockFetch(
  * Sets up isolated fetch mocking for a test with automatic cleanup
  * Use this in beforeEach/afterEach or with manual cleanup
  */
-export function setupMockFetch(url: string, gltfData: any, options?: MockFetchOptions): () => void {
+export function setupMockFetch(
+  url: string,
+  gltfData: any,
+  options?: MockFetchOptions,
+): () => void {
   const originalFetch = globalThis.fetch
   globalThis.fetch = createMockFetch(url, gltfData, options)
 
@@ -221,7 +254,7 @@ export async function withMockFetch<T>(
   url: string,
   gltfData: any,
   testFn: () => Promise<T> | T,
-  options?: MockFetchOptions
+  options?: MockFetchOptions,
 ): Promise<T> {
   const originalFetch = globalThis.fetch
 
@@ -239,7 +272,7 @@ export async function withMockFetch<T>(
  */
 export async function withMultipleMockFetch<T>(
   urlMocks: Array<{ url: string; gltfData: any; options?: MockFetchOptions }>,
-  testFn: () => Promise<T> | T
+  testFn: () => Promise<T> | T,
 ): Promise<T> {
   const originalFetch = globalThis.fetch
 
@@ -251,7 +284,10 @@ export async function withMultipleMockFetch<T>(
           return await mockFetch(input)
         } catch (error) {
           // If this mock doesn't handle the URL, try the next one
-          if (error instanceof Error && error.message.includes('Unexpected URL')) {
+          if (
+            error instanceof Error &&
+            error.message.includes("Unexpected URL")
+          ) {
             continue
           }
           throw error
@@ -274,7 +310,7 @@ export const TestGLTFPatterns = {
   TRIANGLE_WITH_NORMALS: createMockGLTF({ includeNormals: true }),
   TRIANGLE_WITHOUT_NORMALS: createMockGLTF({ includeNormals: false }),
   MULTIPLE_TRIANGLES: createMockGLTF({ triangleCount: 3 }),
-  EXTREME_COORDINATES: createMockGLTF({ coordinateSystem: 'extreme' }),
+  EXTREME_COORDINATES: createMockGLTF({ coordinateSystem: "extreme" }),
   EMPTY_GLTF: {
     scene: 0,
     scenes: [{ nodes: [] }],
@@ -282,8 +318,8 @@ export const TestGLTFPatterns = {
     meshes: [],
     accessors: [],
     bufferViews: [],
-    buffers: []
-  }
+    buffers: [],
+  },
 }
 
 /**
@@ -293,5 +329,5 @@ export const TestURLs = {
   VALID: "test://valid.gltf",
   INVALID: "test://invalid.gltf",
   NOT_FOUND: "test://notfound.gltf",
-  SLOW: "test://slow.gltf"
+  SLOW: "test://slow.gltf",
 }

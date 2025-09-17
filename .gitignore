@@ -37,3 +37,7 @@ reference-repos
 bun.lock
 relevant-repos
 .vercel
+
+# Development files
+CLADE.md
+.direnv/

@@ -1,5 +1,9 @@
 import { test, expect } from "bun:test"
-import { loadGLTF, createTriangles, decodeBase64Buffer } from "../../lib/loaders/gltf"
+import {
+  loadGLTF,
+  createTriangles,
+  decodeBase64Buffer,
+} from "../../lib/loaders/gltf"
 import { createMockGLTF, withMockFetch } from "../helpers/gltf-test-utils"
 
 // Edge Case Tests: Boundary Values and Empty Arrays
@@ -69,8 +73,24 @@ test("createTriangles should handle single index in array", () => {
 test("createTriangles should handle maximum safe integer indices", () => {
   // Boundary: Large but valid indices
   const positions = new Float32Array([
-    0, 0, 0, 1, 0, 0, 0, 1, 0, // vertices 0, 1, 2
-    2, 2, 2, 3, 3, 3, 4, 4, 4  // vertices 3, 4, 5 (won't be used)
+    0,
+    0,
+    0,
+    1,
+    0,
+    0,
+    0,
+    1,
+    0, // vertices 0, 1, 2
+    2,
+    2,
+    2,
+    3,
+    3,
+    3,
+    4,
+    4,
+    4, // vertices 3, 4, 5 (won't be used)
   ])
   const indices = new Uint16Array([0, 1, 2]) // Valid indices
 
@@ -93,7 +113,7 @@ test("createTriangles should handle zero-length normals array", () => {
   expect(triangles.length).toBe(1)
   // Should calculate normals instead of using empty array
   expect(triangles[0].normal).toBeDefined()
-  expect(typeof triangles[0].normal.x).toBe('number')
+  expect(typeof triangles[0].normal.x).toBe("number")
 })
 
 test("decodeBase64Buffer should handle minimum valid base64", () => {
@@ -112,7 +132,7 @@ test("decodeBase64Buffer should handle different media types", () => {
   const testCases = [
     "data:application/octet-stream;base64,AQID",
     "data:application/gltf-buffer;base64,AQID",
-    "data:application/binary;base64,AQID"
+    "data:application/binary;base64,AQID",
   ]
 
   for (const uri of testCases) {
@@ -146,7 +166,7 @@ test("loadGLTF should handle GLTF with zero meshes", () => {
     meshes: [], // Empty meshes array
     accessors: [],
     bufferViews: [],
-    buffers: []
+    buffers: [],
   }
 
   return withMockFetch("test://empty-meshes.gltf", emptyMeshGLTF, async () => {
@@ -166,21 +186,27 @@ test("loadGLTF should handle GLTF with mesh but zero primitives", () => {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [] // Empty primitives array
-    }],
+    meshes: [
+      {
+        primitives: [], // Empty primitives array
+      },
+    ],
     accessors: [],
     bufferViews: [],
-    buffers: []
+    buffers: [],
   }
 
-  return withMockFetch("test://no-primitives.gltf", noPrimitivesGLTF, async () => {
-    const mesh = await loadGLTF("test://no-primitives.gltf")
+  return withMockFetch(
+    "test://no-primitives.gltf",
+    noPrimitivesGLTF,
+    async () => {
+      const mesh = await loadGLTF("test://no-primitives.gltf")
 
-    expect(mesh).toBeDefined()
-    expect(mesh.triangles).toBeDefined()
-    expect(mesh.triangles.length).toBe(0)
-  })
+      expect(mesh).toBeDefined()
+      expect(mesh.triangles).toBeDefined()
+      expect(mesh.triangles.length).toBe(0)
+    },
+  )
 })
 
 test("loadGLTF should handle GLTF with primitive but no POSITION attribute", () => {
@@ -189,31 +215,39 @@ test("loadGLTF should handle GLTF with primitive but no POSITION attribute", () 
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [{
-        attributes: { NORMAL: 0 }, // Has NORMAL but no POSITION
-        mode: 4
-      }]
-    }],
+    meshes: [
+      {
+        primitives: [
+          {
+            attributes: { NORMAL: 0 }, // Has NORMAL but no POSITION
+            mode: 4,
+          },
+        ],
+      },
+    ],
     accessors: [
       {
         bufferView: 0,
         componentType: 5126,
         count: 3,
-        type: "VEC3"
-      }
+        type: "VEC3",
+      },
     ],
     bufferViews: [
       {
         buffer: 0,
         byteOffset: 0,
-        byteLength: 36
-      }
+        byteLength: 36,
+      },
     ],
-    buffers: [{
-      byteLength: 36,
-      uri: "data:application/octet-stream;base64," + btoa(String.fromCharCode(...new Float32Array(9).fill(0)))
-    }]
+    buffers: [
+      {
+        byteLength: 36,
+        uri:
+          "data:application/octet-stream;base64," +
+          btoa(String.fromCharCode(...new Float32Array(9).fill(0))),
+      },
+    ],
   }
 
   return withMockFetch("test://no-position.gltf", noPositionGLTF, async () => {
@@ -230,13 +264,17 @@ test("loadGLTF should handle GLTF with unsupported primitive mode", () => {
   const unsupportedModeGLTF = createMockGLTF()
   unsupportedModeGLTF.meshes[0].primitives[0].mode = 1 // LINES mode instead of TRIANGLES
 
-  return withMockFetch("test://unsupported-mode.gltf", unsupportedModeGLTF, async () => {
-    const mesh = await loadGLTF("test://unsupported-mode.gltf")
+  return withMockFetch(
+    "test://unsupported-mode.gltf",
+    unsupportedModeGLTF,
+    async () => {
+      const mesh = await loadGLTF("test://unsupported-mode.gltf")
 
-    expect(mesh).toBeDefined()
-    expect(mesh.triangles).toBeDefined()
-    expect(mesh.triangles.length).toBe(0) // Should skip non-triangle primitives
-  })
+      expect(mesh).toBeDefined()
+      expect(mesh.triangles).toBeDefined()
+      expect(mesh.triangles.length).toBe(0) // Should skip non-triangle primitives
+    },
+  )
 })
 
 test("loadGLTF should handle large triangle counts efficiently", () => {
@@ -244,26 +282,36 @@ test("loadGLTF should handle large triangle counts efficiently", () => {
   // 500 triangles = 1500 vertices × 3 coords × 4 bytes × 2 (pos+normal) = 36KB total
   const manyTrianglesGLTF = createMockGLTF({ triangleCount: 500 })
 
-  return withMockFetch("test://many-triangles.gltf", manyTrianglesGLTF, async () => {
-    const mesh = await loadGLTF("test://many-triangles.gltf")
+  return withMockFetch(
+    "test://many-triangles.gltf",
+    manyTrianglesGLTF,
+    async () => {
+      const mesh = await loadGLTF("test://many-triangles.gltf")
 
-    expect(mesh).toBeDefined()
-    expect(mesh.triangles).toBeDefined()
-    expect(mesh.triangles.length).toBe(500)
-    expect(Array.isArray(mesh.triangles)).toBe(true)
+      expect(mesh).toBeDefined()
+      expect(mesh.triangles).toBeDefined()
+      expect(mesh.triangles.length).toBe(500)
+      expect(Array.isArray(mesh.triangles)).toBe(true)
 
-    // Verify first and last triangles are valid
-    expect(mesh.triangles[0].vertices.length).toBe(3)
-    expect(mesh.triangles[499].vertices.length).toBe(3)
-  })
+      // Verify first and last triangles are valid
+      expect(mesh.triangles[0].vertices.length).toBe(3)
+      expect(mesh.triangles[499].vertices.length).toBe(3)
+    },
+  )
 })
 
 test("createTriangles should handle triangles with zero area (degenerate)", () => {
   // Edge case: Degenerate triangles (all vertices collinear or identical)
   const positions = new Float32Array([
-    0, 0, 0, // vertex 0
-    0, 0, 0, // vertex 1 (same as vertex 0)
-    0, 0, 0  // vertex 2 (same as vertex 0 and 1)
+    0,
+    0,
+    0, // vertex 0
+    0,
+    0,
+    0, // vertex 1 (same as vertex 0)
+    0,
+    0,
+    0, // vertex 2 (same as vertex 0 and 1)
   ])
 
   const triangles = createTriangles(positions, null, null)
@@ -280,9 +328,15 @@ test("createTriangles should handle triangles with zero area (degenerate)", () =
 test("createTriangles should handle collinear vertices", () => {
   // Edge case: Three vertices in a straight line (zero area triangle)
   const positions = new Float32Array([
-    0, 0, 0, // vertex 0
-    1, 0, 0, // vertex 1
-    2, 0, 0  // vertex 2 (collinear with 0 and 1)
+    0,
+    0,
+    0, // vertex 0
+    1,
+    0,
+    0, // vertex 1
+    2,
+    0,
+    0, // vertex 2 (collinear with 0 and 1)
   ])
 
   const triangles = createTriangles(positions, null, null)
@@ -308,12 +362,24 @@ test("createTriangles should handle Uint32Array indices", () => {
 test("createTriangles should handle mixed vertex counts in non-indexed mode", () => {
   // Edge case: 6 vertices (creates 2 triangles from pairs of 3)
   const positions = new Float32Array([
-    0, 0, 0, // triangle 1, vertex 0
-    1, 0, 0, // triangle 1, vertex 1
-    0, 1, 0, // triangle 1, vertex 2
-    2, 0, 0, // triangle 2, vertex 0
-    3, 0, 0, // triangle 2, vertex 1
-    2, 1, 0  // triangle 2, vertex 2
+    0,
+    0,
+    0, // triangle 1, vertex 0
+    1,
+    0,
+    0, // triangle 1, vertex 1
+    0,
+    1,
+    0, // triangle 1, vertex 2
+    2,
+    0,
+    0, // triangle 2, vertex 0
+    3,
+    0,
+    0, // triangle 2, vertex 1
+    2,
+    1,
+    0, // triangle 2, vertex 2
   ])
 
   const triangles = createTriangles(positions, null, null)
@@ -334,30 +400,48 @@ test("loadGLTF should handle GLTF with missing buffer reference", () => {
     scene: 0,
     scenes: [{ nodes: [0] }],
     nodes: [{ mesh: 0 }],
-    meshes: [{
-      primitives: [{
-        attributes: { POSITION: 0 },
-        mode: 4
-      }]
-    }],
-    accessors: [{
-      bufferView: 0,
-      componentType: 5126,
-      count: 3,
-      type: "VEC3"
-    }],
-    bufferViews: [{
-      buffer: 1, // References buffer index 1, but only buffer 0 exists
-      byteOffset: 0,
-      byteLength: 36
-    }],
-    buffers: [{
-      byteLength: 36,
-      uri: "data:application/octet-stream;base64," + btoa(String.fromCharCode(...new Float32Array(9).fill(1)))
-    }]
+    meshes: [
+      {
+        primitives: [
+          {
+            attributes: { POSITION: 0 },
+            mode: 4,
+          },
+        ],
+      },
+    ],
+    accessors: [
+      {
+        bufferView: 0,
+        componentType: 5126,
+        count: 3,
+        type: "VEC3",
+      },
+    ],
+    bufferViews: [
+      {
+        buffer: 1, // References buffer index 1, but only buffer 0 exists
+        byteOffset: 0,
+        byteLength: 36,
+      },
+    ],
+    buffers: [
+      {
+        byteLength: 36,
+        uri:
+          "data:application/octet-stream;base64," +
+          btoa(String.fromCharCode(...new Float32Array(9).fill(1))),
+      },
+    ],
   }
 
-  return withMockFetch("test://missing-buffer.gltf", missingBufferGLTF, async () => {
-    await expect(loadGLTF("test://missing-buffer.gltf")).rejects.toThrow("Buffer 1 not found")
-  })
+  return withMockFetch(
+    "test://missing-buffer.gltf",
+    missingBufferGLTF,
+    async () => {
+      await expect(loadGLTF("test://missing-buffer.gltf")).rejects.toThrow(
+        "Buffer 1 not found",
+      )
+    },
+  )
 })
