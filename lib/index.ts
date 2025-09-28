@@ -2,6 +2,7 @@ import type { CircuitJson } from "circuit-json"
 import type { ConversionOptions } from "./types"
 import { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
+import { combineBaseGLTFWithExternalModels } from "./utils/combine-gltf"
 
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
@@ -32,6 +33,14 @@ export async function convertCircuitJsonToGltf(
 
   const result = await convertSceneToGLTF(scene3D, gltfOptions)
 
+  if (scene3D.externalGLTFs?.length) {
+    return combineBaseGLTFWithExternalModels(
+      result,
+      format,
+      scene3D.externalGLTFs,
+    )
+  }
+
   return result
 }
 
@@ -54,6 +63,7 @@ export type {
   CircuitTo3DOptions,
   BoardRenderOptions,
   CoordinateTransformConfig,
+  ExternalGLTFInstance,
 } from "./types"
 
 // Re-export loaders

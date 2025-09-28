@@ -10,6 +10,7 @@ import type {
   CircuitTo3DOptions,
   Camera3D,
   Light3D,
+  ExternalGLTFInstance,
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
@@ -47,6 +48,7 @@ export async function convertCircuitJsonTo3D(
 
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
+  const externalGLTFs: ExternalGLTFInstance[] = []
 
   // Get PCB board
   const pcbBoard = db.pcb_board.list()[0]
@@ -95,7 +97,12 @@ export async function convertCircuitJsonTo3D(
 
   for (const cad of cadComponents) {
     const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const model_gltf_url = (cad as any).model_gltf_url as string | undefined
+    const model_glb_url = (cad as any).model_glb_url as string | undefined
+
+    if (!model_stl_url && !model_obj_url && !model_gltf_url && !model_glb_url) {
+      continue
+    }
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -118,6 +125,21 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.center.y ?? 0,
         }
 
+    const rotation = cad.rotation
+      ? convertRotationFromCadRotation(cad.rotation)
+      : undefined
+
+    if (model_gltf_url || model_glb_url) {
+      externalGLTFs.push({
+        url: model_gltf_url ?? model_glb_url!,
+        format: model_gltf_url ? "gltf" : "glb",
+        name: cad.pcb_component_id,
+        translation: center,
+        rotation,
+      })
+      continue
+    }
+
     const box: Box3D = {
       center,
       size,
@@ -127,8 +149,8 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Add rotation if specified
-    if (cad.rotation) {
-      box.rotation = convertRotationFromCadRotation(cad.rotation)
+    if (rotation) {
+      box.rotation = rotation
     }
 
     // Try to load the mesh with default coordinate transform if none specified
@@ -218,5 +240,6 @@ export async function convertCircuitJsonTo3D(
     boxes,
     camera,
     lights,
+    externalGLTFs: externalGLTFs.length > 0 ? externalGLTFs : undefined,
   }
 }

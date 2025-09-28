@@ -47,5 +47,8 @@
       "optional": true
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/functions": "^4.2.1"
+  }
 }

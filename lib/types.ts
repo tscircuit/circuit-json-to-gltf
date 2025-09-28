@@ -95,10 +95,20 @@ export interface Box3D {
   labelColor?: Color
 }
 
+export interface ExternalGLTFInstance {
+  url: string
+  format: "gltf" | "glb"
+  name?: string
+  translation: Point3
+  rotation?: Point3
+  scale?: Point3
+}
+
 export interface Scene3D {
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]
+  externalGLTFs?: ExternalGLTFInstance[]
 }
 
 export interface Camera3D {
