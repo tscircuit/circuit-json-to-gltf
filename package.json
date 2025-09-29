@@ -33,8 +33,7 @@
     "react-dom": "^19.1.1",
     "tsup": "^8.5.0",
     "vite": "^7.1.1",
-    "poppygl": "^0.0.5",
-    "jscad-electronics": "^0.0.42"
+    "poppygl": "^0.0.5"
   },
   "peerDependencies": {
     "typescript": "^5",
