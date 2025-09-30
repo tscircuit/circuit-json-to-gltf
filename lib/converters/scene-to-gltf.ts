@@ -1,13 +1,17 @@
 import { Buffer } from "node:buffer"
 import { mat4 } from "gl-matrix"
-import type { mat4 as Mat4ArrayType } from "gl-matrix"
-import type {
-  mat4 as GLMat4,
-  NodeIO as NodeIOClass,
-  Document,
-  Scene,
-  Transform,
-} from "@gltf-transform/core"
+import type { mat4 as GLMat4 } from "@gltf-transform/core"
+import { NodeIO, Document, Scene } from "@gltf-transform/core"
+import { mergeDocuments, unpartition } from "@gltf-transform/functions"
+import {
+  EXTMeshoptCompression,
+  KHRDracoMeshCompression,
+} from "@gltf-transform/extensions"
+import {
+  MeshoptDecoder,
+  type MeshoptDecoderType,
+} from "meshoptimizer/meshopt_decoder.module"
+import draco3dModule from "draco3dgltf"
 
 import type {
   Scene3D,
@@ -18,33 +22,6 @@ import type {
 } from "../types"
 import { GLTFBuilder } from "../gltf/gltf-builder"
 import { applyCoordinateTransform } from "../utils/coordinate-transform"
-
-interface MeshoptDecoderType {
-  ready: Promise<void>
-}
-
-interface DracoDecoderFactory {
-  createDecoderModule?: () => Promise<unknown>
-}
-
-type NodeIOConstructor = new () => NodeIOClass
-type MergeDocumentsFn = (
-  target: Document,
-  source: Document,
-) => Map<unknown, unknown>
-type UnpartitionFn = () => Transform
-
-interface GltfToolkit {
-  NodeIO: NodeIOConstructor
-  mergeDocuments: MergeDocumentsFn
-  unpartition: UnpartitionFn
-  EXTMeshoptCompression: unknown
-  KHRDracoMeshCompression: unknown
-  meshoptDecoder?: MeshoptDecoderType
-  dracoDecoder?: unknown
-}
-
-let toolkitPromise: Promise<GltfToolkit> | null = null
 
 export async function convertSceneToGLTF(
   scene: Scene3D,
@@ -57,11 +34,9 @@ export async function convertSceneToGLTF(
     return builder.export(options.binary)
   }
 
-  const toolkit = await loadGltfToolkit()
-  const io = createNodeIO(toolkit)
-
-  const glbBuffer = builder.export(true) as ArrayBuffer
-  const baseDocument = await io.readBinary(new Uint8Array(glbBuffer))
+  const io = await createConfiguredNodeIO()
+  const baseGLB = builder.export(true) as ArrayBuffer
+  const baseDocument = await io.readBinary(new Uint8Array(baseGLB))
   const root = baseDocument.getRoot()
 
   let targetScene = root.getDefaultScene()
@@ -73,13 +48,13 @@ export async function convertSceneToGLTF(
 
   for (const model of scene.externalModels) {
     try {
-      await mergeExternalModel(baseDocument, targetScene, io, toolkit, model)
+      await mergeExternalModel(baseDocument, targetScene, io, model)
     } catch (error) {
       console.warn(`Failed to merge external model (${model.url}):`, error)
     }
   }
 
-  await baseDocument.transform(toolkit.unpartition())
+  await baseDocument.transform(unpartition())
 
   if (options.binary) {
     const binary = await io.writeBinary(baseDocument)
@@ -91,80 +66,42 @@ export async function convertSceneToGLTF(
   return json
 }
 
-async function loadGltfToolkit(): Promise<GltfToolkit> {
-  if (!toolkitPromise) {
-    toolkitPromise = (async () => {
-      const [core, functions, extensions] = await Promise.all([
-        import("@gltf-transform/core"),
-        import("@gltf-transform/functions"),
-        import("@gltf-transform/extensions"),
-      ])
+async function createConfiguredNodeIO(): Promise<NodeIO> {
+  const io = new NodeIO()
+  const extensions: unknown[] = []
 
-      let meshoptDecoder: MeshoptDecoderType | undefined
-      try {
-        const meshopt = await import("meshoptimizer")
-        if (meshopt.MeshoptDecoder) {
-          await meshopt.MeshoptDecoder.ready
-          meshoptDecoder = meshopt.MeshoptDecoder as MeshoptDecoderType
-        }
-      } catch (error) {
-        console.warn("Meshopt decoder unavailable:", error)
-      }
-
-      let dracoDecoder: unknown
-      try {
-        const dracoModule = await import("draco3dgltf")
-        const factory: DracoDecoderFactory =
-          (dracoModule as any).default ?? dracoModule
-        if (factory.createDecoderModule) {
-          dracoDecoder = await factory.createDecoderModule()
-        }
-      } catch (error) {
-        console.warn("Draco decoder unavailable:", error)
-      }
-
-      return {
-        NodeIO: core.NodeIO as NodeIOConstructor,
-        mergeDocuments: functions.mergeDocuments as MergeDocumentsFn,
-        unpartition: functions.unpartition as UnpartitionFn,
-        EXTMeshoptCompression: extensions.EXTMeshoptCompression,
-        KHRDracoMeshCompression: extensions.KHRDracoMeshCompression,
-        meshoptDecoder,
-        dracoDecoder,
-      }
-    })()
+  try {
+    if (MeshoptDecoder?.ready) {
+      await MeshoptDecoder.ready
+      extensions.push(EXTMeshoptCompression)
+      io.registerDependencies({ "meshopt.decoder": MeshoptDecoder })
+    }
+  } catch (error) {
+    console.warn("Meshopt decoder unavailable:", error)
   }
 
-  return toolkitPromise
-}
-
-function createNodeIO(toolkit: GltfToolkit): NodeIOClass {
-  const io = new toolkit.NodeIO()
-  const extensions: any[] = []
-
-  if (toolkit.meshoptDecoder) {
-    extensions.push(toolkit.EXTMeshoptCompression)
+  try {
+    const factory = (draco3dModule as any).default ?? draco3dModule
+    if (factory?.createDecoderModule) {
+      const decoder = await factory.createDecoderModule()
+      extensions.push(KHRDracoMeshCompression)
+      io.registerDependencies({ "draco3d.decoder": decoder })
+    }
+  } catch (error) {
+    console.warn("Draco decoder unavailable:", error)
   }
-  if (toolkit.dracoDecoder) {
-    extensions.push(toolkit.KHRDracoMeshCompression)
-  }
+
   if (extensions.length > 0) {
-    io.registerExtensions(extensions)
+    io.registerExtensions(extensions as any)
   }
-  if (toolkit.meshoptDecoder) {
-    io.registerDependencies({ "meshopt.decoder": toolkit.meshoptDecoder })
-  }
-  if (toolkit.dracoDecoder) {
-    io.registerDependencies({ "draco3d.decoder": toolkit.dracoDecoder })
-  }
+
   return io
 }
 
 async function mergeExternalModel(
   baseDocument: Document,
   targetScene: Scene,
-  io: NodeIOClass,
-  toolkit: GltfToolkit,
+  io: NodeIO,
   model: ExternalModelInstance,
 ): Promise<void> {
   const sourceDocument = await documentFromAsset(io, model.asset)
@@ -172,7 +109,7 @@ async function mergeExternalModel(
   const sourceScene = sourceRoot.getDefaultScene() ?? sourceRoot.listScenes()[0]
   if (!sourceScene) return
 
-  const map = toolkit.mergeDocuments(baseDocument, sourceDocument)
+  const map = mergeDocuments(baseDocument, sourceDocument)
   const mergedScene = map.get(sourceScene) as Scene | undefined
   if (!mergedScene) return
 
@@ -189,7 +126,7 @@ async function mergeExternalModel(
 }
 
 async function documentFromAsset(
-  io: NodeIOClass,
+  io: NodeIO,
   asset: LoadedGLTFAsset,
 ): Promise<Document> {
   if (asset.kind === "glb") {
@@ -204,9 +141,11 @@ async function documentFromAsset(
   return io.readJSON({ json: asset.json, resources })
 }
 
+type Mat4Array = ReturnType<typeof mat4.create>
+
 function coordinateTransformToMatrix(
   config?: CoordinateTransformConfig,
-): Mat4ArrayType {
+): Mat4Array {
   const matrix = mat4.create()
   mat4.identity(matrix)
 
@@ -232,8 +171,7 @@ function coordinateTransformToMatrix(
 }
 
 function createInstanceMatrix(model: ExternalModelInstance): GLMat4 {
-  const translation = mat4.create()
-  mat4.fromTranslation(translation, [
+  const translation = mat4.fromTranslation(mat4.create(), [
     model.center.x,
     model.center.y,
     model.center.z,
@@ -245,7 +183,7 @@ function createInstanceMatrix(model: ExternalModelInstance): GLMat4 {
   const rotZ = mat4.fromZRotation(mat4.create(), rotation.z ?? 0)
 
   const scaleValues = model.scale ?? { x: 1, y: 1, z: 1 }
-  const scale = mat4.fromScaling(mat4.create(), [
+  const scaling = mat4.fromScaling(mat4.create(), [
     scaleValues.x ?? 1,
     scaleValues.y ?? 1,
     scaleValues.z ?? 1,
@@ -254,7 +192,7 @@ function createInstanceMatrix(model: ExternalModelInstance): GLMat4 {
   const coordinate = coordinateTransformToMatrix(model.coordinateTransform)
 
   const matrix = mat4.create()
-  mat4.multiply(matrix, scale, coordinate)
+  mat4.multiply(matrix, scaling, coordinate)
   mat4.multiply(matrix, rotY, matrix)
   mat4.multiply(matrix, rotX, matrix)
   mat4.multiply(matrix, rotZ, matrix)

@@ -9,7 +9,9 @@ declare module "draco3dgltf" {
 }
 
 declare module "meshoptimizer/meshopt_decoder.module" {
-  export interface MeshoptDecoder {
+  export interface MeshoptDecoderType {
     ready: Promise<void>
   }
+
+  export const MeshoptDecoder: MeshoptDecoderType
 }

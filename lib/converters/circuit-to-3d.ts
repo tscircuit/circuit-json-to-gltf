@@ -30,72 +30,14 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
-function getNestedValue(obj: unknown, path: string[]): unknown {
-  let current: any = obj
-  for (const key of path) {
-    if (!current || typeof current !== "object") return undefined
-    current = current[key]
-  }
-  return current
-}
-
 function extractGltfUrl(cad: CadComponent): string | undefined {
-  const candidateKeys = [
-    "model_gltf_url",
-    "model_url",
-    "gltf_url",
-    "gltfUrl",
-    "modelGltfUrl",
-    "modelUrl",
-  ] as const
+  const directUrl =
+    (cad as unknown as { model_gltf_url?: string; model_glb_url?: string })
+      .model_gltf_url ??
+    (cad as unknown as { model_glb_url?: string }).model_glb_url
 
-  for (const key of candidateKeys) {
-    const value = (cad as any)[key]
-    if (typeof value === "string" && value.length > 0) {
-      return value
-    }
-  }
-
-  const nestedPaths = [
-    ["model", "gltf_url"],
-    ["model", "gltfUrl"],
-    ["cad_model", "gltf_url"],
-    ["cad_model", "gltfUrl"],
-    ["cadModel", "gltfUrl"],
-  ]
-
-  for (const path of nestedPaths) {
-    const value = getNestedValue(cad, path)
-    if (typeof value === "string" && value.length > 0) {
-      return value
-    }
-  }
-
-  const modelUrls = (cad as any).model_urls ?? (cad as any).modelUrls
-  if (Array.isArray(modelUrls)) {
-    const url = modelUrls.find(
-      (entry) => typeof entry === "string" && /\.gl(b|tf)(\?|$)/i.test(entry),
-    )
-    if (url) return url
-  }
-
-  const cadModels = (cad as any).cad_models ?? (cad as any).cadModels
-  if (Array.isArray(cadModels)) {
-    for (const model of cadModels) {
-      if (model && typeof model === "object") {
-        const url = (model as any).gltf_url ?? (model as any).gltfUrl
-        if (typeof url === "string" && url.length > 0) {
-          return url
-        }
-      }
-    }
-  }
-
-  const cadRecord = cad as unknown as Record<string, unknown>
-  for (const value of Object.values(cadRecord)) {
-    if (typeof value === "string" && /\.gl(b|tf)(\?|$)/i.test(value)) {
-      return value
-    }
+  if (typeof directUrl === "string" && directUrl.length > 0) {
+    return directUrl
   }
 
   return undefined
