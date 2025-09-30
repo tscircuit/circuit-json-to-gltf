@@ -4,7 +4,7 @@ export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   includeModels?: boolean
-  modelCache?: Map<string, STLMesh | OBJMesh>
+  modelCache?: Map<string, STLMesh | OBJMesh | LoadedGLTFAsset>
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
@@ -75,6 +75,30 @@ export interface OBJMaterial {
 
 export type Color = string | [number, number, number, number]
 
+export type LoadedGLTFAsset =
+  | {
+      kind: "glb"
+      arrayBuffer: ArrayBuffer
+      mimeType?: string
+    }
+  | {
+      kind: "gltf"
+      json: any
+      resources: Record<string, ArrayBuffer>
+      mimeType?: string
+    }
+
+export interface ExternalModelInstance {
+  id: string
+  url: string
+  asset: LoadedGLTFAsset
+  center: Point3
+  rotation?: Point3
+  scale?: Point3
+  coordinateTransform?: CoordinateTransformConfig
+  label?: string
+}
+
 export interface Box3D {
   center: Point3
   size: Size3
@@ -99,6 +123,7 @@ export interface Scene3D {
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]
+  externalModels?: ExternalModelInstance[]
 }
 
 export interface Camera3D {
@@ -137,6 +162,10 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
+  includeModels?: boolean
+  modelCache?: Map<string, STLMesh | OBJMesh | LoadedGLTFAsset>
+  backgroundColor?: string
+  showBoundingBoxes?: boolean
 }
 
 export interface BoardRenderOptions {
