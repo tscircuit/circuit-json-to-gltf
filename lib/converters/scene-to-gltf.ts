@@ -28,7 +28,10 @@ interface DracoDecoderFactory {
 }
 
 type NodeIOConstructor = new () => NodeIOClass
-type MergeDocumentsFn = (target: Document, source: Document) => Map<unknown, unknown>
+type MergeDocumentsFn = (
+  target: Document,
+  source: Document,
+) => Map<unknown, unknown>
 type UnpartitionFn = () => Transform
 
 interface GltfToolkit {
@@ -302,9 +305,7 @@ function uint8ArrayToArrayBuffer(uint8: Uint8Array): ArrayBuffer {
   return copy.buffer
 }
 
-function arrayBufferToBase64(
-  data: ArrayBuffer | ArrayBufferView,
-): string {
+function arrayBufferToBase64(data: ArrayBuffer | ArrayBufferView): string {
   let view: Uint8Array
   if (data instanceof Uint8Array) {
     view = data
