@@ -57,11 +57,16 @@ async function fetchAsArrayBuffer(url: string): Promise<FetchResult> {
 
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch GLTF resource: ${response.status} ${response.statusText}`)
+    throw new Error(
+      `Failed to fetch GLTF resource: ${response.status} ${response.statusText}`,
+    )
   }
 
   const data = await response.arrayBuffer()
-  return { data, contentType: response.headers.get("content-type") ?? undefined }
+  return {
+    data,
+    contentType: response.headers.get("content-type") ?? undefined,
+  }
 }
 
 function resolveBaseUrl(url: string): string {
