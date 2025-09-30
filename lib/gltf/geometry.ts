@@ -132,10 +132,10 @@ export function createBoxMesh(size: Size3): MeshData {
   for (const face of faces) {
     // Add vertices for this face
     for (let i = 0; i < 4; i++) {
-      const vertex = face.vertices[i]
-      positions.push(vertex[0], vertex[1], vertex[2])
-      normals.push(face.normal[0], face.normal[1], face.normal[2])
-      texcoords.push(face.uvs[i][0], face.uvs[i][1])
+      const vertex = face.vertices[i]!
+      positions.push(vertex[0]!, vertex[1]!, vertex[2]!)
+      normals.push(face.normal[0]!, face.normal[1]!, face.normal[2]!)
+      texcoords.push(face.uvs[i]![0]!, face.uvs[i]![1]!)
     }
 
     // Add two triangles for the quad
@@ -268,10 +268,10 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
 
     // Add vertices for this face
     for (let i = 0; i < 4; i++) {
-      const vertex = face.vertices[i]
-      positions.push(vertex[0], vertex[1], vertex[2])
-      normals.push(face.normal[0], face.normal[1], face.normal[2])
-      texcoords.push(face.uvs[i][0], face.uvs[i][1])
+      const vertex = face.vertices[i]!
+      positions.push(vertex[0]!, vertex[1]!, vertex[2]!)
+      normals.push(face.normal[0]!, face.normal[1]!, face.normal[2]!)
+      texcoords.push(face.uvs[i]![0]!, face.uvs[i]![1]!)
     }
 
     result[faceName as keyof FaceMeshData] = {
@@ -379,9 +379,9 @@ export function transformMesh(
 
   // Apply transformations to positions
   for (let i = 0; i < result.positions.length; i += 3) {
-    let x = result.positions[i]
-    let y = result.positions[i + 1]
-    let z = result.positions[i + 2]
+    let x = result.positions[i]!
+    let y = result.positions[i + 1]!
+    let z = result.positions[i + 2]!
 
     // Apply scale
     if (scale) {
@@ -426,9 +426,9 @@ export function transformMesh(
   // Also transform normals if there was rotation
   if (rotation) {
     for (let i = 0; i < result.normals.length; i += 3) {
-      let nx = result.normals[i]
-      let ny = result.normals[i + 1]
-      let nz = result.normals[i + 2]
+      let nx = result.normals[i]!
+      let ny = result.normals[i + 1]!
+      let nz = result.normals[i + 2]!
 
       // Apply same rotations to normals
       // Rotation around Y axis
@@ -480,9 +480,9 @@ export function getBounds(positions: number[]): { min: Point3; max: Point3 } {
     maxZ = -Infinity
 
   for (let i = 0; i < positions.length; i += 3) {
-    const x = positions[i]
-    const y = positions[i + 1]
-    const z = positions[i + 2]
+    const x = positions[i]!
+    const y = positions[i + 1]!
+    const z = positions[i + 2]!
 
     minX = Math.min(minX, x)
     minY = Math.min(minY, y)
