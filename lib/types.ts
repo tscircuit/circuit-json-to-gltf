@@ -75,6 +75,30 @@ export interface OBJMaterial {
 
 export type Color = string | [number, number, number, number]
 
+export type LoadedGLTFAsset =
+  | {
+      kind: "glb"
+      arrayBuffer: ArrayBuffer
+      mimeType?: string
+    }
+  | {
+      kind: "gltf"
+      json: any
+      resources: Record<string, ArrayBuffer>
+      mimeType?: string
+    }
+
+export interface ExternalModelInstance {
+  id: string
+  url: string
+  asset: LoadedGLTFAsset
+  center: Point3
+  rotation?: Point3
+  scale?: Point3
+  coordinateTransform?: CoordinateTransformConfig
+  label?: string
+}
+
 export interface Box3D {
   center: Point3
   size: Size3
@@ -97,6 +121,7 @@ export interface Box3D {
 
 export interface Scene3D {
   boxes: Box3D[]
+  externalModels?: ExternalModelInstance[]
   camera?: Camera3D
   lights?: Light3D[]
 }

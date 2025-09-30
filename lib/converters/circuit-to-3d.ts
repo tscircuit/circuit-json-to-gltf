@@ -1,8 +1,4 @@
-import {
-  type CircuitJson,
-  type CadComponent,
-  any_circuit_element,
-} from "circuit-json"
+import { type CircuitJson, type CadComponent } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
   Box3D,
@@ -10,9 +6,11 @@ import type {
   CircuitTo3DOptions,
   Camera3D,
   Light3D,
+  ExternalModelInstance,
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
+import { loadGLTF } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -29,6 +27,99 @@ function convertRotationFromCadRotation(rot: {
     y: (rot.y * Math.PI) / 180,
     z: (rot.z * Math.PI) / 180,
   }
+}
+
+function getNestedValue(obj: unknown, path: string[]): unknown {
+  let current: any = obj
+  for (const key of path) {
+    if (!current || typeof current !== "object") return undefined
+    current = current[key]
+  }
+  return current
+}
+
+function extractGltfUrl(cad: CadComponent): string | undefined {
+  const candidateKeys = [
+    "model_gltf_url",
+    "model_url",
+    "gltf_url",
+    "gltfUrl",
+    "modelGltfUrl",
+    "modelUrl",
+  ] as const
+
+  for (const key of candidateKeys) {
+    const value = (cad as any)[key]
+    if (typeof value === "string" && value.length > 0) {
+      return value
+    }
+  }
+
+  const nestedPaths = [
+    ["model", "gltf_url"],
+    ["model", "gltfUrl"],
+    ["cad_model", "gltf_url"],
+    ["cad_model", "gltfUrl"],
+    ["cadModel", "gltfUrl"],
+  ]
+
+  for (const path of nestedPaths) {
+    const value = getNestedValue(cad, path)
+    if (typeof value === "string" && value.length > 0) {
+      return value
+    }
+  }
+
+  const modelUrls = (cad as any).model_urls ?? (cad as any).modelUrls
+  if (Array.isArray(modelUrls)) {
+    const url = modelUrls.find(
+      (item) => typeof item === "string" && /\.gl(b|tf)(\?|$)/i.test(item),
+    )
+    if (url) return url
+  }
+
+  const cadModels = (cad as any).cad_models ?? (cad as any).cadModels
+  if (Array.isArray(cadModels)) {
+    for (const model of cadModels) {
+      const url =
+        (model && typeof model === "object" && (model as any).gltf_url) ||
+        (model && typeof model === "object" && (model as any).gltfUrl)
+      if (typeof url === "string" && url.length > 0) {
+        return url
+      }
+    }
+  }
+
+  // Fallback: scan string values for glTF-looking URLs
+  for (const value of Object.values(cad as any)) {
+    if (typeof value === "string" && /\.gl(b|tf)(\?|$)/i.test(value)) {
+      return value
+    }
+  }
+
+  return undefined
+}
+
+function extractScale(cad: CadComponent):
+  | { x: number; y: number; z: number }
+  | undefined {
+  const rawScale = (cad as any).scale ?? (cad as any).scaling
+  if (rawScale == null) return undefined
+
+  if (typeof rawScale === "number") {
+    if (rawScale === 1) return undefined
+    return { x: rawScale, y: rawScale, z: rawScale }
+  }
+
+  if (typeof rawScale === "object") {
+    const x = typeof (rawScale as any).x === "number" ? (rawScale as any).x : 1
+    const y = typeof (rawScale as any).y === "number" ? (rawScale as any).y : 1
+    const z = typeof (rawScale as any).z === "number" ? (rawScale as any).z : 1
+    if (x === 1 && y === 1 && z === 1) return undefined
+    return { x, y, z }
+  }
+
+  return undefined
 }
 
 export async function convertCircuitJsonTo3D(
@@ -88,14 +179,19 @@ export async function convertCircuitJsonTo3D(
 
   boxes.push(boardBox)
 
+  const externalModels: ExternalModelInstance[] = []
+
   // Process CAD components (3D models)
   const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
     []) as any
   const pcbComponentIdsWith3D = new Set<string>()
+  const defaultTransform =
+    coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const gltfUrl = extractGltfUrl(cad)
+    const { model_stl_url, model_obj_url } = cad as any
+    if (!model_stl_url && !model_obj_url && !gltfUrl) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -118,6 +214,29 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.center.y ?? 0,
         }
 
+    const rotation = cad.rotation
+      ? convertRotationFromCadRotation(cad.rotation)
+      : undefined
+
+    if (gltfUrl) {
+      try {
+        const asset = await loadGLTF(gltfUrl)
+        externalModels.push({
+          id: cad.cad_component_id ?? gltfUrl,
+          url: gltfUrl,
+          asset,
+          center,
+          rotation,
+          scale: extractScale(cad),
+          coordinateTransform: defaultTransform,
+          label: pcbComponent?.source_component_id,
+        })
+      } catch (error) {
+        console.warn(`Failed to load GLTF model from ${gltfUrl}:`, error)
+      }
+      continue
+    }
+
     const box: Box3D = {
       center,
       size,
@@ -126,14 +245,10 @@ export async function convertCircuitJsonTo3D(
       meshType: model_stl_url ? "stl" : "obj",
     }
 
-    // Add rotation if specified
-    if (cad.rotation) {
-      box.rotation = convertRotationFromCadRotation(cad.rotation)
+    if (rotation) {
+      box.rotation = rotation
     }
 
-    // Try to load the mesh with default coordinate transform if none specified
-    const defaultTransform =
-      coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
     try {
       if (model_stl_url) {
         box.mesh = await loadSTL(model_stl_url, defaultTransform)
@@ -216,6 +331,7 @@ export async function convertCircuitJsonTo3D(
 
   return {
     boxes,
+    externalModels,
     camera,
     lights,
   }
