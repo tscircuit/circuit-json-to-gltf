@@ -11,6 +11,7 @@ Converts circuit JSON to 3D GLTF files. Used for exporting circuits as 3D models
 - Convert circuit JSON to GLTF 2.0 format (JSON or binary)
 - Render PCB board with accurate dimensions and textures
 - Support for STL and OBJ model loading for components
+- Merge multiple external GLTF component models into a single PCB scene
 - High-quality board texture rendering using circuit-to-svg and resvg
 - Automatic component positioning and generic 3D representations
 - Customizable camera, lighting, and material settings
@@ -74,7 +75,7 @@ The converter uses a modular architecture:
 
 1. **Circuit to 3D Converter**: Parses circuit JSON and creates a 3D scene representation
 2. **Board Renderer**: Renders PCB layers as textures using circuit-to-svg and resvg
-3. **Model Loaders**: Load STL and OBJ files for component 3D models
+3. **Model Loaders**: Load STL, OBJ, and GLTF files for component 3D models
 4. **GLTF Builder**: Constructs the final GLTF using Three.js
 
 ## Development
@@ -94,7 +95,19 @@ bun run examples/basic-conversion.ts
 
 - Uses `circuit-to-svg` to render the top/bottom layers of the board to SVG
 - Uses `@resvg/resvg-js` to convert SVG to PNG textures
-- Includes built-in STL and OBJ parsers for 3D model loading
+- Includes built-in STL/OBJ parsers and glTF-Transform-powered GLTF merging
 - Pure GLTF 2.0 implementation without external 3D library dependencies
 - Supports both JSON (.gltf) and binary (.glb) formats
 - Embeds all assets (textures, buffers) directly in the output
+
+## Snapshot Testing
+
+Visual regression tests use [poppygl](https://www.npmjs.com/package/poppygl) to render GLTF output:
+
+```bash
+# Run the full suite (includes PNG comparisons)
+bun test
+
+# Update PNG snapshots when intentional visual changes are made
+BUN_UPDATE_SNAPSHOTS=1 bun test tests/integration/multiple-cad-gltf.test.ts
+```

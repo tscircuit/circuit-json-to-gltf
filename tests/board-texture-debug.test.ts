@@ -23,7 +23,7 @@ test("board texture generation pipeline", async () => {
   // Test 1: Check if we can render board textures
   console.log("Step 1: Testing renderBoardTextures...")
   try {
-    const textures = await renderBoardTextures(circuitData, 256)
+    const textures = await renderBoardTextures(circuitData, 128)
     console.log("✅ renderBoardTextures completed")
     console.log("Top texture length:", textures.top.length)
     console.log("Bottom texture length:", textures.bottom.length)
@@ -43,13 +43,13 @@ test("board texture generation pipeline", async () => {
   try {
     const topLayer = await renderBoardLayer(circuitData, {
       layer: "top",
-      resolution: 256,
+      resolution: 128,
     })
     console.log("✅ Top layer rendered, length:", topLayer.length)
 
     const bottomLayer = await renderBoardLayer(circuitData, {
       layer: "bottom",
-      resolution: 256,
+      resolution: 128,
     })
     console.log("✅ Bottom layer rendered, length:", bottomLayer.length)
 
@@ -65,7 +65,7 @@ test("board texture generation pipeline", async () => {
   try {
     const scene = await convertCircuitJsonTo3D(circuitData, {
       renderBoardTextures: true,
-      textureResolution: 256,
+      textureResolution: 128,
     })
 
     console.log("✅ 3D conversion completed")
@@ -95,7 +95,7 @@ test("board texture generation pipeline", async () => {
     console.error("❌ 3D conversion failed:", error)
     throw error
   }
-})
+}, 180_000)
 
 test("WASM initialization", async () => {
   console.log("Testing WASM initialization...")

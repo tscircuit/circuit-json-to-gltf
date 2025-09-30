@@ -27,6 +27,8 @@
     "bun-match-svg": "^0.0.12",
     "circuit-json": "^0.0.226",
     "circuit-to-svg": "^0.0.175",
+    "looks-same": "^10.0.1",
+    "poppygl": "^0.0.7",
     "react": "^19.1.1",
     "react-cosmos": "^7.0.0",
     "react-cosmos-plugin-vite": "^7.0.0",
@@ -47,5 +49,12 @@
       "optional": true
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/extensions": "^4.2.1",
+    "@gltf-transform/functions": "^4.2.1",
+    "draco3dgltf": "^1.5.7",
+    "gl-matrix": "^3.4.4",
+    "meshoptimizer": "^0.25.0"
+  }
 }

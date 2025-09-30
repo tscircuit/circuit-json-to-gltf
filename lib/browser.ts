@@ -16,6 +16,8 @@ export type {
   GLTFExportOptions,
   CircuitTo3DOptions,
   BoardRenderOptions,
+  ExternalModelInstance,
+  LoadedGLTFAsset,
 } from "./types"
 
 export { loadSTL, clearSTLCache } from "./loaders/stl"
