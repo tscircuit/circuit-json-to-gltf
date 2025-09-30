@@ -17,10 +17,8 @@ const circuitData = JSON.parse(
   readFileSync(circuitPath, "utf-8"),
 ) as CircuitJson
 
-test(
-  "board texture generation pipeline",
-  async () => {
-    console.log("Testing board texture generation...")
+test("board texture generation pipeline", async () => {
+  console.log("Testing board texture generation...")
 
   // Test 1: Check if we can render board textures
   console.log("Step 1: Testing renderBoardTextures...")
@@ -83,8 +81,7 @@ test(
     console.error("❌ 3D conversion failed:", error)
     throw error
   }
-},
-300_000)
+}, 300_000)
 
 test("WASM initialization", async () => {
   console.log("Testing WASM initialization...")
