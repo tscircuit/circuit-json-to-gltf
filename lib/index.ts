@@ -59,6 +59,7 @@ export type {
 // Re-export loaders
 export { loadSTL, clearSTLCache } from "./loaders/stl"
 export { loadOBJ, clearOBJCache } from "./loaders/obj"
+export { loadGLB, clearGLBCache } from "./loaders/glb"
 
 // Re-export converters
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
