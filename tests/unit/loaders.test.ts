@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { loadSTL, loadOBJ } from "../../lib"
+import { loadSTL, loadOBJ, loadGLB } from "../../lib"
 
 test("STL loader should parse ASCII STL", () => {
   const asciiSTL = `solid cube
@@ -28,4 +28,9 @@ test("STL loader should parse ASCII STL", () => {
 test("OBJ loader should be defined", () => {
   expect(loadOBJ).toBeDefined()
   expect(typeof loadOBJ).toBe("function")
+})
+
+test("GLB loader should be defined", () => {
+  expect(loadGLB).toBeDefined()
+  expect(typeof loadGLB).toBe("function")
 })

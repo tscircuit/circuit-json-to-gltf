@@ -114,6 +114,17 @@ export class GLTFBuilder {
     let materialIndex = defaultMaterialIndex
     if (box.color) {
       materialIndex = this.addMaterialFromColor(box.color, !box.mesh)
+    } else if (box.mesh) {
+      // For meshes without a color, use an opaque light gray material
+      materialIndex = this.addMaterial({
+        name: `MeshMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [0.7, 0.7, 0.7, 1.0],
+          metallicFactor: 0.1,
+          roughnessFactor: 0.9,
+        },
+        alphaMode: "OPAQUE",
+      })
     }
 
     // Create mesh
@@ -127,7 +138,7 @@ export class GLTFBuilder {
     })
 
     // Add node to scene
-    this.gltf.scenes![0].nodes!.push(nodeIndex)
+    this.gltf.scenes![0]!.nodes!.push(nodeIndex)
   }
 
   private async addOBJMeshWithMaterials(
@@ -243,7 +254,7 @@ export class GLTFBuilder {
     })
 
     // Add node to scene
-    this.gltf.scenes![0].nodes!.push(nodeIndex)
+    this.gltf.scenes![0]!.nodes!.push(nodeIndex)
   }
 
   private async addBoxWithFaceMaterials(
@@ -270,7 +281,7 @@ export class GLTFBuilder {
 
       const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
       if (textureIndex !== -1) {
-        const material = this.materials[topMaterialIndex]
+        const material = this.materials[topMaterialIndex]!
         if (material.pbrMetallicRoughness) {
           material.pbrMetallicRoughness.baseColorTexture = {
             index: textureIndex,
@@ -296,7 +307,7 @@ export class GLTFBuilder {
 
       const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
       if (textureIndex !== -1) {
-        const material = this.materials[bottomMaterialIndex]
+        const material = this.materials[bottomMaterialIndex]!
         if (material.pbrMetallicRoughness) {
           material.pbrMetallicRoughness.baseColorTexture = {
             index: textureIndex,
@@ -372,7 +383,7 @@ export class GLTFBuilder {
           TEXCOORD_0: texcoordAccessorIndex,
         },
         indices: indicesAccessorIndex,
-        material: faceMaterials[faceName],
+        material: faceMaterials[faceName]!,
         mode: PRIMITIVE_MODE.TRIANGLES,
       })
     }
@@ -391,7 +402,7 @@ export class GLTFBuilder {
     })
 
     // Add node to scene
-    this.gltf.scenes![0].nodes!.push(nodeIndex)
+    this.gltf.scenes![0]!.nodes!.push(nodeIndex)
   }
 
   private addMesh(
@@ -557,22 +568,22 @@ export class GLTFBuilder {
     } else if (color.startsWith("rgba(")) {
       const match = color.match(/rgba\(([^)]+)\)/)
       if (match) {
-        const parts = match[1].split(",").map((s) => s.trim())
+        const parts = match[1]!.split(",").map((s) => s.trim())
         return [
-          parseFloat(parts[0]) / 255,
-          parseFloat(parts[1]) / 255,
-          parseFloat(parts[2]) / 255,
-          parseFloat(parts[3]),
+          parseFloat(parts[0]!) / 255,
+          parseFloat(parts[1]!) / 255,
+          parseFloat(parts[2]!) / 255,
+          parseFloat(parts[3]!),
         ]
       }
     } else if (color.startsWith("rgb(")) {
       const match = color.match(/rgb\(([^)]+)\)/)
       if (match) {
-        const parts = match[1].split(",").map((s) => s.trim())
+        const parts = match[1]!.split(",").map((s) => s.trim())
         return [
-          parseFloat(parts[0]) / 255,
-          parseFloat(parts[1]) / 255,
-          parseFloat(parts[2]) / 255,
+          parseFloat(parts[0]!) / 255,
+          parseFloat(parts[1]!) / 255,
+          parseFloat(parts[2]!) / 255,
           1,
         ]
       }
@@ -601,8 +612,8 @@ export class GLTFBuilder {
         return -1
       }
 
-      const mimeType = `image/${base64Match[1]}`
-      const base64Data = base64Match[2]
+      const mimeType = `image/${base64Match[1]!}`
+      const base64Data = base64Match[2]!
       const imageData = Uint8Array.from(atob(base64Data), (c) =>
         c.charCodeAt(0),
       )
@@ -652,7 +663,7 @@ export class GLTFBuilder {
             byteOffset,
             byteLength: imageData.length,
           })
-          this.images[i].bufferView = bufferViewIndex
+          this.images[i]!.bufferView = bufferViewIndex
         }
       }
 
@@ -761,7 +772,7 @@ export class GLTFBuilder {
     const bytes = new Uint8Array(buffer)
     let binary = ""
     for (let i = 0; i < bytes.byteLength; i++) {
-      binary += String.fromCharCode(bytes[i])
+      binary += String.fromCharCode(bytes[i]!)
     }
     return btoa(binary)
   }

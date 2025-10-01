@@ -45,7 +45,7 @@ export async function convertCircuitJsonTo3D(
   const boxes: any[] = []
 
   // Get PCB board
-  const pcbBoard = db.pcb_board.list()[0]
+  const pcbBoard = db.pcb_board!.list()[0]
   if (!pcbBoard) {
     throw new Error("No pcb_board found in circuit JSON")
   }
@@ -66,8 +66,8 @@ export async function convertCircuitJsonTo3D(
   })
 
   // Add generic boxes for components
-  for (const component of db.pcb_component.list()) {
-    const sourceComponent = db.source_component.get(
+  for (const component of db.pcb_component!.list()) {
+    const sourceComponent = db.source_component!.get(
       component.source_component_id,
     )
     const compHeight = Math.min(
