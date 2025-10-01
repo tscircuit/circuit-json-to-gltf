@@ -13,6 +13,7 @@ import type {
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
+import { loadGLTFFromFootprinter } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -94,8 +95,8 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const { model_stl_url, model_obj_url, footprinter_string } = cad
+    if (!model_stl_url && !model_obj_url && !footprinter_string) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -123,7 +124,7 @@ export async function convertCircuitJsonTo3D(
       size,
       color: componentColor,
       meshUrl: model_stl_url || model_obj_url,
-      meshType: model_stl_url ? "stl" : "obj",
+      meshType: model_stl_url ? "stl" : model_obj_url ? "obj" : undefined,
     }
 
     // Add rotation if specified
@@ -134,14 +135,35 @@ export async function convertCircuitJsonTo3D(
     // Try to load the mesh with default coordinate transform if none specified
     const defaultTransform =
       coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
-    try {
-      if (model_stl_url) {
-        box.mesh = await loadSTL(model_stl_url, defaultTransform)
-      } else if (model_obj_url) {
-        box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+
+    if (footprinter_string) {
+      try {
+        const { mesh, url } = await loadGLTFFromFootprinter(
+          footprinter_string,
+          defaultTransform,
+        )
+        box.mesh = mesh
+        box.meshUrl = url
+        box.meshType = "gltf"
+      } catch (error) {
+        console.warn(`Failed to load footprinter model: ${error}`)
       }
-    } catch (error) {
-      console.warn(`Failed to load 3D model: ${error}`)
+    }
+
+    if (!box.mesh) {
+      try {
+        if (model_stl_url) {
+          box.mesh = await loadSTL(model_stl_url, defaultTransform)
+          box.meshUrl = model_stl_url
+          box.meshType = "stl"
+        } else if (model_obj_url) {
+          box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+          box.meshUrl = model_obj_url
+          box.meshType = "obj"
+        }
+      } catch (error) {
+        console.warn(`Failed to load 3D model: ${error}`)
+      }
     }
 
     boxes.push(box)
