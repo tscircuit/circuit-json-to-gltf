@@ -6,8 +6,8 @@ test("GLTF CAD components have correct CAD data", () => {
   expect(circuitWithGLTF).toBeDefined()
   expect(Array.isArray(circuitWithGLTF)).toBe(true)
 
-  const cadComponents = circuitWithGLTF.filter((item: any) =>
-    item.type === "cad_component"
+  const cadComponents = circuitWithGLTF.filter(
+    (item: any) => item.type === "cad_component",
   )
 
   expect(cadComponents.length).toBe(2)
@@ -22,27 +22,36 @@ test("GLTF CAD components have correct CAD data", () => {
 })
 
 test("GLTF URLs are properly configured", () => {
-  const cadComponents = circuitWithGLTF.filter((item: any) =>
-    item.type === "cad_component"
+  const cadComponents = circuitWithGLTF.filter(
+    (item: any) => item.type === "cad_component",
   )
 
   const gltfUrls = cadComponents.map((cad: any) => cad.model_gltf_url)
 
-  expect(gltfUrls).toContain("https://modelcdn.tscircuit.com/jscad_models/soic8.glb")
+  expect(gltfUrls).toContain(
+    "https://modelcdn.tscircuit.com/jscad_models/soic8.glb",
+  )
   expect(gltfUrls.length).toBe(2)
-  expect(gltfUrls.every(url => url === "https://modelcdn.tscircuit.com/jscad_models/soic8.glb")).toBe(true)
+  expect(
+    gltfUrls.every(
+      (url) => url === "https://modelcdn.tscircuit.com/jscad_models/soic8.glb",
+    ),
+  ).toBe(true)
 })
 
 test("GLTF components are properly structured", () => {
-  const soicComponent = circuitWithGLTF.find((item: any) =>
-    item.type === "cad_component" && item.model_gltf_url?.includes("soic8")
+  const soicComponent = circuitWithGLTF.find(
+    (item: any) =>
+      item.type === "cad_component" && item.model_gltf_url?.includes("soic8"),
   ) as any
 
   expect(soicComponent).toBeDefined()
   expect(soicComponent.position).toEqual({ x: -15, y: 0, z: 2 })
   expect(soicComponent.size).toEqual({ x: 5, y: 1.5, z: 4 })
   expect(soicComponent.rotation).toEqual({ x: 0, y: 0, z: 0 })
-  expect(soicComponent.model_gltf_url).toBe("https://modelcdn.tscircuit.com/jscad_models/soic8.glb")
+  expect(soicComponent.model_gltf_url).toBe(
+    "https://modelcdn.tscircuit.com/jscad_models/soic8.glb",
+  )
 })
 
 // Test that doesn't import the main library to avoid sharp dependency
