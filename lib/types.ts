@@ -64,6 +64,8 @@ export interface OBJMesh extends STLMesh {
   materialIndexMap?: Map<string, number>
 }
 
+
+
 export interface OBJMaterial {
   name: string
   color?: Color
@@ -90,7 +92,7 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj"
+  meshType?: "stl" | "obj" | "gltf" | "glb"
   label?: string
   labelColor?: Color
 }

@@ -37,17 +37,21 @@
     "vite": "^7.1.1"
   },
   "peerDependencies": {
-    "typescript": "^5",
-    "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
-    "circuit-to-svg": "*",
+    "@resvg/resvg-wasm": "2",
     "@tscircuit/circuit-json-util": "*",
-    "circuit-json": "*"
+    "circuit-json": "*",
+    "circuit-to-svg": "*",
+    "typescript": "^5"
   },
   "peerDependenciesMeta": {
     "@resvg/resvg-wasm": {
       "optional": true
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@gltf-transform/core": "^4.2.1",
+    "@gltf-transform/extensions": "^4.2.1",
+    "@gltf-transform/functions": "^4.2.1"
+  }
 }

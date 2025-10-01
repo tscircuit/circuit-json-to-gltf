@@ -13,6 +13,7 @@ import type {
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
+import { loadGLTF } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -94,8 +95,9 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const cad_any = cad as any
+    const { model_stl_url, model_obj_url, model_gltf_url, model_glb_url } = cad_any
+    if (!model_stl_url && !model_obj_url && !model_gltf_url && !model_glb_url) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -118,12 +120,15 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.center.y ?? 0,
         }
 
+    const modelUrl = model_gltf_url || model_glb_url || model_stl_url || model_obj_url
+    const modelType = model_gltf_url ? "gltf" : model_glb_url ? "glb" : model_stl_url ? "stl" : "obj"
+
     const box: Box3D = {
       center,
       size,
       color: componentColor,
-      meshUrl: model_stl_url || model_obj_url,
-      meshType: model_stl_url ? "stl" : "obj",
+      meshUrl: modelUrl,
+      meshType: modelType as "stl" | "obj" | "gltf" | "glb",
     }
 
     // Add rotation if specified
@@ -139,6 +144,9 @@ export async function convertCircuitJsonTo3D(
         box.mesh = await loadSTL(model_stl_url, defaultTransform)
       } else if (model_obj_url) {
         box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+      } else if (model_gltf_url || model_glb_url) {
+        // For GLTF models, load and convert to triangles like STL/OBJ
+        box.mesh = await loadGLTF(modelUrl!, defaultTransform)
       }
     } catch (error) {
       console.warn(`Failed to load 3D model: ${error}`)

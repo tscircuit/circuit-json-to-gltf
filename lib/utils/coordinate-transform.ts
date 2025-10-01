@@ -1,4 +1,5 @@
 import type { Point3, CoordinateTransformConfig, Triangle } from "../types"
+import type { Document } from "@gltf-transform/core"
 
 export function applyCoordinateTransform(
   point: Point3,
@@ -92,6 +93,48 @@ export function transformTriangles(
     ) as [Point3, Point3, Point3],
     normal: applyCoordinateTransform(triangle.normal, config),
   }))
+}
+
+export async function transformGLTFDocument(
+  document: Document,
+  config: CoordinateTransformConfig,
+): Promise<void> {
+  // Apply transformation to all nodes in the document
+  const nodes = document.getRoot().listNodes()
+
+  for (const node of nodes) {
+    // Get current translation, rotation, scale
+    const translation = node.getTranslation()
+    const rotation = node.getRotation()
+    const scale = node.getScale()
+
+    // Apply coordinate transformation to translation
+    if (translation) {
+      const transformedTranslation = applyCoordinateTransform(
+        { x: translation[0], y: translation[1], z: translation[2] },
+        config,
+      )
+      node.setTranslation([
+        transformedTranslation.x,
+        transformedTranslation.y,
+        transformedTranslation.z,
+      ])
+    }
+
+    // For rotation, we'd need quaternion math - for now, keep original rotation
+    // This could be extended to apply rotations properly
+    // node.setRotation(transformedRotation)
+
+    // Apply scale transformations if needed
+    if (scale && (config.flipX !== 1 || config.flipY !== 1 || config.flipZ !== 1)) {
+      const transformedScale = {
+        x: scale[0] * (config.flipX ?? 1),
+        y: scale[1] * (config.flipY ?? 1),
+        z: scale[2] * (config.flipZ ?? 1),
+      }
+      node.setScale([transformedScale.x, transformedScale.y, transformedScale.z])
+    }
+  }
 }
 
 // Predefined transformation configs for common model orientations
