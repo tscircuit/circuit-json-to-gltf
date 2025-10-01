@@ -176,7 +176,7 @@ function extractFloatArrayFromAccessor(accessor: Accessor): number[] {
   if (array instanceof Float32Array) {
     for (let i = 0; i < array.length; i++) {
       const val = array[i]
-      if (val !== undefined) {
+      if (typeof val === "number" && !Number.isNaN(val)) {
         result.push(val)
       }
     }
@@ -192,7 +192,7 @@ function extractIndicesFromAccessor(accessor: Accessor): number[] {
   if (array instanceof Uint16Array || array instanceof Uint32Array) {
     for (let i = 0; i < array.length; i++) {
       const val = array[i]
-      if (val !== undefined) {
+      if (typeof val === "number" && !Number.isNaN(val)) {
         result.push(val)
       }
     }
