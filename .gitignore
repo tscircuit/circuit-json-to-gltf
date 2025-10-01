@@ -37,3 +37,4 @@ reference-repos
 bun.lock
 relevant-repos
 .vercel
+*.diff.png
