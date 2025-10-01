@@ -84,7 +84,9 @@ function parseGLB(
 
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
-  const finalConfig = transform ?? { axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const } }
+  const finalConfig = transform ?? {
+    axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
+  }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {
@@ -148,49 +150,56 @@ function extractTrianglesFromGLTF(
         )
         indices =
           indexAccessor.componentType === 5123
-            ? new Uint16Array(indexData.buffer, indexData.byteOffset, indexData.length)
-            : new Uint32Array(indexData.buffer, indexData.byteOffset, indexData.length)
+            ? new Uint16Array(
+                indexData.buffer,
+                indexData.byteOffset,
+                indexData.length,
+              )
+            : new Uint32Array(
+                indexData.buffer,
+                indexData.byteOffset,
+                indexData.length,
+              )
       }
 
       // Build triangles
       const vertexCount = positions.length / 3
       if (indices) {
         for (let i = 0; i < indices.length; i += 3) {
-          const i0 = indices[i]
-          const i1 = indices[i + 1]
-          const i2 = indices[i + 2]
+          const i0 = indices[i]!
+          const i1 = indices[i + 1]!
+          const i2 = indices[i + 2]!
 
           const v0: Point3 = {
-            x: positions[i0 * 3],
-            y: positions[i0 * 3 + 1],
-            z: positions[i0 * 3 + 2],
+            x: positions[i0 * 3]!,
+            y: positions[i0 * 3 + 1]!,
+            z: positions[i0 * 3 + 2]!,
           }
           const v1: Point3 = {
-            x: positions[i1 * 3],
-            y: positions[i1 * 3 + 1],
-            z: positions[i1 * 3 + 2],
+            x: positions[i1 * 3]!,
+            y: positions[i1 * 3 + 1]!,
+            z: positions[i1 * 3 + 2]!,
           }
           const v2: Point3 = {
-            x: positions[i2 * 3],
-            y: positions[i2 * 3 + 1],
-            z: positions[i2 * 3 + 2],
+            x: positions[i2 * 3]!,
+            y: positions[i2 * 3 + 1]!,
+            z: positions[i2 * 3 + 2]!,
           }
 
           let normal: Point3
           if (normals) {
             // Average normals of the three vertices
             normal = {
-              x:
-                (normals[i0 * 3] + normals[i1 * 3] + normals[i2 * 3]) / 3,
+              x: (normals[i0 * 3]! + normals[i1 * 3]! + normals[i2 * 3]!) / 3,
               y:
-                (normals[i0 * 3 + 1] +
-                  normals[i1 * 3 + 1] +
-                  normals[i2 * 3 + 1]) /
+                (normals[i0 * 3 + 1]! +
+                  normals[i1 * 3 + 1]! +
+                  normals[i2 * 3 + 1]!) /
                 3,
               z:
-                (normals[i0 * 3 + 2] +
-                  normals[i1 * 3 + 2] +
-                  normals[i2 * 3 + 2]) /
+                (normals[i0 * 3 + 2]! +
+                  normals[i1 * 3 + 2]! +
+                  normals[i2 * 3 + 2]!) /
                 3,
             }
           } else {
@@ -204,34 +213,38 @@ function extractTrianglesFromGLTF(
         // No indices, vertices are in order
         for (let i = 0; i < vertexCount; i += 3) {
           const v0: Point3 = {
-            x: positions[i * 3],
-            y: positions[i * 3 + 1],
-            z: positions[i * 3 + 2],
+            x: positions[i * 3]!,
+            y: positions[i * 3 + 1]!,
+            z: positions[i * 3 + 2]!,
           }
           const v1: Point3 = {
-            x: positions[(i + 1) * 3],
-            y: positions[(i + 1) * 3 + 1],
-            z: positions[(i + 1) * 3 + 2],
+            x: positions[(i + 1) * 3]!,
+            y: positions[(i + 1) * 3 + 1]!,
+            z: positions[(i + 1) * 3 + 2]!,
           }
           const v2: Point3 = {
-            x: positions[(i + 2) * 3],
-            y: positions[(i + 2) * 3 + 1],
-            z: positions[(i + 2) * 3 + 2],
+            x: positions[(i + 2) * 3]!,
+            y: positions[(i + 2) * 3 + 1]!,
+            z: positions[(i + 2) * 3 + 2]!,
           }
 
           let normal: Point3
           if (normals) {
             normal = {
-              x: (normals[i * 3] + normals[(i + 1) * 3] + normals[(i + 2) * 3]) / 3,
+              x:
+                (normals[i * 3]! +
+                  normals[(i + 1) * 3]! +
+                  normals[(i + 2) * 3]!) /
+                3,
               y:
-                (normals[i * 3 + 1] +
-                  normals[(i + 1) * 3 + 1] +
-                  normals[(i + 2) * 3 + 1]) /
+                (normals[i * 3 + 1]! +
+                  normals[(i + 1) * 3 + 1]! +
+                  normals[(i + 2) * 3 + 1]!) /
                 3,
               z:
-                (normals[i * 3 + 2] +
-                  normals[(i + 1) * 3 + 2] +
-                  normals[(i + 2) * 3 + 2]) /
+                (normals[i * 3 + 2]! +
+                  normals[(i + 1) * 3 + 2]! +
+                  normals[(i + 2) * 3 + 2]!) /
                 3,
             }
           } else {
@@ -282,11 +295,19 @@ function getAccessorData(
     return new Float32Array(binaryBuffer, byteOffset, totalComponents)
   } else if (componentType === 5123) {
     // UNSIGNED_SHORT
-    const uint16Array = new Uint16Array(binaryBuffer, byteOffset, totalComponents)
+    const uint16Array = new Uint16Array(
+      binaryBuffer,
+      byteOffset,
+      totalComponents,
+    )
     return new Float32Array(uint16Array)
   } else if (componentType === 5125) {
     // UNSIGNED_INT
-    const uint32Array = new Uint32Array(binaryBuffer, byteOffset, totalComponents)
+    const uint32Array = new Uint32Array(
+      binaryBuffer,
+      byteOffset,
+      totalComponents,
+    )
     return new Float32Array(uint32Array)
   } else if (componentType === 5122) {
     // SHORT
