@@ -37,3 +37,8 @@ reference-repos
 bun.lock
 relevant-repos
 .vercel
+AGENTS.md
+AGENT_COMMUNICATION.md
+IMPLEMENTATION_NOTES.md
+OLD_SOLUTION.md
+DIFF_REPORT.md

@@ -1,10 +1,29 @@
 import type { CircuitJson } from "circuit-json"
+import type { Document } from "@gltf-transform/core"
+
+export interface ModelTransform {
+  translation: Point3
+  rotation?: Point3
+  scale?: Point3
+}
+
+export interface LoadedGLTFAsset {
+  url: string
+  document: Document
+}
+
+export interface ExternalModelInstance {
+  url: string
+  name?: string
+  asset: LoadedGLTFAsset
+  transform: ModelTransform
+}
 
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   includeModels?: boolean
-  modelCache?: Map<string, STLMesh | OBJMesh>
+  modelCache?: Map<string, STLMesh | OBJMesh | LoadedGLTFAsset>
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
@@ -99,6 +118,7 @@ export interface Scene3D {
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]
+  externalModels?: ExternalModelInstance[]
 }
 
 export interface Camera3D {
@@ -137,6 +157,7 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
+  includeModels?: boolean
 }
 
 export interface BoardRenderOptions {

@@ -1,8 +1,4 @@
-import {
-  type CircuitJson,
-  type CadComponent,
-  any_circuit_element,
-} from "circuit-json"
+import { type CircuitJson, type CadComponent } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
   Box3D,
@@ -10,9 +6,13 @@ import type {
   CircuitTo3DOptions,
   Camera3D,
   Light3D,
+  ExternalModelInstance,
+  ModelTransform,
+  Point3,
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
+import { loadGLTF } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -43,10 +43,12 @@ export async function convertCircuitJsonTo3D(
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
     coordinateTransform,
+    includeModels = true,
   } = options
 
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
+  const externalModels: ExternalModelInstance[] = []
 
   // Get PCB board
   const pcbBoard = db.pcb_board.list()[0]
@@ -94,57 +96,84 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const modelGltfUrl =
+      (cad as any).model_gltf_url || (cad as any).model_glb_url
+    const modelStlUrl = cad.model_stl_url
+    const modelObjUrl = cad.model_obj_url
 
-    pcbComponentIdsWith3D.add(cad.pcb_component_id)
+    if (!includeModels || (!modelGltfUrl && !modelStlUrl && !modelObjUrl)) {
+      continue
+    }
 
     // Get the associated PCB component
     const pcbComponent = db.pcb_component.get(cad.pcb_component_id)
 
-    // Determine size
     const size = cad.size ?? {
       x: pcbComponent?.width ?? 2,
       y: defaultComponentHeight,
       z: pcbComponent?.height ?? 2,
     }
 
-    // Determine position
-    const center = cad.position
-      ? { x: cad.position.x, y: cad.position.z, z: cad.position.y }
-      : {
-          x: pcbComponent?.center.x ?? 0,
-          y: boardThickness / 2 + size.y / 2,
-          z: pcbComponent?.center.y ?? 0,
-        }
-
-    const box: Box3D = {
-      center,
+    const center = determineComponentCenter(
+      cad,
+      pcbComponent,
       size,
-      color: componentColor,
-      meshUrl: model_stl_url || model_obj_url,
-      meshType: model_stl_url ? "stl" : "obj",
-    }
+      boardThickness,
+    )
 
-    // Add rotation if specified
-    if (cad.rotation) {
-      box.rotation = convertRotationFromCadRotation(cad.rotation)
-    }
+    const rotation = extractRotation(cad)
+    const scale = extractScale(cad)
 
-    // Try to load the mesh with default coordinate transform if none specified
-    const defaultTransform =
-      coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
-    try {
-      if (model_stl_url) {
-        box.mesh = await loadSTL(model_stl_url, defaultTransform)
-      } else if (model_obj_url) {
-        box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+    if (modelGltfUrl) {
+      try {
+        const asset = await loadGLTF(modelGltfUrl)
+        pcbComponentIdsWith3D.add(cad.pcb_component_id)
+        externalModels.push({
+          url: asset.url,
+          name: pcbComponent?.pcb_component_id ?? cad.pcb_component_id,
+          asset,
+          transform: buildModelTransform(center, rotation, scale),
+        })
+      } catch (error) {
+        console.warn(`Failed to load GLTF model from ${modelGltfUrl}:`, error)
       }
-    } catch (error) {
-      console.warn(`Failed to load 3D model: ${error}`)
+      continue
     }
 
-    boxes.push(box)
+    if (modelStlUrl || modelObjUrl) {
+      pcbComponentIdsWith3D.add(cad.pcb_component_id)
+
+      const box: Box3D = {
+        center,
+        size,
+        color: componentColor,
+        meshUrl: modelStlUrl || modelObjUrl,
+        meshType: modelStlUrl ? "stl" : "obj",
+      }
+
+      if (rotation) {
+        box.rotation = convertRotationFromCadRotation(rotation)
+      }
+
+      const defaultTransform =
+        coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
+
+      if (modelStlUrl) {
+        try {
+          box.mesh = await loadSTL(modelStlUrl, defaultTransform)
+        } catch (error) {
+          console.warn(`Failed to load STL model from ${modelStlUrl}:`, error)
+        }
+      } else if (modelObjUrl) {
+        try {
+          box.mesh = await loadOBJ(modelObjUrl, defaultTransform)
+        } catch (error) {
+          console.warn(`Failed to load OBJ model from ${modelObjUrl}:`, error)
+        }
+      }
+
+      boxes.push(box)
+    }
   }
 
   // Add generic boxes for components without 3D models
@@ -218,5 +247,77 @@ export async function convertCircuitJsonTo3D(
     boxes,
     camera,
     lights,
+    externalModels,
+  }
+}
+
+function determineComponentCenter(
+  cad: CadComponent,
+  pcbComponent: any,
+  size: { x: number; y: number; z: number },
+  boardThickness: number,
+): Point3 {
+  if (cad.position) {
+    return {
+      x: cad.position.x ?? 0,
+      y: cad.position.z ?? 0,
+      z: cad.position.y ?? 0,
+    }
+  }
+
+  return {
+    x: pcbComponent?.center.x ?? 0,
+    y: boardThickness / 2 + size.y / 2,
+    z: pcbComponent?.center.y ?? 0,
+  }
+}
+
+function extractRotation(cad: CadComponent): {
+  x: number
+  y: number
+  z: number
+} {
+  const rotation = cad.rotation ?? { x: 0, y: 0, z: 0 }
+  return {
+    x: rotation.x ?? 0,
+    y: rotation.y ?? 0,
+    z: rotation.z ?? 0,
+  }
+}
+
+function extractScale(
+  cad: CadComponent,
+): { x: number; y: number; z: number } | undefined {
+  const raw: unknown = (cad as any).scale ?? (cad as any).scaling
+
+  if (raw == null) {
+    return undefined
+  }
+
+  if (typeof raw === "number") {
+    if (raw === 1) return undefined
+    return { x: raw, y: raw, z: raw }
+  }
+
+  if (typeof raw === "object") {
+    const x = typeof (raw as any).x === "number" ? (raw as any).x : 1
+    const y = typeof (raw as any).y === "number" ? (raw as any).y : 1
+    const z = typeof (raw as any).z === "number" ? (raw as any).z : 1
+    if (x === 1 && y === 1 && z === 1) return undefined
+    return { x, y, z }
+  }
+
+  return undefined
+}
+
+function buildModelTransform(
+  translation: Point3,
+  rotation: { x: number; y: number; z: number },
+  scale?: { x: number; y: number; z: number },
+): ModelTransform {
+  return {
+    translation,
+    rotation,
+    scale,
   }
 }

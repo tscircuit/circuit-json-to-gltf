@@ -18,9 +18,10 @@ export async function convertCircuitJsonToGltf(
 
   // Convert circuit JSON to 3D scene
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
-    renderBoardTextures: true,
+    renderBoardTextures: boardTextureResolution > 0,
     textureResolution: boardTextureResolution,
     coordinateTransform: options.coordinateTransform,
+    includeModels,
   })
 
   // Convert 3D scene to GLTF
@@ -54,11 +55,15 @@ export type {
   CircuitTo3DOptions,
   BoardRenderOptions,
   CoordinateTransformConfig,
+  ExternalModelInstance,
+  ModelTransform,
+  LoadedGLTFAsset,
 } from "./types"
 
 // Re-export loaders
 export { loadSTL, clearSTLCache } from "./loaders/stl"
 export { loadOBJ, clearOBJCache } from "./loaders/obj"
+export { loadGLTF, clearGLTFCache } from "./loaders/gltf"
 
 // Re-export converters
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
