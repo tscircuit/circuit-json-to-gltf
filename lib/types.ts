@@ -137,6 +137,7 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
+  footprinterBaseUrl?: string
 }
 
 export interface BoardRenderOptions {

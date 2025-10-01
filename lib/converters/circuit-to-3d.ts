@@ -44,6 +44,7 @@ export async function convertCircuitJsonTo3D(
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
     coordinateTransform,
+    footprinterBaseUrl,
   } = options
 
   const db: any = cju(circuitJson)
@@ -141,6 +142,7 @@ export async function convertCircuitJsonTo3D(
         const { mesh, url } = await loadGLTFFromFootprinter(
           footprinter_string,
           defaultTransform,
+          { baseUrl: footprinterBaseUrl },
         )
         box.mesh = mesh
         box.meshUrl = url

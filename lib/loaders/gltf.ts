@@ -6,12 +6,23 @@ import {
 
 const gltfCache = new Map<string, STLMesh>()
 
+const DEFAULT_FOOTPRINTER_BASE_URL =
+  "https://modelcdn.tscircuit.com/jscad_models/"
+
+export interface FootprinterLoadOptions {
+  baseUrl?: string
+}
+
 export async function loadGLTFFromFootprinter(
   footprinterString: string,
   transform?: CoordinateTransformConfig,
+  options?: FootprinterLoadOptions,
 ): Promise<{ mesh: STLMesh; url: string }> {
-  const baseUrl =
-    "https://modelcdn.tscircuit.com/jscad_models/" + footprinterString
+  const configuredBaseUrl = options?.baseUrl ?? DEFAULT_FOOTPRINTER_BASE_URL
+  const normalizedBaseUrl = configuredBaseUrl.endsWith("/")
+    ? configuredBaseUrl
+    : `${configuredBaseUrl}/`
+  const baseUrl = normalizedBaseUrl + footprinterString
   const glbUrl = `${baseUrl}.glb`
   const gltfUrl = `${baseUrl}.gltf`
 
@@ -55,7 +66,7 @@ export async function loadGLTFMesh(
   let mesh: STLMesh
   if (url.toLowerCase().endsWith(".gltf")) {
     const gltfJson = await response.json()
-    mesh = await parseGLTFJson(gltfJson, url, transform)
+    mesh = await parseGLTFJson(gltfJson, transform)
   } else {
     const buffer = await response.arrayBuffer()
     mesh = parseGLB(buffer, transform)
@@ -71,17 +82,18 @@ export function clearGLTFCaches(): void {
 
 async function parseGLTFJson(
   gltfJson: any,
-  sourceUrl: string,
   transform?: CoordinateTransformConfig,
 ): Promise<STLMesh> {
   const buffers: ArrayBuffer[] = []
-  const baseUrl = sourceUrl.slice(0, sourceUrl.lastIndexOf("/") + 1)
 
-  for (const bufferDef of gltfJson.buffers ?? []) {
+  for (const [index, bufferDef] of (gltfJson.buffers ?? []).entries()) {
     if (typeof bufferDef.uri === "string") {
-      buffers.push(await loadGLTFBuffer(bufferDef.uri, baseUrl))
+      buffers.push(loadGLTFBuffer(bufferDef.uri))
     } else {
-      buffers.push(new ArrayBuffer(bufferDef.byteLength ?? 0))
+      throw new Error(
+        `GLTF buffer ${index} is missing an embedded data URI. ` +
+          "GLTF files must have fully embedded buffers.",
+      )
     }
   }
 
@@ -141,10 +153,7 @@ function parseGLB(
   return parseGLTFWithBuffers(jsonChunk, buffers, transform)
 }
 
-async function loadGLTFBuffer(
-  uri: string,
-  baseUrl: string,
-): Promise<ArrayBuffer> {
+function loadGLTFBuffer(uri: string): ArrayBuffer {
   if (uri.startsWith("data:")) {
     const base64Index = uri.indexOf(",")
     const base64Data = uri.slice(base64Index + 1)
@@ -154,14 +163,9 @@ async function loadGLTFBuffer(
     return result.buffer
   }
 
-  const bufferUrl = new URL(uri, baseUrl).href
-  const response = await fetch(bufferUrl)
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch GLTF buffer ${uri} (resolved to ${bufferUrl}): ${response.status}`,
-    )
-  }
-  return await response.arrayBuffer()
+  throw new Error(
+    `GLTF files must have fully embedded buffers. Found external URI: ${uri}`,
+  )
 }
 
 function parseGLTFWithBuffers(

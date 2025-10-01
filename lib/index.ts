@@ -64,6 +64,7 @@ export {
   loadGLTFMesh,
   clearGLTFCaches,
 } from "./loaders/gltf"
+export type { FootprinterLoadOptions } from "./loaders/gltf"
 
 // Re-export converters
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
