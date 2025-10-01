@@ -132,11 +132,11 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Try to load the mesh with default coordinate transform if none specified
-    // GLB files are typically already in Y-up format, so use IDENTITY for them
-    // STL/OBJ files usually need Z-up to Y-up conversion
+    // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
+    // STL/OBJ files need Z-up to Y-up conversion
     const defaultTransform = coordinateTransform ?? (
       model_glb_url
-        ? COORDINATE_TRANSFORMS.IDENTITY
+        ? undefined // GLB loader has its own default transform
         : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
     )
     try {

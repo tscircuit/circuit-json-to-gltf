@@ -83,7 +83,8 @@ function parseGLB(
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
   // Apply coordinate transformation
-  const finalConfig = transform ?? COORDINATE_TRANSFORMS.IDENTITY
+  // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
+  const finalConfig = transform ?? { axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const } }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {
