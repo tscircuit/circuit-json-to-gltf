@@ -67,8 +67,8 @@ test("convertCircuitJsonTo3D should handle GLTF CAD components", async () => {
   expect(scene.boxes).toBeInstanceOf(Array)
 
   // Should have boxes with GLTF meshes
-  const gltfBoxes = scene.boxes.filter((box) =>
-    box.meshType === "gltf" || box.meshType === "glb"
+  const gltfBoxes = scene.boxes.filter(
+    (box) => box.meshType === "gltf" || box.meshType === "glb",
   )
   expect(gltfBoxes.length).toBe(2) // SOIC8 and ESP32
 

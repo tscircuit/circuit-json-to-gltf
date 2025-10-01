@@ -126,13 +126,20 @@ export async function transformGLTFDocument(
     // node.setRotation(transformedRotation)
 
     // Apply scale transformations if needed
-    if (scale && (config.flipX !== 1 || config.flipY !== 1 || config.flipZ !== 1)) {
+    if (
+      scale &&
+      (config.flipX !== 1 || config.flipY !== 1 || config.flipZ !== 1)
+    ) {
       const transformedScale = {
         x: scale[0] * (config.flipX ?? 1),
         y: scale[1] * (config.flipY ?? 1),
         z: scale[2] * (config.flipZ ?? 1),
       }
-      node.setScale([transformedScale.x, transformedScale.y, transformedScale.z])
+      node.setScale([
+        transformedScale.x,
+        transformedScale.y,
+        transformedScale.z,
+      ])
     }
   }
 }

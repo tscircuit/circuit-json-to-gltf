@@ -96,8 +96,10 @@ export async function convertCircuitJsonTo3D(
 
   for (const cad of cadComponents) {
     const cad_any = cad as any
-    const { model_stl_url, model_obj_url, model_gltf_url, model_glb_url } = cad_any
-    if (!model_stl_url && !model_obj_url && !model_gltf_url && !model_glb_url) continue
+    const { model_stl_url, model_obj_url, model_gltf_url, model_glb_url } =
+      cad_any
+    if (!model_stl_url && !model_obj_url && !model_gltf_url && !model_glb_url)
+      continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -120,8 +122,15 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.center.y ?? 0,
         }
 
-    const modelUrl = model_gltf_url || model_glb_url || model_stl_url || model_obj_url
-    const modelType = model_gltf_url ? "gltf" : model_glb_url ? "glb" : model_stl_url ? "stl" : "obj"
+    const modelUrl =
+      model_gltf_url || model_glb_url || model_stl_url || model_obj_url
+    const modelType = model_gltf_url
+      ? "gltf"
+      : model_glb_url
+        ? "glb"
+        : model_stl_url
+          ? "stl"
+          : "obj"
 
     const box: Box3D = {
       center,

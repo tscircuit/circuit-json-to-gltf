@@ -23,17 +23,18 @@ async function testGLTFMerging() {
     console.log("Scene created successfully!")
     console.log(`Number of boxes: ${scene.boxes.length}`)
 
-    const gltfBoxes = scene.boxes.filter(box =>
-      box.meshType === "gltf" || box.meshType === "glb"
+    const gltfBoxes = scene.boxes.filter(
+      (box) => box.meshType === "gltf" || box.meshType === "glb",
     )
     console.log(`Number of GLTF boxes: ${gltfBoxes.length}`)
 
     for (const box of gltfBoxes) {
-      console.log(`GLTF Box: ${box.label || 'unnamed'} - ${box.meshType} - Triangles: ${(box.mesh as any)?.triangles?.length || 0}`)
+      console.log(
+        `GLTF Box: ${box.label || "unnamed"} - ${box.meshType} - Triangles: ${(box.mesh as any)?.triangles?.length || 0}`,
+      )
     }
 
     console.log("✅ GLTF merging functionality is working!")
-
   } catch (error) {
     console.error("❌ Error occurred:", error)
     if (error instanceof Error) {

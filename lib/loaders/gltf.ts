@@ -1,6 +1,17 @@
-import { Document, NodeIO, Mesh, Primitive, Accessor } from "@gltf-transform/core"
+import {
+  Document,
+  NodeIO,
+  Mesh,
+  Primitive,
+  Accessor,
+} from "@gltf-transform/core"
 import { dedup, prune, weld } from "@gltf-transform/functions"
-import type { STLMesh, Triangle, Point3, CoordinateTransformConfig } from "../types"
+import type {
+  STLMesh,
+  Triangle,
+  Point3,
+  CoordinateTransformConfig,
+} from "../types"
 import {
   transformTriangles,
   COORDINATE_TRANSFORMS,
@@ -58,8 +69,12 @@ function extractTrianglesFromGLTFDocument(
       if (!positionAccessor) continue
 
       const positions = extractFloatArrayFromAccessor(positionAccessor)
-      const normals = normalAccessor ? extractFloatArrayFromAccessor(normalAccessor) : null
-      const indices = indicesAccessor ? extractIndicesFromAccessor(indicesAccessor) : null
+      const normals = normalAccessor
+        ? extractFloatArrayFromAccessor(normalAccessor)
+        : null
+      const indices = indicesAccessor
+        ? extractIndicesFromAccessor(indicesAccessor)
+        : null
 
       if (!indices) {
         // If no indices, assume triangles are in order (every 3 vertices)
@@ -80,7 +95,7 @@ function extractTrianglesFromGLTFDocument(
               { x: px1, y: py1, z: pz1 },
               { x: px2, y: py2, z: pz2 },
             ],
-            normal: { x: 0, y: 1, z: 0 } // Simplified normal
+            normal: { x: 0, y: 1, z: 0 }, // Simplified normal
           }
           triangles.push(triangle)
         }
@@ -95,7 +110,11 @@ function extractTrianglesFromGLTFDocument(
           const i1 = idx1 * 3
           const i2 = idx2 * 3
 
-          if (i0 + 2 >= positions.length || i1 + 2 >= positions.length || i2 + 2 >= positions.length) {
+          if (
+            i0 + 2 >= positions.length ||
+            i1 + 2 >= positions.length ||
+            i2 + 2 >= positions.length
+          ) {
             continue // Skip invalid indices
           }
 
@@ -115,12 +134,21 @@ function extractTrianglesFromGLTFDocument(
               { x: px1, y: py1, z: pz1 },
               { x: px2, y: py2, z: pz2 },
             ],
-            normal: normals && i0 + 2 < normals.length && i1 + 2 < normals.length && i2 + 2 < normals.length ?
-              {
-                x: ((normals[i0] as number) + (normals[i1] as number) + (normals[i2] as number)) / 3,
-                y: ((normals[i0 + 1] as number) + (normals[i1 + 1] as number) + (normals[i2 + 1] as number)) / 3,
-                z: ((normals[i0 + 2] as number) + (normals[i1 + 2] as number) + (normals[i2 + 2] as number)) / 3,
-              } : { x: 0, y: 1, z: 0 }
+            normal:
+              normals &&
+              i0 + 2 < normals.length &&
+              i1 + 2 < normals.length &&
+              i2 + 2 < normals.length
+                ? {
+                    x: (normals[i0]! + normals[i1]! + normals[i2]!) / 3,
+                    y:
+                      (normals[i0 + 1]! + normals[i1 + 1]! + normals[i2 + 1]!) /
+                      3,
+                    z:
+                      (normals[i0 + 2]! + normals[i1 + 2]! + normals[i2 + 2]!) /
+                      3,
+                  }
+                : { x: 0, y: 1, z: 0 },
           }
           triangles.push(triangle)
         }
@@ -130,8 +158,10 @@ function extractTrianglesFromGLTFDocument(
 
   // Apply coordinate transformation if specified
   const finalTransform = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
-  const transformedTriangles = finalTransform === COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP ?
-    triangles : transformTriangles(triangles, finalTransform)
+  const transformedTriangles =
+    finalTransform === COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+      ? triangles
+      : transformTriangles(triangles, finalTransform)
 
   return {
     triangles: transformedTriangles,
@@ -145,7 +175,10 @@ function extractFloatArrayFromAccessor(accessor: Accessor): number[] {
 
   if (array instanceof Float32Array) {
     for (let i = 0; i < array.length; i++) {
-      result.push(array[i])
+      const val = array[i]
+      if (val !== undefined) {
+        result.push(val)
+      }
     }
   }
 
@@ -158,14 +191,20 @@ function extractIndicesFromAccessor(accessor: Accessor): number[] {
 
   if (array instanceof Uint16Array || array instanceof Uint32Array) {
     for (let i = 0; i < array.length; i++) {
-      result.push(array[i])
+      const val = array[i]
+      if (val !== undefined) {
+        result.push(val)
+      }
     }
   }
 
   return result
 }
 
-function calculateBoundingBox(triangles: Triangle[]): { min: Point3; max: Point3 } {
+function calculateBoundingBox(triangles: Triangle[]): {
+  min: Point3
+  max: Point3
+} {
   if (triangles.length === 0) {
     return {
       min: { x: 0, y: 0, z: 0 },
@@ -173,8 +212,12 @@ function calculateBoundingBox(triangles: Triangle[]): { min: Point3; max: Point3
     }
   }
 
-  let minX = Infinity, minY = Infinity, minZ = Infinity
-  let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+  let minX = Infinity,
+    minY = Infinity,
+    minZ = Infinity
+  let maxX = -Infinity,
+    maxY = -Infinity,
+    maxZ = -Infinity
 
   for (const triangle of triangles) {
     for (const vertex of triangle.vertices) {
