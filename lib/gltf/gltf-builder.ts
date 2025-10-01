@@ -114,6 +114,17 @@ export class GLTFBuilder {
     let materialIndex = defaultMaterialIndex
     if (box.color) {
       materialIndex = this.addMaterialFromColor(box.color, !box.mesh)
+    } else if (box.mesh) {
+      // For meshes without a color, use an opaque light gray material
+      materialIndex = this.addMaterial({
+        name: `MeshMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [0.7, 0.7, 0.7, 1.0],
+          metallicFactor: 0.1,
+          roughnessFactor: 0.9,
+        },
+        alphaMode: "OPAQUE",
+      })
     }
 
     // Create mesh

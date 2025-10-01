@@ -13,6 +13,7 @@ import type {
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
+import { loadGLB } from "../loaders/glb"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -94,8 +95,8 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url } = cad
-    if (!model_stl_url && !model_obj_url) continue
+    const { model_stl_url, model_obj_url, model_glb_url } = cad
+    if (!model_stl_url && !model_obj_url && !model_glb_url) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -121,9 +122,8 @@ export async function convertCircuitJsonTo3D(
     const box: Box3D = {
       center,
       size,
-      color: componentColor,
-      meshUrl: model_stl_url || model_obj_url,
-      meshType: model_stl_url ? "stl" : "obj",
+      meshUrl: model_stl_url || model_obj_url || model_glb_url,
+      meshType: model_stl_url ? "stl" : model_obj_url ? "obj" : "glb",
     }
 
     // Add rotation if specified
@@ -132,16 +132,28 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Try to load the mesh with default coordinate transform if none specified
-    const defaultTransform =
-      coordinateTransform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
+    // GLB files are typically already in Y-up format, so use IDENTITY for them
+    // STL/OBJ files usually need Z-up to Y-up conversion
+    const defaultTransform = coordinateTransform ?? (
+      model_glb_url
+        ? COORDINATE_TRANSFORMS.IDENTITY
+        : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
+    )
     try {
       if (model_stl_url) {
         box.mesh = await loadSTL(model_stl_url, defaultTransform)
       } else if (model_obj_url) {
         box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+      } else if (model_glb_url) {
+        box.mesh = await loadGLB(model_glb_url, defaultTransform)
       }
     } catch (error) {
       console.warn(`Failed to load 3D model: ${error}`)
+    }
+
+    // Only set color if mesh loading failed (fallback to simple box)
+    if (!box.mesh) {
+      box.color = componentColor
     }
 
     boxes.push(box)
