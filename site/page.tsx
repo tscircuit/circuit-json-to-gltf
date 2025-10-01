@@ -20,6 +20,25 @@ declare global {
       >
     }
   }
+
+  namespace React {
+    namespace JSX {
+      interface IntrinsicElements {
+        "model-viewer": React.DetailedHTMLProps<
+          React.HTMLAttributes<HTMLElement> & {
+            src?: string
+            alt?: string
+            "auto-rotate"?: boolean
+            "camera-controls"?: boolean
+            "shadow-intensity"?: string
+            "environment-image"?: string
+            style?: React.CSSProperties
+          },
+          HTMLElement
+        >
+      }
+    }
+  }
 }
 
 export default function CircuitToGltfDemo() {
