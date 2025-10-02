@@ -130,13 +130,19 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.center.y ?? 0,
         }
 
-    const meshType = model_stl_url ? "stl" : model_obj_url ? "obj": model_gltf_url? "gltf" : "glb"
+    const meshType = model_stl_url
+      ? "stl"
+      : model_obj_url
+        ? "obj"
+        : model_gltf_url
+          ? "gltf"
+          : "glb"
     const box: Box3D = {
       center,
       size,
       meshUrl:
         model_stl_url! || model_obj_url || model_glb_url || model_gltf_url,
-      meshType: (meshType as any),
+      meshType: meshType as any,
     }
 
     // Add rotation if specified

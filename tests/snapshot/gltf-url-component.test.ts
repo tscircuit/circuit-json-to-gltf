@@ -8,7 +8,10 @@ import type { CircuitJson } from "circuit-json"
 
 test("gltf-url-component-snapshot", async () => {
   // Load the fixture
-  const fixturePath = path.join(__dirname, "../fixtures/circuit-with-gltf-url.json")
+  const fixturePath = path.join(
+    __dirname,
+    "../fixtures/circuit-with-gltf-url.json",
+  )
 
   const circuitData = fs.readFileSync(fixturePath, "utf-8")
   const circuitJson: CircuitJson = JSON.parse(circuitData)
