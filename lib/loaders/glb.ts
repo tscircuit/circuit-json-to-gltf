@@ -109,9 +109,7 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
   const colorGroups = new Map<string, Triangle[]>()
 
   for (const triangle of triangles) {
-    const colorKey = triangle.color
-      ? JSON.stringify(triangle.color)
-      : "default"
+    const colorKey = triangle.color ? JSON.stringify(triangle.color) : "default"
     if (!colorGroups.has(colorKey)) {
       colorGroups.set(colorKey, [])
     }

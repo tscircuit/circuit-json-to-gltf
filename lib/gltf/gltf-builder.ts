@@ -167,7 +167,10 @@ export class GLTFBuilder {
       }
 
       // Override with dissolve if explicitly set
-      const alpha = objMaterial.dissolve !== undefined ? 1.0 - objMaterial.dissolve : baseColor[3]
+      const alpha =
+        objMaterial.dissolve !== undefined
+          ? 1.0 - objMaterial.dissolve
+          : baseColor[3]
       baseColor[3] = alpha
 
       const gltfMaterialIndex = this.addMaterial({
