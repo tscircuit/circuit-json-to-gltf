@@ -1,8 +1,4 @@
-import {
-  type CircuitJson,
-  type CadComponent,
-  any_circuit_element,
-} from "circuit-json"
+import { type CircuitJson, type CadComponent } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
   Box3D,
@@ -13,8 +9,8 @@ import type {
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
-import { loadGLB, parseGLB } from "../loaders/glb"
-import { fetchGltfAndConvertToGlb } from "../loaders/gltf-url"
+import { loadGLB } from "../loaders/glb"
+import { loadGLTF } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 
@@ -158,19 +154,14 @@ export async function convertCircuitJsonTo3D(
       (model_glb_url || model_gltf_url
         ? undefined // GLB loader has its own default transform
         : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
-    try {
-      if (model_stl_url) {
-        box.mesh = await loadSTL(model_stl_url, defaultTransform)
-      } else if (model_obj_url) {
-        box.mesh = await loadOBJ(model_obj_url, defaultTransform)
-      } else if (model_glb_url) {
-        box.mesh = await loadGLB(model_glb_url, defaultTransform)
-      } else if (model_gltf_url) {
-        const glb_buffer = await fetchGltfAndConvertToGlb(model_gltf_url)
-        box.mesh = parseGLB(glb_buffer, defaultTransform)
-      }
-    } catch (error) {
-      console.warn(`Failed to load 3D model: ${error}`)
+    if (model_stl_url) {
+      box.mesh = await loadSTL(model_stl_url, defaultTransform)
+    } else if (model_obj_url) {
+      box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+    } else if (model_glb_url) {
+      box.mesh = await loadGLB(model_glb_url, defaultTransform)
+    } else if (model_gltf_url) {
+      box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
     }
 
     // Only set color if mesh loading failed (fallback to simple box)

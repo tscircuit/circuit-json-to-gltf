@@ -1,3 +1,6 @@
+import type { CoordinateTransformConfig, STLMesh } from "../types"
+import { parseGLB } from "./glb"
+
 async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url)
   if (!response.ok) {
@@ -104,4 +107,12 @@ export async function fetchGltfAndConvertToGlb(
   }
 
   return glbBuffer
+}
+
+export async function loadGLTF(
+  url: string,
+  transform?: CoordinateTransformConfig,
+): Promise<STLMesh> {
+  const glb_buffer = await fetchGltfAndConvertToGlb(url)
+  return parseGLB(glb_buffer, transform)
 }
