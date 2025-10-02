@@ -28,7 +28,7 @@
     "circuit-json": "^0.0.267",
     "circuit-to-svg": "^0.0.175",
     "looks-same": "^9.0.1",
-    "poppygl": "^0.0.6",
+    "poppygl": "^0.0.9",
     "react": "^19.1.1",
     "react-cosmos": "^7.0.0",
     "react-cosmos-plugin-vite": "^7.0.0",
