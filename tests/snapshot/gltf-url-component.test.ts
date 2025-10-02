@@ -27,10 +27,10 @@ test("gltf-url-component-snapshot", async () => {
   expect(glbResult).toBeInstanceOf(ArrayBuffer)
   expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
-  // Render the GLB to PNG with camera position derived from circuit dimensions
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
+      camPos: [11, 19, 13],
+      lookAt: [0, 0, 0],
+    }),
   ).toMatchPngSnapshot(import.meta.path)
 })
