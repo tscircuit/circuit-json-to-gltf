@@ -143,7 +143,19 @@ export async function convertCircuitJsonTo3D(
 
     // Add rotation if specified
     if (cad.rotation) {
-      box.rotation = convertRotationFromCadRotation(cad.rotation)
+      // For GLB/GLTF models, we need to remap rotation axes because the coordinate
+      // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
+      // model uses Y-up.
+      if (model_glb_url || model_gltf_url) {
+        // Remap rotation: circuit Z -> model Y, circuit Y -> model Z
+        box.rotation = convertRotationFromCadRotation({
+          x: cad.rotation.x,
+          y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
+          z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
+        })
+      } else {
+        box.rotation = convertRotationFromCadRotation(cad.rotation)
+      }
     }
 
     // Try to load the mesh with default coordinate transform if none specified
