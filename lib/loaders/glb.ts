@@ -2,6 +2,8 @@ import type {
   Point3,
   Triangle,
   STLMesh,
+  OBJMesh,
+  OBJMaterial,
   CoordinateTransformConfig,
 } from "../types"
 import {
@@ -9,12 +11,12 @@ import {
   COORDINATE_TRANSFORMS,
 } from "../utils/coordinate-transform"
 
-const glbCache = new Map<string, STLMesh>()
+const glbCache = new Map<string, STLMesh | OBJMesh>()
 
 export async function loadGLB(
   url: string,
   transform?: CoordinateTransformConfig,
-): Promise<STLMesh> {
+): Promise<STLMesh | OBJMesh> {
   const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
   if (glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
@@ -30,7 +32,7 @@ export async function loadGLB(
 export function parseGLB(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
-): STLMesh {
+): STLMesh | OBJMesh {
   const view = new DataView(buffer)
   let offset = 0
 
@@ -88,9 +90,75 @@ export function parseGLB(
   }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
+  // Check if any triangles have colors (materials)
+  const hasColors = transformedTriangles.some((t) => t.color !== undefined)
+
+  if (hasColors) {
+    // Group triangles by color and return as OBJMesh
+    return convertToOBJMesh(transformedTriangles)
+  }
+
   return {
     triangles: transformedTriangles,
     boundingBox: calculateBoundingBox(transformedTriangles),
+  }
+}
+
+function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
+  // Group triangles by color
+  const colorGroups = new Map<string, Triangle[]>()
+
+  for (const triangle of triangles) {
+    const colorKey = triangle.color
+      ? JSON.stringify(triangle.color)
+      : "default"
+    if (!colorGroups.has(colorKey)) {
+      colorGroups.set(colorKey, [])
+    }
+    colorGroups.get(colorKey)!.push(triangle)
+  }
+
+  // Create materials and assign material indices
+  const materials = new Map<string, OBJMaterial>()
+  const materialIndexMap = new Map<string, number>()
+  let materialIndex = 0
+
+  const trianglesWithMaterialIndex: Triangle[] = []
+
+  for (const [colorKey, groupTriangles] of colorGroups) {
+    const materialName = `Material_${materialIndex}`
+    materialIndexMap.set(materialName, materialIndex)
+
+    if (colorKey === "default") {
+      // Default gray material
+      materials.set(materialName, {
+        name: materialName,
+        color: [179, 179, 179, 1.0], // 0.7 * 255 = 179
+      })
+    } else {
+      const color = JSON.parse(colorKey)
+      materials.set(materialName, {
+        name: materialName,
+        color,
+      })
+    }
+
+    // Add triangles with material index
+    for (const triangle of groupTriangles) {
+      trianglesWithMaterialIndex.push({
+        ...triangle,
+        materialIndex,
+      })
+    }
+
+    materialIndex++
+  }
+
+  return {
+    triangles: trianglesWithMaterialIndex,
+    boundingBox: calculateBoundingBox(trianglesWithMaterialIndex),
+    materials,
+    materialIndexMap,
   }
 }
 
@@ -136,6 +204,34 @@ function extractTrianglesFromGLTF(
           gltf.bufferViews,
           binaryBuffer,
         )
+      }
+
+      // Get vertex colors (COLOR_0 attribute, if present)
+      let vertexColors: Float32Array | undefined
+      const colorAccessorIndex = primitive.attributes.COLOR_0
+      if (colorAccessorIndex !== undefined) {
+        const colorAccessor = gltf.accessors[colorAccessorIndex]
+        vertexColors = getAccessorData(
+          colorAccessor,
+          gltf.bufferViews,
+          binaryBuffer,
+        )
+      }
+
+      // Get material color (if present and no vertex colors)
+      let materialColor: [number, number, number, number] | undefined
+      if (!vertexColors && primitive.material !== undefined && gltf.materials) {
+        const material = gltf.materials[primitive.material]
+        if (material?.pbrMetallicRoughness?.baseColorFactor) {
+          const factor = material.pbrMetallicRoughness.baseColorFactor
+          // Convert from 0-1 range to 0-255 range for our Color type
+          materialColor = [
+            Math.round(factor[0] * 255),
+            Math.round(factor[1] * 255),
+            Math.round(factor[2] * 255),
+            factor[3],
+          ]
+        }
       }
 
       // Get indices (if present)
@@ -206,7 +302,77 @@ function extractTrianglesFromGLTF(
             normal = computeNormal(v0, v1, v2)
           }
 
-          triangles.push({ vertices: [v0, v1, v2], normal })
+          // Get triangle color from vertex colors or material
+          let triangleColor: [number, number, number, number] | undefined
+          if (vertexColors) {
+            // Average the three vertex colors
+            // Note: COLOR_0 can be RGB or RGBA, we'll handle both
+            const componentsPerColor = vertexColors.length / vertexCount
+            if (componentsPerColor === 3) {
+              // RGB
+              triangleColor = [
+                Math.round(
+                  ((vertexColors[i0 * 3]! +
+                    vertexColors[i1 * 3]! +
+                    vertexColors[i2 * 3]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i0 * 3 + 1]! +
+                    vertexColors[i1 * 3 + 1]! +
+                    vertexColors[i2 * 3 + 1]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i0 * 3 + 2]! +
+                    vertexColors[i1 * 3 + 2]! +
+                    vertexColors[i2 * 3 + 2]!) /
+                    3) *
+                    255,
+                ),
+                1.0,
+              ]
+            } else if (componentsPerColor === 4) {
+              // RGBA
+              triangleColor = [
+                Math.round(
+                  ((vertexColors[i0 * 4]! +
+                    vertexColors[i1 * 4]! +
+                    vertexColors[i2 * 4]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i0 * 4 + 1]! +
+                    vertexColors[i1 * 4 + 1]! +
+                    vertexColors[i2 * 4 + 1]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i0 * 4 + 2]! +
+                    vertexColors[i1 * 4 + 2]! +
+                    vertexColors[i2 * 4 + 2]!) /
+                    3) *
+                    255,
+                ),
+                (vertexColors[i0 * 4 + 3]! +
+                  vertexColors[i1 * 4 + 3]! +
+                  vertexColors[i2 * 4 + 3]!) /
+                  3,
+              ]
+            }
+          } else {
+            triangleColor = materialColor
+          }
+
+          triangles.push({
+            vertices: [v0, v1, v2],
+            normal,
+            color: triangleColor,
+          })
         }
       } else {
         // No indices, vertices are in order
@@ -250,7 +416,76 @@ function extractTrianglesFromGLTF(
             normal = computeNormal(v0, v1, v2)
           }
 
-          triangles.push({ vertices: [v0, v1, v2], normal })
+          // Get triangle color from vertex colors or material
+          let triangleColor: [number, number, number, number] | undefined
+          if (vertexColors) {
+            // Average the three vertex colors
+            const componentsPerColor = vertexColors.length / vertexCount
+            if (componentsPerColor === 3) {
+              // RGB
+              triangleColor = [
+                Math.round(
+                  ((vertexColors[i * 3]! +
+                    vertexColors[(i + 1) * 3]! +
+                    vertexColors[(i + 2) * 3]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i * 3 + 1]! +
+                    vertexColors[(i + 1) * 3 + 1]! +
+                    vertexColors[(i + 2) * 3 + 1]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i * 3 + 2]! +
+                    vertexColors[(i + 1) * 3 + 2]! +
+                    vertexColors[(i + 2) * 3 + 2]!) /
+                    3) *
+                    255,
+                ),
+                1.0,
+              ]
+            } else if (componentsPerColor === 4) {
+              // RGBA
+              triangleColor = [
+                Math.round(
+                  ((vertexColors[i * 4]! +
+                    vertexColors[(i + 1) * 4]! +
+                    vertexColors[(i + 2) * 4]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i * 4 + 1]! +
+                    vertexColors[(i + 1) * 4 + 1]! +
+                    vertexColors[(i + 2) * 4 + 1]!) /
+                    3) *
+                    255,
+                ),
+                Math.round(
+                  ((vertexColors[i * 4 + 2]! +
+                    vertexColors[(i + 1) * 4 + 2]! +
+                    vertexColors[(i + 2) * 4 + 2]!) /
+                    3) *
+                    255,
+                ),
+                (vertexColors[i * 4 + 3]! +
+                  vertexColors[(i + 1) * 4 + 3]! +
+                  vertexColors[(i + 2) * 4 + 3]!) /
+                  3,
+              ]
+            }
+          } else {
+            triangleColor = materialColor
+          }
+
+          triangles.push({
+            vertices: [v0, v1, v2],
+            normal,
+            color: triangleColor,
+          })
         }
       }
     }

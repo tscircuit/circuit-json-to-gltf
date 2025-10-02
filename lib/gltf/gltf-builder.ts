@@ -151,10 +151,7 @@ export class GLTFBuilder {
     const objMaterialIndices = new Map<number, number>()
 
     for (const [name, objMaterial] of objMesh.materials!) {
-      const dissolve = objMaterial.dissolve ?? 1.0
-      const alpha = 1.0 - dissolve
-
-      let baseColor: [number, number, number, number] = [0.3, 0.3, 0.3, alpha]
+      let baseColor: [number, number, number, number] = [0.3, 0.3, 0.3, 1.0]
 
       if (objMaterial.color) {
         const color =
@@ -164,10 +161,14 @@ export class GLTFBuilder {
                 objMaterial.color[0] / 255,
                 objMaterial.color[1] / 255,
                 objMaterial.color[2] / 255,
-                alpha,
+                objMaterial.color[3], // Use the alpha from the color
               ]
-        baseColor = [color[0]!, color[1]!, color[2]!, alpha]
+        baseColor = [color[0]!, color[1]!, color[2]!, color[3]!]
       }
+
+      // Override with dissolve if explicitly set
+      const alpha = objMaterial.dissolve !== undefined ? 1.0 - objMaterial.dissolve : baseColor[3]
+      baseColor[3] = alpha
 
       const gltfMaterialIndex = this.addMaterial({
         name: `OBJ_${name}`,
