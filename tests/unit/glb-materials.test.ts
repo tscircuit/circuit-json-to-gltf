@@ -60,7 +60,8 @@ test("GLB loader parses materials and mapping from baseColorFactor", async () =>
   const glbBuffer = createMinimalGLBWithMaterials()
 
   const originalFetch = globalThis.fetch
-  globalThis.fetch = (async () => new Response(new Uint8Array(glbBuffer))) as any
+  globalThis.fetch = (async () =>
+    new Response(new Uint8Array(glbBuffer))) as any
 
   try {
     const mesh = await loadGLB("https://example.com/test.glb")
@@ -93,4 +94,3 @@ test("GLB loader parses materials and mapping from baseColorFactor", async () =>
     globalThis.fetch = originalFetch as any
   }
 })
-

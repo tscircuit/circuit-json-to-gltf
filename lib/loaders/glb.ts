@@ -103,13 +103,23 @@ function parseGLB(
       let color: [number, number, number, number] | undefined
 
       const pbr = gmat?.pbrMetallicRoughness
-      if (pbr && Array.isArray(pbr.baseColorFactor) && pbr.baseColorFactor.length >= 3) {
+      if (
+        pbr &&
+        Array.isArray(pbr.baseColorFactor) &&
+        pbr.baseColorFactor.length >= 3
+      ) {
         const r = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[0])))
         const g = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[1])))
         const b = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[2])))
-        const a = pbr.baseColorFactor.length >= 4 ? Number(pbr.baseColorFactor[3]) : 1.0
+        const a =
+          pbr.baseColorFactor.length >= 4 ? Number(pbr.baseColorFactor[3]) : 1.0
         alpha = isFinite(a) ? Math.max(0, Math.min(1, a)) : 1.0
-        color = [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), 1]
+        color = [
+          Math.round(r * 255),
+          Math.round(g * 255),
+          Math.round(b * 255),
+          1,
+        ]
       }
 
       const dissolve = 1.0 - alpha
