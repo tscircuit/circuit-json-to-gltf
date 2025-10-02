@@ -115,11 +115,11 @@ export class GLTFBuilder {
     if (box.color) {
       materialIndex = this.addMaterialFromColor(box.color, !box.mesh)
     } else if (box.mesh) {
-      // For meshes without a color, use an opaque light gray material
+      // For meshes without a color, use a darker opaque gray material
       materialIndex = this.addMaterial({
         name: `MeshMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [0.7, 0.7, 0.7, 1.0],
+          baseColorFactor: [0.2, 0.2, 0.2, 1.0],
           metallicFactor: 0.1,
           roughnessFactor: 0.9,
         },

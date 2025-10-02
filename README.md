@@ -10,7 +10,8 @@ Converts circuit JSON to 3D GLTF files. Used for exporting circuits as 3D models
 
 - Convert circuit JSON to GLTF 2.0 format (JSON or binary)
 - Render PCB board with accurate dimensions and textures
-- Support for STL and OBJ model loading for components
+- Support for STL, OBJ, and GLB model loading for components
+- GLB material colors preserved: baseColorFactor (RGB) is mapped to internal materials; alpha is handled via dissolve (1 - alpha)
 - High-quality board texture rendering using circuit-to-svg and resvg
 - Automatic component positioning and generic 3D representations
 - Customizable camera, lighting, and material settings
@@ -74,7 +75,7 @@ The converter uses a modular architecture:
 
 1. **Circuit to 3D Converter**: Parses circuit JSON and creates a 3D scene representation
 2. **Board Renderer**: Renders PCB layers as textures using circuit-to-svg and resvg
-3. **Model Loaders**: Load STL and OBJ files for component 3D models
+3. **Model Loaders**: Load STL, OBJ, and GLB files for component 3D models (GLB materials parsed from baseColorFactor)
 4. **GLTF Builder**: Constructs the final GLTF using Three.js
 
 ## Development
@@ -95,6 +96,7 @@ bun run examples/basic-conversion.ts
 - Uses `circuit-to-svg` to render the top/bottom layers of the board to SVG
 - Uses `@resvg/resvg-js` to convert SVG to PNG textures
 - Includes built-in STL and OBJ parsers for 3D model loading
+- GLB loader parses materials from `gltf.materials[*].pbrMetallicRoughness.baseColorFactor`; it returns an OBJMesh-like shape with `materials` and `materialIndexMap`, and tags triangles with `materialIndex = primitive.material` so per-material primitives are emitted in the final GLTF/GLB.
 - Pure GLTF 2.0 implementation without external 3D library dependencies
 - Supports both JSON (.gltf) and binary (.glb) formats
 - Embeds all assets (textures, buffers) directly in the output

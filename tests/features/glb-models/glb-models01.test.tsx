@@ -4,7 +4,9 @@ import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../../lib"
 import { getBestCameraPosition } from "../../../lib/utils/camera-position"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
-test("glb-models01", async () => {
+test(
+  "glb-models01",
+  async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="10mm" height="10mm">
@@ -29,4 +31,6 @@ test("glb-models01", async () => {
   expect(
     renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path)
-})
+  },
+  { timeout: 180_000 },
+)

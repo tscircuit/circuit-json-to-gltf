@@ -2,15 +2,25 @@ import type {
   Point3,
   Triangle,
   STLMesh,
+  OBJMaterial,
   CoordinateTransformConfig,
 } from "../types"
-import {
-  transformTriangles,
-  COORDINATE_TRANSFORMS,
-} from "../utils/coordinate-transform"
+import { transformTriangles } from "../utils/coordinate-transform"
 
 const glbCache = new Map<string, STLMesh>()
 
+/**
+ * Load a GLB file and return geometry suitable for GLTF building.
+ *
+ * Notes on color/material support:
+ * - If the GLB defines `materials[*].pbrMetallicRoughness.baseColorFactor`,
+ *   we convert RGB from 0..1 to 0..255 and map alpha via `dissolve = 1 - alpha`.
+ * - Triangles are tagged with `materialIndex = primitive.material` so
+ *   downstream code can emit per-material primitives.
+ * - For API continuity this function returns `STLMesh`, but the returned
+ *   object may include extra fields at runtime: `materials` and
+ *   `materialIndexMap`. Callers that understand materials can use these.
+ */
 export async function loadGLB(
   url: string,
   transform?: CoordinateTransformConfig,
@@ -79,6 +89,42 @@ function parseGLB(
     }
   }
 
+  // Build materials map from GLTF materials (if present)
+  const materials = new Map<string, OBJMaterial>()
+  const materialIndexMap = new Map<string, number>()
+
+  if (Array.isArray(gltf.materials)) {
+    for (let i = 0; i < gltf.materials.length; i++) {
+      const gmat = gltf.materials[i]
+      const name: string = gmat?.name ?? `GLB_Material_${i}`
+
+      // Default alpha to 1.0 (opaque) → dissolve = 1 - alpha = 0
+      let alpha = 1.0
+      let color: [number, number, number, number] | undefined
+
+      const pbr = gmat?.pbrMetallicRoughness
+      if (pbr && Array.isArray(pbr.baseColorFactor) && pbr.baseColorFactor.length >= 3) {
+        const r = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[0])))
+        const g = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[1])))
+        const b = Math.max(0, Math.min(1, Number(pbr.baseColorFactor[2])))
+        const a = pbr.baseColorFactor.length >= 4 ? Number(pbr.baseColorFactor[3]) : 1.0
+        alpha = isFinite(a) ? Math.max(0, Math.min(1, a)) : 1.0
+        color = [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255), 1]
+      }
+
+      const dissolve = 1.0 - alpha
+
+      const mat: OBJMaterial = {
+        name,
+        ...(color ? { color } : {}),
+        dissolve,
+      }
+
+      materials.set(name, mat)
+      materialIndexMap.set(name, i)
+    }
+  }
+
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
@@ -89,10 +135,28 @@ function parseGLB(
   }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
-  return {
+  const base = {
     triangles: transformedTriangles,
     boundingBox: calculateBoundingBox(transformedTriangles),
   }
+
+  // Optional: warn if GLB declares materials but has no primitives/triangles
+  if (materials.size > 0 && transformedTriangles.length === 0) {
+    console.warn(
+      "GLB contains materials but no mesh primitives; colors won't be visible.",
+    )
+  }
+
+  if (materials.size > 0) {
+    return {
+      ...base,
+      // Extra fields preserved at runtime; typed as STLMesh for API stability
+      materials,
+      materialIndexMap,
+    } as STLMesh
+  }
+
+  return base
 }
 
 function extractTrianglesFromGLTF(
@@ -164,6 +228,18 @@ function extractTrianglesFromGLTF(
 
       // Build triangles
       const vertexCount = positions.length / 3
+      let materialIndexForPrimitive: number =
+        typeof primitive.material === "number" ? primitive.material : -1
+
+      // Guard against out-of-range material indices
+      if (Array.isArray(gltf.materials)) {
+        if (
+          materialIndexForPrimitive < 0 ||
+          materialIndexForPrimitive >= gltf.materials.length
+        ) {
+          materialIndexForPrimitive = -1
+        }
+      }
       if (indices) {
         for (let i = 0; i < indices.length; i += 3) {
           const i0 = indices[i]!
@@ -207,7 +283,11 @@ function extractTrianglesFromGLTF(
             normal = computeNormal(v0, v1, v2)
           }
 
-          triangles.push({ vertices: [v0, v1, v2], normal })
+          triangles.push({
+            vertices: [v0, v1, v2],
+            normal,
+            materialIndex: materialIndexForPrimitive,
+          })
         }
       } else {
         // No indices, vertices are in order
@@ -251,7 +331,11 @@ function extractTrianglesFromGLTF(
             normal = computeNormal(v0, v1, v2)
           }
 
-          triangles.push({ vertices: [v0, v1, v2], normal })
+          triangles.push({
+            vertices: [v0, v1, v2],
+            normal,
+            materialIndex: materialIndexForPrimitive,
+          })
         }
       }
     }
