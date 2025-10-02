@@ -27,7 +27,7 @@ export async function loadGLB(
   return mesh
 }
 
-function parseGLB(
+export function parseGLB(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
 ): STLMesh {
@@ -78,7 +78,6 @@ function parseGLB(
       binaryBuffer = buffer.slice(offset, offset + binaryChunkLength)
     }
   }
-
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
