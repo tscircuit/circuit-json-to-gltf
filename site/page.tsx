@@ -1,6 +1,12 @@
-import React, { useEffect, useRef, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import "@google/model-viewer"
 import usbCFlashlightCircuit from "./assets/usb-c-flashlight.json"
+
+type CircuitToGltfDemoProps = {
+  initialCircuit?: unknown
+  initialFormat?: "gltf" | "glb"
+  title?: string
+}
 
 // Declare model-viewer as a JSX element
 declare global {
@@ -41,14 +47,20 @@ declare global {
   }
 }
 
-export default function CircuitToGltfDemo() {
+export default function CircuitToGltfDemo({
+  initialCircuit,
+  initialFormat = "gltf",
+  title,
+}: CircuitToGltfDemoProps) {
   const [gltfUrl, setGltfUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
-  const [circuitJson, setCircuitJson] = useState(
-    JSON.stringify(usbCFlashlightCircuit, null, 2),
+  const initialCircuitString = useMemo(
+    () => JSON.stringify(initialCircuit ?? usbCFlashlightCircuit, null, 2),
+    [initialCircuit],
   )
-  const [format, setFormat] = useState<"gltf" | "glb">("gltf")
+  const [circuitJson, setCircuitJson] = useState(initialCircuitString)
+  const [format, setFormat] = useState<"gltf" | "glb">(initialFormat)
 
   const convertToGltf = async () => {
     setLoading(true)
@@ -87,10 +99,16 @@ export default function CircuitToGltfDemo() {
     }
   }
 
-  // Convert on mount
+  // Reset editor contents when fixture defaults change
+  useEffect(() => {
+    setCircuitJson(initialCircuitString)
+    setFormat(initialFormat)
+  }, [initialCircuitString, initialFormat])
+
+  // Convert on mount and whenever defaults change
   useEffect(() => {
     convertToGltf()
-  }, [])
+  }, [initialCircuitString, initialFormat])
 
   // Cleanup blob URL
   useEffect(() => {
@@ -103,7 +121,7 @@ export default function CircuitToGltfDemo() {
 
   return (
     <div style={{ padding: "20px", fontFamily: "monospace" }}>
-      <h1>Circuit JSON to GLTF Converter</h1>
+      <h1>{title ?? "Circuit JSON to GLTF Converter"}</h1>
 
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         <div style={{ flex: 1 }}>

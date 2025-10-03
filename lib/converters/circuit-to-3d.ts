@@ -109,6 +109,7 @@ export async function convertCircuitJsonTo3D(
 
     // Get the associated PCB component
     const pcbComponent = db.pcb_component.get(cad.pcb_component_id)
+    const isBottomLayer = pcbComponent?.layer === "bottom"
 
     // Determine size
     const size = cad.size ?? {
@@ -118,13 +119,27 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Determine position
-    const center = cad.position
-      ? { x: cad.position.x, y: cad.position.z, z: cad.position.y }
-      : {
-          x: pcbComponent?.center.x ?? 0,
-          y: boardThickness / 2 + size.y / 2,
-          z: pcbComponent?.center.y ?? 0,
-        }
+    const fallbackVertical = boardThickness / 2 + size.y / 2
+    let center: { x: number; y: number; z: number }
+
+    if (cad.position) {
+      const vertical =
+        cad.position.z !== undefined && cad.position.z !== null
+          ? cad.position.z
+          : fallbackVertical
+
+      center = {
+        x: cad.position.x,
+        y: isBottomLayer ? -vertical : vertical,
+        z: cad.position.y,
+      }
+    } else {
+      center = {
+        x: pcbComponent?.center.x ?? 0,
+        y: isBottomLayer ? -fallbackVertical : fallbackVertical,
+        z: pcbComponent?.center.y ?? 0,
+      }
+    }
 
     const meshType = model_stl_url
       ? "stl"
@@ -195,11 +210,13 @@ export async function convertCircuitJsonTo3D(
       Math.min(component.width, component.height),
       defaultComponentHeight,
     )
+    const isBottomLayer = component.layer === "bottom"
+    const verticalOffset = boardThickness / 2 + compHeight / 2
 
     boxes.push({
       center: {
         x: component.center.x,
-        y: boardThickness / 2 + compHeight / 2,
+        y: isBottomLayer ? -verticalOffset : verticalOffset,
         z: component.center.y,
       },
       size: {
