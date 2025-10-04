@@ -4,7 +4,10 @@ import type { CircuitJson } from "circuit-json"
 import * as fs from "node:fs"
 import * as path from "node:path"
 
-const fixturePath = path.join(__dirname, "../fixtures/bottom-layer-circuit.json")
+const fixturePath = path.join(
+  __dirname,
+  "../fixtures/bottom-layer-circuit.json",
+)
 
 function loadFixture(): CircuitJson {
   const data = fs.readFileSync(fixturePath, "utf-8")
@@ -28,9 +31,6 @@ test("bottom layer components are placed beneath the board", async () => {
 
   expect(topBox!.center.y).toBeGreaterThan(0)
   expect(bottomBox!.center.y).toBeLessThan(0)
-
-  // With default thickness (1.6mm) and computed component height (2mm),
-  // the box centers should sit exactly 1.8mm above/below the board midline.
   expect(topBox!.center.y).toBeCloseTo(1.8, 5)
   expect(bottomBox!.center.y).toBeCloseTo(-1.8, 5)
 })
