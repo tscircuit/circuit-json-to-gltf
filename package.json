@@ -48,6 +48,9 @@
   "peerDependenciesMeta": {
     "@resvg/resvg-wasm": {
       "optional": true
+    },
+    "@resvg/resvg-js": {
+      "optional": true
     }
   }
 }
