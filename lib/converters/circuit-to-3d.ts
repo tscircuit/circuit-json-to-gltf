@@ -59,7 +59,8 @@ export async function convertCircuitJsonTo3D(
   if (pcbBoard) {
     // Create the main PCB board box
     const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
+    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
+      []) as PCBPlatedHole[]
 
     const boardMesh = createBoardMesh(pcbBoard, {
       thickness: effectiveBoardThickness,

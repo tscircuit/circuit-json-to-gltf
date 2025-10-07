@@ -286,7 +286,10 @@ export class GLTFBuilder {
     }
 
     // Create materials
-    const materials: { triangles: typeof box.mesh.triangles; materialIndex: number }[] = []
+    const materials: {
+      triangles: typeof box.mesh.triangles
+      materialIndex: number
+    }[] = []
 
     // Top material with texture
     if (topTriangles.length > 0 && box.texture?.top) {
@@ -310,7 +313,10 @@ export class GLTFBuilder {
           }
         }
       }
-      materials.push({ triangles: topTriangles, materialIndex: topMaterialIndex })
+      materials.push({
+        triangles: topTriangles,
+        materialIndex: topMaterialIndex,
+      })
     }
 
     // Bottom material with texture
@@ -335,7 +341,10 @@ export class GLTFBuilder {
           }
         }
       }
-      materials.push({ triangles: bottomTriangles, materialIndex: bottomMaterialIndex })
+      materials.push({
+        triangles: bottomTriangles,
+        materialIndex: bottomMaterialIndex,
+      })
     }
 
     // Side material (green)
@@ -350,7 +359,10 @@ export class GLTFBuilder {
         alphaMode: "OPAQUE",
         doubleSided: true,
       })
-      materials.push({ triangles: sideTriangles, materialIndex: sideMaterialIndex })
+      materials.push({
+        triangles: sideTriangles,
+        materialIndex: sideMaterialIndex,
+      })
     }
 
     // Convert triangles to mesh data and create primitives
@@ -358,8 +370,12 @@ export class GLTFBuilder {
     const bounds = getBounds([]) // We'll calculate bounds from triangles
 
     // Calculate bounds from all triangles
-    let minX = Infinity, minY = Infinity, minZ = Infinity
-    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+    let minX = Infinity,
+      minY = Infinity,
+      minZ = Infinity
+    let maxX = -Infinity,
+      maxY = -Infinity,
+      maxZ = -Infinity
 
     for (const triangle of box.mesh!.triangles) {
       for (const v of triangle.vertices) {
@@ -398,7 +414,11 @@ export class GLTFBuilder {
       }
 
       const meshData: MeshData = { positions, normals, texcoords, indices }
-      const transformedMeshData = transformMesh(meshData, box.center, box.rotation)
+      const transformedMeshData = transformMesh(
+        meshData,
+        box.center,
+        box.rotation,
+      )
 
       const positionAccessorIndex = this.addAccessor(
         transformedMeshData.positions,
