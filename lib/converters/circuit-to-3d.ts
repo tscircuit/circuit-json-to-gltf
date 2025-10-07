@@ -118,16 +118,16 @@ export async function convertCircuitJsonTo3D(
   for (const cad of cadComponents) {
     let { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
 
-    const hasModelUrl = Boolean(
+    let hasModelUrl = Boolean(
       model_stl_url || model_obj_url || model_glb_url || model_gltf_url,
     )
 
     if (!hasModelUrl && cad.footprinter_string) {
       model_glb_url = `https://modelcdn.tscircuit.com/jscad_models/${cad.footprinter_string}.glb`
+      hasModelUrl = true
     }
 
-    if (!model_stl_url && !model_obj_url && !model_glb_url && !model_gltf_url)
-      continue
+    if (!hasModelUrl) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
