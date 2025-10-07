@@ -132,13 +132,13 @@ const createHoleGeoms = (
 
     const radius = diameter / 2
     const relX = hole.x - boardCenter.x
-    const relY = hole.y - boardCenter.y
+    const relY = -(hole.y - boardCenter.y) // Negate y to account for rotateX(-PI/2)
     holeGeoms.push(createCircularHole(relX, relY, radius, thickness))
   }
 
   for (const plated of platedHoles) {
     const relX = plated.x - boardCenter.x
-    const relY = plated.y - boardCenter.y
+    const relY = -(plated.y - boardCenter.y) // Negate y to account for rotateX(-PI/2)
     const platedRecord = plated as unknown as Record<string, unknown>
 
     if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
