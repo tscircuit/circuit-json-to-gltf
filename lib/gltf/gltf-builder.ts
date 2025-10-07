@@ -86,7 +86,7 @@ export class GLTFBuilder {
     defaultMaterialIndex: number,
   ): Promise<void> {
     // If we have face-specific textures or need green sides, use face-based approach
-    if (box.texture && (box.texture.top || box.texture.bottom)) {
+    if (!box.mesh && box.texture && (box.texture.top || box.texture.bottom)) {
       await this.addBoxWithFaceMaterials(box, defaultMaterialIndex)
       return
     }

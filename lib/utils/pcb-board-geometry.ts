@@ -1,0 +1,254 @@
+import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
+import {
+  polygon,
+  rectangle,
+  roundedRectangle,
+  cylinder,
+} from "@jscad/modeling/src/primitives"
+import {
+  translate,
+  rotateZ,
+  rotateX,
+} from "@jscad/modeling/src/operations/transforms"
+import { subtract } from "@jscad/modeling/src/operations/booleans"
+import * as geom3 from "@jscad/modeling/src/geometries/geom3"
+import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
+import type { Geom3 } from "@jscad/modeling/src/geometries/types"
+import type { Vec2 } from "@jscad/modeling/src/maths/types"
+import type { PcbBoard, PcbHole, PCBPlatedHole, Point } from "circuit-json"
+import type { BoundingBox, STLMesh, Triangle } from "../types"
+
+const DEFAULT_SEGMENTS = 64
+const RADIUS_EPSILON = 1e-4
+
+export interface BoardGeometryOptions {
+  thickness: number
+  holes?: PcbHole[]
+  platedHoles?: PCBPlatedHole[]
+}
+
+const toVec2 = (point: Point, center: { x: number; y: number }): Vec2 => [
+  point.x - center.x,
+  point.y - center.y,
+]
+
+export const arePointsClockwise = (points: Vec2[]): boolean => {
+  let area = 0
+  for (let i = 0; i < points.length; i++) {
+    const j = (i + 1) % points.length
+    area += points[i]![0] * points[j]![1]
+    area -= points[j]![0] * points[i]![1]
+  }
+  const signedArea = area / 2
+  return signedArea <= 0
+}
+
+const getNumberProperty = (
+  obj: Record<string, unknown>,
+  key: string,
+): number | undefined => {
+  const value = obj[key]
+  return typeof value === "number" ? value : undefined
+}
+
+const createBoardOutlineGeom = (
+  board: PcbBoard,
+  center: { x: number; y: number },
+  thickness: number,
+): Geom3 => {
+  if (board.outline && board.outline.length >= 3) {
+    let outlinePoints: Vec2[] = board.outline.map((pt) => toVec2(pt, center))
+
+    if (arePointsClockwise(outlinePoints)) {
+      outlinePoints = outlinePoints.slice().reverse()
+    }
+
+    const shape2d = polygon({ points: outlinePoints })
+    let geom = extrudeLinear({ height: thickness }, shape2d)
+    geom = translate([0, 0, -thickness / 2], geom)
+    return geom
+  }
+
+  const baseRect = rectangle({ size: [board.width, board.height] })
+  let geom = extrudeLinear({ height: thickness }, baseRect)
+  geom = translate([0, 0, -thickness / 2], geom)
+  return geom
+}
+
+const createCircularHole = (
+  x: number,
+  y: number,
+  radius: number,
+  thickness: number,
+): Geom3 =>
+  cylinder({
+    center: [x, y, 0],
+    height: thickness + 1,
+    radius,
+    segments: DEFAULT_SEGMENTS,
+  })
+
+const createPillHole = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  rotate: boolean,
+): Geom3 => {
+  const minDimension = Math.min(width, height)
+  const maxAllowedRadius = Math.max(0, minDimension / 2 - RADIUS_EPSILON)
+  const roundRadius =
+    maxAllowedRadius <= 0 ? 0 : Math.min(height / 2, maxAllowedRadius)
+  const hole2d = roundedRectangle({
+    size: [width, height],
+    roundRadius,
+    segments: DEFAULT_SEGMENTS,
+  })
+  let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
+  hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
+
+  if (rotate) {
+    hole3d = rotateZ(Math.PI / 2, hole3d)
+  }
+
+  return translate([x, y, 0], hole3d)
+}
+
+const createHoleGeoms = (
+  boardCenter: { x: number; y: number },
+  thickness: number,
+  holes: PcbHole[] = [],
+  platedHoles: PCBPlatedHole[] = [],
+): Geom3[] => {
+  const holeGeoms: Geom3[] = []
+
+  for (const hole of holes) {
+    const holeRecord = hole as unknown as Record<string, unknown>
+    const diameter =
+      getNumberProperty(holeRecord, "hole_diameter") ??
+      getNumberProperty(holeRecord, "diameter")
+    if (!diameter) continue
+
+    const radius = diameter / 2
+    const relX = hole.x - boardCenter.x
+    const relY = hole.y - boardCenter.y
+    holeGeoms.push(createCircularHole(relX, relY, radius, thickness))
+  }
+
+  for (const plated of platedHoles) {
+    const relX = plated.x - boardCenter.x
+    const relY = plated.y - boardCenter.y
+    const platedRecord = plated as unknown as Record<string, unknown>
+
+    if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
+      const holeWidth =
+        getNumberProperty(platedRecord, "hole_width") ??
+        getNumberProperty(platedRecord, "outer_diameter") ??
+        0
+      const holeHeight =
+        getNumberProperty(platedRecord, "hole_height") ??
+        getNumberProperty(platedRecord, "hole_diameter") ??
+        0
+      if (!holeWidth || !holeHeight) continue
+      const rotate = holeHeight > holeWidth
+      const width = rotate ? holeHeight : holeWidth
+      const height = rotate ? holeWidth : holeHeight
+      holeGeoms.push(
+        createPillHole(relX, relY, width, height, thickness, rotate),
+      )
+      continue
+    }
+
+    const diameter =
+      getNumberProperty(platedRecord, "hole_diameter") ??
+      getNumberProperty(platedRecord, "outer_diameter")
+    if (!diameter) continue
+    holeGeoms.push(createCircularHole(relX, relY, diameter / 2, thickness))
+  }
+
+  return holeGeoms
+}
+
+const geom3ToTriangles = (geometry: Geom3, polygons?: any[]): Triangle[] => {
+  const sourcePolygons = polygons ?? geom3.toPolygons(geometry)
+  const triangles: Triangle[] = []
+
+  for (const poly of sourcePolygons) {
+    if (!poly || poly.vertices.length < 3) continue
+    const base = poly.vertices[0]!
+    const next = poly.vertices[1]!
+    const next2 = poly.vertices[2]!
+
+    const ab = [next[0]! - base[0]!, next[1]! - base[1]!, next[2]! - base[2]!]
+    const ac = [
+      next2[0]! - base[0]!,
+      next2[1]! - base[1]!,
+      next2[2]! - base[2]!,
+    ]
+    const cross = [
+      ab[1]! * ac[2]! - ab[2]! * ac[1]!,
+      ab[2]! * ac[0]! - ab[0]! * ac[2]!,
+      ab[0]! * ac[1]! - ab[1]! * ac[0]!,
+    ]
+    const length =
+      Math.sqrt(cross[0]! ** 2 + cross[1]! ** 2 + cross[2]! ** 2) || 1
+    const normal = {
+      x: cross[0]! / length,
+      y: cross[1]! / length,
+      z: cross[2]! / length,
+    }
+
+    for (let i = 1; i < poly.vertices.length - 1; i++) {
+      const v1 = poly.vertices[i]!
+      const v2 = poly.vertices[i + 1]!
+      const triangle: Triangle = {
+        vertices: [
+          { x: base[0]!, y: base[1]!, z: base[2]! },
+          { x: v1[0]!, y: v1[1]!, z: v1[2]! },
+          { x: v2[0]!, y: v2[1]!, z: v2[2]! },
+        ],
+        normal,
+      }
+      triangles.push(triangle)
+    }
+  }
+
+  return triangles
+}
+
+const createBoundingBox = (bbox: [number[], number[]]): BoundingBox => {
+  const [min, max] = bbox
+  return {
+    min: { x: min[0]!, y: min[1]!, z: min[2]! },
+    max: { x: max[0]!, y: max[1]!, z: max[2]! },
+  }
+}
+
+export const createBoardMesh = (
+  board: PcbBoard,
+  options: BoardGeometryOptions,
+): STLMesh => {
+  const { thickness, holes = [], platedHoles = [] } = options
+  const center = board.center ?? { x: 0, y: 0 }
+
+  let boardGeom = createBoardOutlineGeom(board, center, thickness)
+
+  const holeGeoms = createHoleGeoms(center, thickness, holes, platedHoles)
+  if (holeGeoms.length > 0) {
+    boardGeom = subtract(boardGeom, ...holeGeoms)
+  }
+
+  boardGeom = rotateX(-Math.PI / 2, boardGeom)
+
+  const polygons = geom3.toPolygons(boardGeom)
+  const triangles = geom3ToTriangles(boardGeom, polygons)
+
+  const bboxValues = measureBoundingBox(boardGeom)
+  const boundingBox = createBoundingBox(bboxValues)
+
+  return {
+    triangles,
+    boundingBox,
+  }
+}

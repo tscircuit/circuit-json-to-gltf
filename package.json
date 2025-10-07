@@ -52,5 +52,8 @@
     "@resvg/resvg-js": {
       "optional": true
     }
+  },
+  "dependencies": {
+    "@jscad/modeling": "^2.12.6"
   }
 }

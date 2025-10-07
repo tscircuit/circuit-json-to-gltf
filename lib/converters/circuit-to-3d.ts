@@ -1,4 +1,9 @@
-import { type CircuitJson, type CadComponent } from "circuit-json"
+import {
+  type CircuitJson,
+  type CadComponent,
+  type PcbHole,
+  type PCBPlatedHole,
+} from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
   Box3D,
@@ -13,6 +18,7 @@ import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
+import { createBoardMesh } from "../utils/pcb-board-geometry"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -53,6 +59,20 @@ export async function convertCircuitJsonTo3D(
   }
 
   // Create the main PCB board box
+  const effectiveBoardThickness = pcbBoard.thickness ?? boardThickness
+
+  const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
+  const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
+
+  const boardMesh = createBoardMesh(pcbBoard, {
+    thickness: effectiveBoardThickness,
+    holes: pcbHoles,
+    platedHoles: pcbPlatedHoles,
+  })
+
+  const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
+  const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
+
   const boardBox: Box3D = {
     center: {
       x: pcbBoard.center.x,
@@ -60,10 +80,12 @@ export async function convertCircuitJsonTo3D(
       z: pcbBoard.center.y,
     },
     size: {
-      x: pcbBoard.width,
-      y: boardThickness,
-      z: pcbBoard.height,
+      x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
+      y: effectiveBoardThickness,
+      z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
     },
+    mesh: boardMesh,
+    color: pcbColor,
   }
 
   // Render board textures if requested and resolution > 0
@@ -132,8 +154,8 @@ export async function convertCircuitJsonTo3D(
       : {
           x: pcbComponent?.center.x ?? 0,
           y: isBottomLayer
-            ? -(boardThickness / 2 + size.y / 2)
-            : boardThickness / 2 + size.y / 2,
+            ? -(effectiveBoardThickness / 2 + size.y / 2)
+            : effectiveBoardThickness / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
 
@@ -233,8 +255,8 @@ export async function convertCircuitJsonTo3D(
       center: {
         x: component.center.x,
         y: isBottomLayer
-          ? -(boardThickness / 2 + compHeight / 2)
-          : boardThickness / 2 + compHeight / 2,
+          ? -(effectiveBoardThickness / 2 + compHeight / 2)
+          : effectiveBoardThickness / 2 + compHeight / 2,
         z: component.center.y,
       },
       size: {
