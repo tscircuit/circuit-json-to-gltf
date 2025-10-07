@@ -298,8 +298,8 @@ export function createMeshFromSTL(stlMesh: STLMesh): MeshData {
     for (const vertex of triangle.vertices) {
       positions.push(vertex.x, vertex.y, vertex.z)
       normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
-      // Simple planar UV mapping (negating z to flip texture)
-      texcoords.push(vertex.x, -vertex.z)
+      // Simple planar UV mapping
+      texcoords.push(vertex.x, vertex.z)
     }
 
     // Add indices (reverse winding for correct face orientation)
@@ -341,7 +341,7 @@ export function createMeshFromOBJ(
         triangle.normal.y,
         triangle.normal.z,
       )
-      targetMesh.texcoords.push(vertex.x, -vertex.z)
+      targetMesh.texcoords.push(vertex.x, vertex.z)
     }
 
     targetMesh.indices.push(baseIndex, baseIndex + 2, baseIndex + 1)

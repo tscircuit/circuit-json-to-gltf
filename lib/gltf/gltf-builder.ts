@@ -390,7 +390,7 @@ export class GLTFBuilder {
           // Generate UV coordinates based on X/Z position for top/bottom faces
           const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
           const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
-          texcoords.push(u, v_coord)
+          texcoords.push(u, 1 - v_coord) // Flip V coordinate
         }
 
         indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
