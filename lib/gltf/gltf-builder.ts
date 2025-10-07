@@ -266,9 +266,9 @@ export class GLTFBuilder {
     defaultMaterialIndex: number,
   ): Promise<void> {
     // Separate mesh triangles by face orientation
-    const topTriangles: typeof box.mesh.triangles = []
-    const bottomTriangles: typeof box.mesh.triangles = []
-    const sideTriangles: typeof box.mesh.triangles = []
+    const topTriangles: NonNullable<typeof box.mesh>["triangles"] = []
+    const bottomTriangles: NonNullable<typeof box.mesh>["triangles"] = []
+    const sideTriangles: NonNullable<typeof box.mesh>["triangles"] = []
 
     const yThreshold = 0.8 // Faces with normal Y > threshold are "top"
 
@@ -287,7 +287,7 @@ export class GLTFBuilder {
 
     // Create materials
     const materials: {
-      triangles: typeof box.mesh.triangles
+      triangles: NonNullable<typeof box.mesh>["triangles"]
       materialIndex: number
     }[] = []
 
