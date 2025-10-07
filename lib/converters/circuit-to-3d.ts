@@ -46,45 +46,47 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
-  // Get PCB board
-  const pcbBoard = db.pcb_board.list()[0]
-  if (!pcbBoard) {
-    throw new Error("No pcb_board found in circuit JSON")
-  }
+  // Get PCB board (optional)
+  const pcbBoard = db.pcb_board?.list?.()[0]
 
-  // Create the main PCB board box
-  const boardBox: Box3D = {
-    center: {
-      x: pcbBoard.center.x,
-      y: 0,
-      z: pcbBoard.center.y,
-    },
-    size: {
-      x: pcbBoard.width,
-      y: boardThickness,
-      z: pcbBoard.height,
-    },
-  }
+  if (pcbBoard) {
+    // Create the main PCB board box
+    const boardBox: Box3D = {
+      center: {
+        x: pcbBoard.center.x,
+        y: 0,
+        z: pcbBoard.center.y,
+      },
+      size: {
+        x: pcbBoard.width,
+        y: boardThickness,
+        z: pcbBoard.height,
+      },
+    }
 
-  // Render board textures if requested and resolution > 0
-  if (shouldRenderTextures && textureResolution > 0) {
-    try {
-      const textures = await renderBoardTextures(circuitJson, textureResolution)
-      boardBox.texture = {
-        top: textures.top,
-        bottom: textures.bottom,
+    // Render board textures if requested and resolution > 0
+    if (shouldRenderTextures && textureResolution > 0) {
+      try {
+        const textures = await renderBoardTextures(
+          circuitJson,
+          textureResolution,
+        )
+        boardBox.texture = {
+          top: textures.top,
+          bottom: textures.bottom,
+        }
+      } catch (error) {
+        console.warn("Failed to render board textures:", error)
+        // If texture rendering fails, use the fallback color
+        boardBox.color = pcbColor
       }
-    } catch (error) {
-      console.warn("Failed to render board textures:", error)
-      // If texture rendering fails, use the fallback color
+    } else {
+      // No textures requested, use solid color
       boardBox.color = pcbColor
     }
-  } else {
-    // No textures requested, use solid color
-    boardBox.color = pcbColor
-  }
 
-  boxes.push(boardBox)
+    boxes.push(boardBox)
+  }
 
   // Process CAD components (3D models)
   const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
@@ -248,27 +250,79 @@ export async function convertCircuitJsonTo3D(
     })
   }
 
-  // Create a default camera positioned to view the board
-  const boardDiagonal = Math.sqrt(
-    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
-  )
-  const cameraDistance = boardDiagonal * 1.5
+  // Create a default camera positioned to view the board or components
+  let camera: Camera3D
 
-  const camera: Camera3D = {
-    position: {
-      x: pcbBoard.center.x + cameraDistance * 0.5,
-      y: cameraDistance * 0.7,
-      z: pcbBoard.center.y + cameraDistance * 0.5,
-    },
-    target: {
-      x: pcbBoard.center.x,
-      y: 0,
-      z: pcbBoard.center.y,
-    },
-    up: { x: 0, y: 1, z: 0 },
-    fov: 50,
-    near: 0.1,
-    far: cameraDistance * 4,
+  if (pcbBoard) {
+    const boardDiagonal = Math.sqrt(
+      pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
+    )
+    const cameraDistance = boardDiagonal * 1.5
+
+    camera = {
+      position: {
+        x: pcbBoard.center.x + cameraDistance * 0.5,
+        y: cameraDistance * 0.7,
+        z: pcbBoard.center.y + cameraDistance * 0.5,
+      },
+      target: {
+        x: pcbBoard.center.x,
+        y: 0,
+        z: pcbBoard.center.y,
+      },
+      up: { x: 0, y: 1, z: 0 },
+      fov: 50,
+      near: 0.1,
+      far: cameraDistance * 4,
+    }
+  } else {
+    const hasBoxes = boxes.length > 0
+
+    if (hasBoxes) {
+      let minX = Infinity
+      let minZ = Infinity
+      let maxX = -Infinity
+      let maxZ = -Infinity
+
+      for (const box of boxes) {
+        const halfX = (box.size?.x ?? 0) / 2
+        const halfZ = (box.size?.z ?? 0) / 2
+
+        minX = Math.min(minX, box.center.x - halfX)
+        maxX = Math.max(maxX, box.center.x + halfX)
+        minZ = Math.min(minZ, box.center.z - halfZ)
+        maxZ = Math.max(maxZ, box.center.z + halfZ)
+      }
+
+      const width = Math.max(maxX - minX, 1)
+      const height = Math.max(maxZ - minZ, 1)
+      const diagonal = Math.sqrt(width * width + height * height)
+      const distance = diagonal * 1.5
+      const centerX = (minX + maxX) / 2
+      const centerZ = (minZ + maxZ) / 2
+
+      camera = {
+        position: {
+          x: centerX + distance * 0.5,
+          y: distance * 0.7,
+          z: centerZ + distance * 0.5,
+        },
+        target: { x: centerX, y: 0, z: centerZ },
+        up: { x: 0, y: 1, z: 0 },
+        fov: 50,
+        near: 0.1,
+        far: distance * 4,
+      }
+    } else {
+      camera = {
+        position: { x: 30, y: 30, z: 25 },
+        target: { x: 0, y: 0, z: 0 },
+        up: { x: 0, y: 1, z: 0 },
+        fov: 50,
+        near: 0.1,
+        far: 120,
+      }
+    }
   }
 
   // Add some default lights
