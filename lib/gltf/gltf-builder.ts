@@ -86,7 +86,7 @@ export class GLTFBuilder {
     defaultMaterialIndex: number,
   ): Promise<void> {
     // If we have face-specific textures or need green sides, use face-based approach
-    if (!box.mesh && box.texture && (box.texture.top || box.texture.bottom)) {
+    if (box.texture && (box.texture.top || box.texture.bottom)) {
       await this.addBoxWithFaceMaterials(box, defaultMaterialIndex)
       return
     }
@@ -261,11 +261,214 @@ export class GLTFBuilder {
     this.gltf.scenes![0]!.nodes!.push(nodeIndex)
   }
 
+  private async addMeshWithFaceTextures(
+    box: Box3D,
+    defaultMaterialIndex: number,
+  ): Promise<void> {
+    // Separate mesh triangles by face orientation
+    const topTriangles: typeof box.mesh.triangles = []
+    const bottomTriangles: typeof box.mesh.triangles = []
+    const sideTriangles: typeof box.mesh.triangles = []
+
+    const yThreshold = 0.8 // Faces with normal Y > threshold are "top"
+
+    for (const triangle of box.mesh!.triangles) {
+      const ny = Math.abs(triangle.normal.y)
+      if (ny > yThreshold) {
+        if (triangle.normal.y > 0) {
+          topTriangles.push(triangle)
+        } else {
+          bottomTriangles.push(triangle)
+        }
+      } else {
+        sideTriangles.push(triangle)
+      }
+    }
+
+    // Create materials
+    const materials: { triangles: typeof box.mesh.triangles; materialIndex: number }[] = []
+
+    // Top material with texture
+    if (topTriangles.length > 0 && box.texture?.top) {
+      const topMaterialIndex = this.addMaterial({
+        name: `TopMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          metallicFactor: 0.0,
+          roughnessFactor: 0.8,
+        },
+        alphaMode: "OPAQUE",
+        doubleSided: true,
+      })
+
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
+      if (textureIndex !== -1) {
+        const material = this.materials[topMaterialIndex]!
+        if (material.pbrMetallicRoughness) {
+          material.pbrMetallicRoughness.baseColorTexture = {
+            index: textureIndex,
+          }
+        }
+      }
+      materials.push({ triangles: topTriangles, materialIndex: topMaterialIndex })
+    }
+
+    // Bottom material with texture
+    if (bottomTriangles.length > 0 && box.texture?.bottom) {
+      const bottomMaterialIndex = this.addMaterial({
+        name: `BottomMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          metallicFactor: 0.0,
+          roughnessFactor: 0.8,
+        },
+        alphaMode: "OPAQUE",
+        doubleSided: true,
+      })
+
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
+      if (textureIndex !== -1) {
+        const material = this.materials[bottomMaterialIndex]!
+        if (material.pbrMetallicRoughness) {
+          material.pbrMetallicRoughness.baseColorTexture = {
+            index: textureIndex,
+          }
+        }
+      }
+      materials.push({ triangles: bottomTriangles, materialIndex: bottomMaterialIndex })
+    }
+
+    // Side material (green)
+    if (sideTriangles.length > 0) {
+      const sideMaterialIndex = this.addMaterial({
+        name: `GreenSideMaterial_${this.materials.length}`,
+        pbrMetallicRoughness: {
+          baseColorFactor: [0.0, 0.55, 0.0, 1.0],
+          metallicFactor: 0.0,
+          roughnessFactor: 0.8,
+        },
+        alphaMode: "OPAQUE",
+        doubleSided: true,
+      })
+      materials.push({ triangles: sideTriangles, materialIndex: sideMaterialIndex })
+    }
+
+    // Convert triangles to mesh data and create primitives
+    const primitives: any[] = []
+    const bounds = getBounds([]) // We'll calculate bounds from triangles
+
+    // Calculate bounds from all triangles
+    let minX = Infinity, minY = Infinity, minZ = Infinity
+    let maxX = -Infinity, maxY = -Infinity, maxZ = -Infinity
+
+    for (const triangle of box.mesh!.triangles) {
+      for (const v of triangle.vertices) {
+        minX = Math.min(minX, v.x)
+        minY = Math.min(minY, v.y)
+        minZ = Math.min(minZ, v.z)
+        maxX = Math.max(maxX, v.x)
+        maxY = Math.max(maxY, v.y)
+        maxZ = Math.max(maxZ, v.z)
+      }
+    }
+
+    const sizeX = maxX - minX
+    const sizeZ = maxZ - minZ
+
+    for (const { triangles, materialIndex } of materials) {
+      const positions: number[] = []
+      const normals: number[] = []
+      const texcoords: number[] = []
+      const indices: number[] = []
+      let vertexIndex = 0
+
+      for (const triangle of triangles) {
+        for (const v of triangle.vertices) {
+          positions.push(v.x, v.y, v.z)
+          normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
+
+          // Generate UV coordinates based on X/Z position for top/bottom faces
+          const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
+          const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
+          texcoords.push(u, v_coord)
+        }
+
+        indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
+        vertexIndex += 3
+      }
+
+      const meshData: MeshData = { positions, normals, texcoords, indices }
+      const transformedMeshData = transformMesh(meshData, box.center, box.rotation)
+
+      const positionAccessorIndex = this.addAccessor(
+        transformedMeshData.positions,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const normalAccessorIndex = this.addAccessor(
+        transformedMeshData.normals,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const texcoordAccessorIndex = this.addAccessor(
+        transformedMeshData.texcoords,
+        "VEC2",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+
+      const indicesAccessorIndex = this.addAccessor(
+        transformedMeshData.indices,
+        "SCALAR",
+        COMPONENT_TYPE.UNSIGNED_SHORT,
+        TARGET.ELEMENT_ARRAY_BUFFER,
+      )
+
+      primitives.push({
+        attributes: {
+          POSITION: positionAccessorIndex,
+          NORMAL: normalAccessorIndex,
+          TEXCOORD_0: texcoordAccessorIndex,
+        },
+        indices: indicesAccessorIndex,
+        material: materialIndex,
+        mode: PRIMITIVE_MODE.TRIANGLES,
+      })
+    }
+
+    // Create mesh with all primitives
+    const meshIndex = this.meshes.length
+    this.meshes.push({
+      name: box.label || `MeshWithTextures${meshIndex}`,
+      primitives,
+    })
+
+    // Create node
+    const nodeIndex = this.nodes.length
+    this.nodes.push({
+      name: box.label || `Box${nodeIndex}`,
+      mesh: meshIndex,
+    })
+
+    // Add node to scene
+    this.gltf.scenes![0]!.nodes!.push(nodeIndex)
+  }
+
   private async addBoxWithFaceMaterials(
     box: Box3D,
     defaultMaterialIndex: number,
   ): Promise<void> {
-    // Create face-specific geometry
+    // If we have a custom mesh (e.g., PCB with holes), use it
+    if (box.mesh) {
+      await this.addMeshWithFaceTextures(box, defaultMaterialIndex)
+      return
+    }
+
+    // Create face-specific geometry for simple boxes
     const faceMeshes = createBoxMeshByFaces(box.size)
 
     // Create materials for each face

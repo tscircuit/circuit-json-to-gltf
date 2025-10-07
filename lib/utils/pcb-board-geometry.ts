@@ -21,20 +21,6 @@ import type { BoundingBox, STLMesh, Triangle } from "../types"
 const DEFAULT_SEGMENTS = 64
 const RADIUS_EPSILON = 1e-4
 
-/**
- * Fixes winding order for extruded geometries.
- * The extrudeLinear operation creates polygons with inverted winding order.
- */
-const fixWindingOrder = (geom: Geom3): Geom3 => {
-  if ((geom as any).polygons) {
-    for (const poly of (geom as any).polygons) {
-      if (!poly.plane || !poly.vertices || poly.vertices.length < 3) continue
-      poly.vertices.reverse()
-    }
-  }
-  return geom
-}
-
 export interface BoardGeometryOptions {
   thickness: number
   holes?: PcbHole[]
@@ -254,8 +240,6 @@ export const createBoardMesh = (
   }
 
   boardGeom = rotateX(-Math.PI / 2, boardGeom)
-  // Fix winding order after rotation to ensure correct face orientation
-  boardGeom = fixWindingOrder(boardGeom)
 
   const polygons = geom3.toPolygons(boardGeom)
   const triangles = geom3ToTriangles(boardGeom, polygons)
