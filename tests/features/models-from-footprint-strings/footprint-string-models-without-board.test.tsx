@@ -1,9 +1,9 @@
-import { Circuit } from "tscircuit"
+import { expect, test } from "bun:test"
 import type { CircuitJson } from "circuit-json"
-import { test, expect } from "bun:test"
+import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { Circuit } from "tscircuit"
 import { convertCircuitJsonToGltf } from "../../../lib"
 import { getBestCameraPosition } from "../../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
 test("models-from-footprint-strings-without-board", async () => {
   const circuit = new Circuit()

@@ -1,4 +1,4 @@
-import type { Point3, CoordinateTransformConfig, Triangle } from "../types"
+import type { CoordinateTransformConfig, Point3, Triangle } from "../types"
 
 export function applyCoordinateTransform(
   point: Point3,

@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
 import { svgToPng, svgToPngDataUrl } from "../../lib/utils/svg-to-png"
 
 test("svgToPng should convert SVG to PNG buffer", async () => {

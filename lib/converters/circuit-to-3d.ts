@@ -1,25 +1,25 @@
-import * as THREE from "three"
-import {
-  type CircuitJson,
-  type CadComponent,
-  type PcbHole,
-  type PCBPlatedHole,
-} from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
-  Box3D,
-  Scene3D,
-  CircuitTo3DOptions,
-  Camera3D,
-  Light3D,
-} from "../types"
-import { loadSTL } from "../loaders/stl"
-import { loadOBJ } from "../loaders/obj"
+  CadComponent,
+  CircuitJson,
+  PCBPlatedHole,
+  PcbHole,
+} from "circuit-json"
+import * as THREE from "three"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
-import { renderBoardTextures } from "./board-renderer"
+import { loadOBJ } from "../loaders/obj"
+import { loadSTL } from "../loaders/stl"
+import type {
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Light3D,
+  Scene3D,
+} from "../types"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
+import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -37,7 +37,11 @@ function convertRotationFromCadRotation(rot: {
 }
 
 // Sprite-based label creation function
-function createLabelSprite(text: string, size: { x: number; z: number }, color = "black") {
+function createLabelSprite(
+  text: string,
+  size: { x: number; z: number },
+  color = "black",
+) {
   const canvas = document.createElement("canvas")
   const ctx = canvas.getContext("2d")!
 
@@ -53,7 +57,10 @@ function createLabelSprite(text: string, size: { x: number; z: number }, color =
   ctx.fillText(text, 10, canvas.height / 2)
 
   const texture = new THREE.CanvasTexture(canvas)
-  const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true })
+  const spriteMaterial = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+  })
   const sprite = new THREE.Sprite(spriteMaterial)
 
   const scaleFactor = Math.max(size.x, size.z) * 0.015
@@ -61,8 +68,6 @@ function createLabelSprite(text: string, size: { x: number; z: number }, color =
 
   return sprite
 }
-
-
 
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
@@ -88,7 +93,8 @@ export async function convertCircuitJsonTo3D(
   if (pcbBoard) {
     // Create the main PCB board box
     const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
+    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
+      []) as PCBPlatedHole[]
 
     const boardMesh = createBoardMesh(pcbBoard, {
       thickness: effectiveBoardThickness,
@@ -139,7 +145,8 @@ export async function convertCircuitJsonTo3D(
   }
 
   // Process CAD components (3D models)
-  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ?? []) as any
+  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
+    []) as any
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
@@ -189,10 +196,10 @@ export async function convertCircuitJsonTo3D(
     const meshType = model_stl_url
       ? "stl"
       : model_obj_url
-      ? "obj"
-      : model_gltf_url
-      ? "gltf"
-      : "glb"
+        ? "obj"
+        : model_gltf_url
+          ? "gltf"
+          : "glb"
     const box: Box3D = {
       center,
       size,
@@ -252,7 +259,6 @@ export async function convertCircuitJsonTo3D(
       const labelOffset = Math.max(size.y * 0.15, 0.5) // distance above component
       const sprite = createLabelSprite(cad.name, size, "black")
 
-
       sprite.position.set(
         box.center.x,
         isBottomLayer
@@ -271,7 +277,9 @@ export async function convertCircuitJsonTo3D(
   for (const component of db.pcb_component.list()) {
     if (pcbComponentIdsWith3D.has(component.pcb_component_id)) continue
 
-    const sourceComponent = db.source_component.get(component.source_component_id)
+    const sourceComponent = db.source_component.get(
+      component.source_component_id,
+    )
     const compHeight = Math.min(
       Math.min(component.width, component.height),
       defaultComponentHeight,
@@ -395,4 +403,3 @@ export async function convertCircuitJsonTo3D(
     lights,
   }
 }
-

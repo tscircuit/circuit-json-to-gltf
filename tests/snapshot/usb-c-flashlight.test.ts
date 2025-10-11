@@ -1,10 +1,10 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
+import * as fs from "node:fs"
+import * as path from "node:path"
+import type { CircuitJson } from "circuit-json"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
-import type { CircuitJson } from "circuit-json"
-import * as fs from "node:fs"
-import * as path from "node:path"
 
 test("usb-c-flashlight-pcb-snapshot", async () => {
   const usbcFlashlightPath = path.join(

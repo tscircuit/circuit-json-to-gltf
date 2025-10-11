@@ -1,8 +1,8 @@
+import { expect, test } from "bun:test"
+import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { Circuit } from "tscircuit"
-import { test, expect } from "bun:test"
 import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../../lib"
 import { getBestCameraPosition } from "../../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
 test("models-from-footprint-strings", async () => {
   const circuit = new Circuit()

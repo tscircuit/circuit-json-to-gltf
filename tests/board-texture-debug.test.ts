@@ -1,12 +1,12 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
+import type { CircuitJson } from "circuit-json"
 import { readFileSync } from "fs"
 import { join } from "path"
 import {
-  renderBoardTextures,
   renderBoardLayer,
+  renderBoardTextures,
 } from "../lib/converters/board-renderer"
 import { convertCircuitJsonTo3D } from "../lib/converters/circuit-to-3d"
-import type { CircuitJson } from "circuit-json"
 
 // Load test circuit data
 const circuitPath = join(

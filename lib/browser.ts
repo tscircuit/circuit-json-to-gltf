@@ -1,31 +1,32 @@
 // Browser-safe exports that don't include Node.js dependencies
+
+export { clearOBJCache, loadOBJ } from "./loaders/obj"
+
+export { clearSTLCache, loadSTL } from "./loaders/stl"
 export type {
-  ConversionOptions,
-  Point3,
-  Size3,
-  Triangle,
-  BoundingBox,
-  STLMesh,
-  OBJMesh,
-  OBJMaterial,
-  Color,
-  Box3D,
-  Scene3D,
-  Camera3D,
-  Light3D,
-  GLTFExportOptions,
-  CircuitTo3DOptions,
   BoardRenderOptions,
+  BoundingBox,
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Color,
+  ConversionOptions,
+  GLTFExportOptions,
+  Light3D,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  Scene3D,
+  Size3,
+  STLMesh,
+  Triangle,
 } from "./types"
 
-export { loadSTL, clearSTLCache } from "./loaders/stl"
-export { loadOBJ, clearOBJCache } from "./loaders/obj"
-
+import { cju } from "@tscircuit/circuit-json-util"
 // Browser-safe version of circuit to 3D conversion (without texture rendering)
 import type { CircuitJson } from "circuit-json"
-import type { ConversionOptions, Scene3D } from "./types"
-import { cju } from "@tscircuit/circuit-json-util"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
+import type { ConversionOptions, Scene3D } from "./types"
 
 const DEFAULT_BOARD_THICKNESS = 1.6
 const DEFAULT_COMPONENT_HEIGHT = 2

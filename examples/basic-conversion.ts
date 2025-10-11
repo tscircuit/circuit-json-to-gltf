@@ -1,6 +1,6 @@
-import { convertCircuitJsonToGltf } from "../lib"
 import { writeFile } from "fs/promises"
 import { join } from "path"
+import { convertCircuitJsonToGltf } from "../lib"
 
 // Example circuit JSON with a PCB board and some components
 const circuitJson = [

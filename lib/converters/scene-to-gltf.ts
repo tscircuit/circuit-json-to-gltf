@@ -1,5 +1,5 @@
-import type { Scene3D, GLTFExportOptions } from "../types"
 import { GLTFBuilder } from "../gltf/gltf-builder"
+import type { GLTFExportOptions, Scene3D } from "../types"
 
 export async function convertSceneToGLTF(
   scene: Scene3D,

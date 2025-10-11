@@ -75,7 +75,7 @@ export class BufferBuilder {
     return byteOffset
   }
 
-  align(alignment: number = 4) {
+  align(alignment = 4) {
     const remainder = this.offset % alignment
     if (remainder !== 0) {
       const padding = alignment - remainder

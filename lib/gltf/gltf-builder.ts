@@ -1,34 +1,34 @@
-import type { Scene3D, Box3D, Color, OBJMesh } from "../types"
-import type {
-  GLTF,
-  GLTFScene,
-  GLTFNode,
-  GLTFMesh,
-  GLTFBuffer,
-  GLTFBufferView,
-  GLTFAccessor,
-  GLTFMaterial,
-  GLTFTexture,
-  GLTFImage,
-} from "./gltf-types"
-import {
-  COMPONENT_TYPE,
-  TARGET,
-  PRIMITIVE_MODE,
-  FILTER,
-  WRAP,
-} from "./gltf-types"
+import type { Box3D, Color, OBJMesh, Scene3D } from "../types"
 import { BufferBuilder } from "./buffer-builder"
 import {
   createBoxMesh,
   createBoxMeshByFaces,
-  createMeshFromSTL,
   createMeshFromOBJ,
-  transformMesh,
+  createMeshFromSTL,
+  type FaceMeshData,
   getBounds,
   type MeshData,
-  type FaceMeshData,
+  transformMesh,
 } from "./geometry"
+import type {
+  GLTF,
+  GLTFAccessor,
+  GLTFBuffer,
+  GLTFBufferView,
+  GLTFImage,
+  GLTFMaterial,
+  GLTFMesh,
+  GLTFNode,
+  GLTFScene,
+  GLTFTexture,
+} from "./gltf-types"
+import {
+  COMPONENT_TYPE,
+  FILTER,
+  PRIMITIVE_MODE,
+  TARGET,
+  WRAP,
+} from "./gltf-types"
 
 export class GLTFBuilder {
   private gltf: GLTF

@@ -1,14 +1,14 @@
 import type {
-  Point3,
-  OBJMesh,
-  Triangle,
   Color,
-  OBJMaterial,
   CoordinateTransformConfig,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  Triangle,
 } from "../types"
 import {
-  transformTriangles,
   COORDINATE_TRANSFORMS,
+  transformTriangles,
 } from "../utils/coordinate-transform"
 
 const objCache = new Map<string, OBJMesh>()
