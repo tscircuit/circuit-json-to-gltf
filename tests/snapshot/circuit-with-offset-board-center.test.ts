@@ -34,6 +34,9 @@ test("circuit-with-offset-board-center-should-be-centered-at-origin", async () =
   const cameraOptions = getBestCameraPosition(circuitJson)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
+      ...cameraOptions,
+      showGrid: true
+    } as any),
   ).toMatchPngSnapshot(import.meta.path)
 })
