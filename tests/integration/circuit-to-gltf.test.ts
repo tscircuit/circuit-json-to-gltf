@@ -2,7 +2,6 @@ import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf, convertCircuitJsonTo3D } from "../../lib"
 import simpleCircuit from "../fixtures/simple-circuit.json"
 
-
 test("convertCircuitJsonToGltf should convert circuit to GLTF", async () => {
   const result = await convertCircuitJsonToGltf(simpleCircuit as any, {
     boardTextureResolution: 512, // Lower resolution for testing

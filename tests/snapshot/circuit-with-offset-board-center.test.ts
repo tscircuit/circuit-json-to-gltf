@@ -8,7 +8,10 @@ import type { CircuitJson } from "circuit-json"
 
 test("circuit-with-offset-board-center-should-be-centered-at-origin", async () => {
   // Load the circuit with board center at (25,15) which should be positioned at origin (0,0) in 3D
-  const circuitPath = path.join(__dirname, "../fixtures/circuit-with-offset-board-center.json")
+  const circuitPath = path.join(
+    __dirname,
+    "../fixtures/circuit-with-offset-board-center.json",
+  )
 
   const circuitData = fs.readFileSync(circuitPath, "utf-8")
   const circuitJson: CircuitJson = JSON.parse(circuitData)

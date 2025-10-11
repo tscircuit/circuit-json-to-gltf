@@ -12,7 +12,7 @@ test("reproducer: convertCircuitJsonTo3D currently uses pcb_board.center as boar
       center: { x: 25, y: 15 }, // Board center is at (25, 15), not (0,0)
       width: 50,
       height: 30,
-      thickness: 1.6
+      thickness: 1.6,
     },
     {
       type: "pcb_component",
@@ -21,14 +21,14 @@ test("reproducer: convertCircuitJsonTo3D currently uses pcb_board.center as boar
       center: { x: 15, y: 10 }, // Positioned relative to board center
       width: 8,
       height: 6,
-      layer: "top"
+      layer: "top",
     },
     {
       type: "source_component",
       source_component_id: "src1",
       name: "R1",
-      display_value: "10k"
-    }
+      display_value: "10k",
+    },
   ]
 
   const scene = await convertCircuitJsonTo3D(circuitJsonWithOffsetBoard as any)
