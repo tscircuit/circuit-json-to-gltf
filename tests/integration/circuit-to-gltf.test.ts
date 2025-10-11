@@ -33,6 +33,51 @@ test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {
   expect((result as ArrayBuffer).byteLength).toBeGreaterThan(0)
 })
 
+test("convertCircuitJsonTo3D should center board at (0,0,0) regardless of board.center", async () => {
+  // Test with a board that has an offset center to ensure it's still centered at origin
+  const circuitJsonWithOffsetBoard = [
+    {
+      type: "pcb_board",
+      pcb_board_id: "board1",
+      center: { x: 25, y: 15 }, // Board center is at (25, 15), not (0,0)
+      width: 50,
+      height: 30,
+      thickness: 1.6
+    },
+    {
+      type: "pcb_component",
+      pcb_component_id: "comp1",
+      source_component_id: "src1",
+      center: { x: 15, y: 10 },
+      width: 8,
+      height: 6,
+      layer: "top"
+    },
+    {
+      type: "source_component",
+      source_component_id: "src1",
+      name: "R1",
+      display_value: "10k"
+    }
+  ]
+
+  const scene = await convertCircuitJsonTo3D(circuitJsonWithOffsetBoard as any)
+
+  expect(scene).toBeDefined()
+  expect(scene.boxes).toBeInstanceOf(Array)
+  expect(scene.boxes.length).toBeGreaterThan(0)
+
+  // Board should be centered at (0,0,0) even though board.center is (25,15)
+  const boardBox = scene.boxes.find((box) => box.size?.y === 1.6)
+  expect(boardBox).toBeDefined()
+  expect(boardBox?.center.x).toBe(0) // FIXED: should be 0, not 25
+  expect(boardBox?.center.z).toBe(0) // FIXED: should be 0, not 15
+
+  // Should have component boxes
+  const componentBoxes = scene.boxes.filter((box) => box.label)
+  expect(componentBoxes.length).toBe(1)
+})
+
 test("convertCircuitJsonTo3D should create 3D scene", async () => {
   const scene = await convertCircuitJsonTo3D(simpleCircuit as any)
 

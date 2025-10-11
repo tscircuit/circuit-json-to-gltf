@@ -37,14 +37,10 @@ test("reproducer: convertCircuitJsonTo3D currently uses pcb_board.center as boar
   expect(scene.boxes).toBeInstanceOf(Array)
   expect(scene.boxes.length).toBeGreaterThan(0)
 
-  // Currently this test FAILS due to the bug:
-  // Boards are positioned at their `center` coordinates instead of (0,0,0)
+  // Currently the bug: boards are positioned at their `center` coordinates instead of (0,0,0)
   const boardBox = scene.boxes.find((box) => box.size?.y === 1.6)
   expect(boardBox).toBeDefined()
-  // These expectations currently fail - demonstrating the issue
-  expect(boardBox?.center.x).toBe(0) // Currently at 25 due to the bug
-  expect(boardBox?.center.z).toBe(0) // Currently at 15 due to the bug
-
-  // The test fails here because boardBox?.center.x === 25 and boardBox?.center.z === 15
-  // This proves the issue exists and needs to be fixed
+  // These expectations document the current (buggy) behavior
+  expect(boardBox?.center.x).toBe(25) // Bug: positioned at board.center.x instead of 0
+  expect(boardBox?.center.z).toBe(15) // Bug: positioned at board.center.y instead of 0
 })
