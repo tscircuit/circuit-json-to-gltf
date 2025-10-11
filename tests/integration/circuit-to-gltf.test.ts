@@ -17,7 +17,7 @@ test("convertCircuitJsonTo3D should center board at (0,0,0) regardless of pcb_bo
       type: "pcb_component",
       pcb_component_id: "comp1",
       source_component_id: "src1",
-      center: { x: 15, y: 10 }, // Positioned relative to board center
+      center: { x: 15, y: 10 },
       width: 8,
       height: 6,
       layer: "top",
