@@ -1,3 +1,4 @@
+import * as THREE from "three"
 import {
   type CircuitJson,
   type CadComponent,
@@ -35,6 +36,34 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
+// Sprite-based label creation function
+function createLabelSprite(text: string, size: { x: number; z: number }, color = "black") {
+  const canvas = document.createElement("canvas")
+  const ctx = canvas.getContext("2d")!
+
+  const baseFontSize = 48
+  ctx.font = `${baseFontSize}px Arial`
+  const textWidth = ctx.measureText(text).width
+  canvas.width = Math.max(256, textWidth + 20)
+  canvas.height = 64
+
+  ctx.font = `${baseFontSize}px Arial`
+  ctx.fillStyle = color
+  ctx.textBaseline = "middle"
+  ctx.fillText(text, 10, canvas.height / 2)
+
+  const texture = new THREE.CanvasTexture(canvas)
+  const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true })
+  const sprite = new THREE.Sprite(spriteMaterial)
+
+  const scaleFactor = Math.max(size.x, size.z) * 0.015
+  sprite.scale.set(canvas.width * scaleFactor, canvas.height * scaleFactor, 1)
+
+  return sprite
+}
+
+
+
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
   options: CircuitTo3DOptions = {},
@@ -59,8 +88,7 @@ export async function convertCircuitJsonTo3D(
   if (pcbBoard) {
     // Create the main PCB board box
     const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PCBPlatedHole[]
+    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
 
     const boardMesh = createBoardMesh(pcbBoard, {
       thickness: effectiveBoardThickness,
@@ -111,8 +139,7 @@ export async function convertCircuitJsonTo3D(
   }
 
   // Process CAD components (3D models)
-  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
-    []) as any
+  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ?? []) as any
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
@@ -148,9 +175,7 @@ export async function convertCircuitJsonTo3D(
     const center = cad.position
       ? {
           x: cad.position.x,
-          y: isBottomLayer
-            ? -Math.abs(cad.position.z) // Ensure negative Y for bottom layer
-            : cad.position.z,
+          y: isBottomLayer ? -Math.abs(cad.position.z) : cad.position.z,
           z: cad.position.y,
         }
       : {
@@ -164,10 +189,10 @@ export async function convertCircuitJsonTo3D(
     const meshType = model_stl_url
       ? "stl"
       : model_obj_url
-        ? "obj"
-        : model_gltf_url
-          ? "gltf"
-          : "glb"
+      ? "obj"
+      : model_gltf_url
+      ? "gltf"
+      : "glb"
     const box: Box3D = {
       center,
       size,
@@ -178,15 +203,12 @@ export async function convertCircuitJsonTo3D(
 
     // Add rotation if specified
     if (cad.rotation) {
-      // For GLB/GLTF models, we need to remap rotation axes because the coordinate
-      // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
-      // model uses Y-up.
+      // For GLB/GLTF models, remap rotation axes
       if (model_glb_url || model_gltf_url) {
-        // Remap rotation: circuit Z -> model Y, circuit Y -> model Z
         box.rotation = convertRotationFromCadRotation({
           x: isBottomLayer ? cad.rotation.x + 180 : cad.rotation.x,
-          y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
-          z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
+          y: cad.rotation.z,
+          z: cad.rotation.y,
         })
       } else {
         box.rotation = convertRotationFromCadRotation({
@@ -196,30 +218,20 @@ export async function convertCircuitJsonTo3D(
         })
       }
     } else if (isBottomLayer) {
-      // If no rotation specified but component is on bottom, flip it
-      if (model_glb_url || model_gltf_url) {
-        box.rotation = convertRotationFromCadRotation({
-          x: 180,
-          y: 0,
-          z: 0,
-        })
-      } else {
-        box.rotation = convertRotationFromCadRotation({
-          x: 180,
-          y: 0,
-          z: 0,
-        })
-      }
+      box.rotation = convertRotationFromCadRotation({
+        x: 180,
+        y: 0,
+        z: 0,
+      })
     }
 
-    // Try to load the mesh with default coordinate transform if none specified
-    // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
-    // STL/OBJ files need Z-up to Y-up conversion
+    // Load mesh with default coordinate transform if none specified
     const defaultTransform =
       coordinateTransform ??
       (model_glb_url || model_gltf_url
-        ? undefined // GLB loader has its own default transform
+        ? undefined
         : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
+
     if (model_stl_url) {
       box.mesh = await loadSTL(model_stl_url, defaultTransform)
     } else if (model_obj_url) {
@@ -235,6 +247,23 @@ export async function convertCircuitJsonTo3D(
       box.color = componentColor
     }
 
+    // Add sprite-based reference designator label for better compatibility
+    if (box.mesh && cad.name) {
+      const labelOffset = Math.max(size.y * 0.15, 0.5) // distance above component
+      const sprite = createLabelSprite(cad.name, size, "black")
+
+
+      sprite.position.set(
+        box.center.x,
+        isBottomLayer
+          ? -(effectiveBoardThickness + labelOffset)
+          : effectiveBoardThickness / 2 + size.y + labelOffset,
+        box.center.z,
+      )
+
+      box.mesh.add(sprite)
+    }
+
     boxes.push(box)
   }
 
@@ -242,9 +271,7 @@ export async function convertCircuitJsonTo3D(
   for (const component of db.pcb_component.list()) {
     if (pcbComponentIdsWith3D.has(component.pcb_component_id)) continue
 
-    const sourceComponent = db.source_component.get(
-      component.source_component_id,
-    )
+    const sourceComponent = db.source_component.get(component.source_component_id)
     const compHeight = Math.min(
       Math.min(component.width, component.height),
       defaultComponentHeight,
@@ -368,3 +395,4 @@ export async function convertCircuitJsonTo3D(
     lights,
   }
 }
+
