@@ -1,12 +1,12 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
 import type {
   CircuitJson,
+  PCBPlatedHole,
   PcbBoard,
   PcbHole,
-  PCBPlatedHole,
 } from "circuit-json"
-import { createBoardMesh } from "../../lib/utils/pcb-board-geometry"
 import { convertCircuitJsonTo3D } from "../../lib/converters/circuit-to-3d"
+import { createBoardMesh } from "../../lib/utils/pcb-board-geometry"
 
 const triangleArea = (
   a: { x: number; y: number; z: number },

@@ -1,14 +1,14 @@
 import type {
-  Point3,
-  Triangle,
-  STLMesh,
-  OBJMesh,
-  OBJMaterial,
   CoordinateTransformConfig,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  STLMesh,
+  Triangle,
 } from "../types"
 import {
-  transformTriangles,
   COORDINATE_TRANSFORMS,
+  transformTriangles,
 } from "../utils/coordinate-transform"
 
 const glbCache = new Map<string, STLMesh | OBJMesh>()

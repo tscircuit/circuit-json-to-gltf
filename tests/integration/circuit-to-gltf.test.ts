@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test"
-import { convertCircuitJsonToGltf, convertCircuitJsonTo3D } from "../../lib"
+import { expect, test } from "bun:test"
+import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
 import simpleCircuit from "../fixtures/simple-circuit.json"
 
 test("convertCircuitJsonToGltf should convert circuit to GLTF", async () => {

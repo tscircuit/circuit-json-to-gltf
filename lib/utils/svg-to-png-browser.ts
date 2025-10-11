@@ -1,4 +1,4 @@
-import { Resvg, initWasm } from "@resvg/resvg-wasm"
+import { initWasm, Resvg } from "@resvg/resvg-wasm"
 
 let wasmInitialized = false
 
@@ -34,7 +34,7 @@ async function ensureWasmInitialized() {
         // Browser environment - try to load from URL
         try {
           // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-          // @ts-ignore - Vite will handle this import
+          // @ts-expect-error - Vite will handle this import
           const wasmUrl = await import("@resvg/resvg-wasm/index_bg.wasm?url")
           await initWasm(fetch(wasmUrl.default))
         } catch {

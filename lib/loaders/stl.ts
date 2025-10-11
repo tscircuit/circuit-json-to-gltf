@@ -1,12 +1,12 @@
 import type {
+  CoordinateTransformConfig,
   Point3,
   STLMesh,
   Triangle,
-  CoordinateTransformConfig,
 } from "../types"
 import {
-  transformTriangles,
   COORDINATE_TRANSFORMS,
+  transformTriangles,
 } from "../utils/coordinate-transform"
 
 const stlCache = new Map<string, STLMesh>()

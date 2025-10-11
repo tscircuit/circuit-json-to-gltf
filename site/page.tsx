@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from "react"
+import type React from "react"
+import { useEffect, useRef, useState } from "react"
 import "@google/model-viewer"
 import usbCFlashlightCircuit from "./assets/usb-c-flashlight.json"
 

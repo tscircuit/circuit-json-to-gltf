@@ -1,4 +1,4 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
 import { convertCircuitJsonTo3D } from "../../lib"
 
 test("convertCircuitJsonTo3D should work without textures", async () => {

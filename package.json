@@ -15,7 +15,8 @@
     "dist"
   ],
   "dependencies": {
-    "@jscad/modeling": "^2.12.6"
+    "@jscad/modeling": "^2.12.6",
+    "three": "^0.180.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
@@ -26,6 +27,7 @@
     "@types/bun": "latest",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
+    "@types/three": "^0.180.0",
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
     "circuit-json": "^0.0.267",
@@ -39,15 +41,16 @@
     "react-dom": "^19.1.1",
     "tscircuit": "^0.0.701",
     "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
     "vite": "^7.1.1"
   },
   "peerDependencies": {
-    "typescript": "^5",
-    "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
-    "circuit-to-svg": "*",
+    "@resvg/resvg-wasm": "2",
     "@tscircuit/circuit-json-util": "*",
-    "circuit-json": "*"
+    "circuit-json": "*",
+    "circuit-to-svg": "*",
+    "typescript": "^5"
   },
   "peerDependenciesMeta": {
     "@resvg/resvg-wasm": {

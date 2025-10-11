@@ -1,21 +1,21 @@
+import * as geom3 from "@jscad/modeling/src/geometries/geom3"
+import type { Geom3 } from "@jscad/modeling/src/geometries/types"
+import type { Vec2 } from "@jscad/modeling/src/maths/types"
+import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
+import { subtract } from "@jscad/modeling/src/operations/booleans"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
 import {
+  rotateX,
+  rotateZ,
+  translate,
+} from "@jscad/modeling/src/operations/transforms"
+import {
+  cylinder,
   polygon,
   rectangle,
   roundedRectangle,
-  cylinder,
 } from "@jscad/modeling/src/primitives"
-import {
-  translate,
-  rotateZ,
-  rotateX,
-} from "@jscad/modeling/src/operations/transforms"
-import { subtract } from "@jscad/modeling/src/operations/booleans"
-import * as geom3 from "@jscad/modeling/src/geometries/geom3"
-import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
-import type { Geom3 } from "@jscad/modeling/src/geometries/types"
-import type { Vec2 } from "@jscad/modeling/src/maths/types"
-import type { PcbBoard, PcbHole, PCBPlatedHole, Point } from "circuit-json"
+import type { PCBPlatedHole, PcbBoard, PcbHole, Point } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
 
 const DEFAULT_SEGMENTS = 64

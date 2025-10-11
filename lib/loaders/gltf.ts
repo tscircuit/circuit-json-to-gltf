@@ -1,4 +1,4 @@
-import type { CoordinateTransformConfig, STLMesh, OBJMesh } from "../types"
+import type { CoordinateTransformConfig, OBJMesh, STLMesh } from "../types"
 import { parseGLB } from "./glb"
 
 async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {

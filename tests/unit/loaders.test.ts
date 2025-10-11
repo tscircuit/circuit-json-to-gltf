@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test"
-import { loadSTL, loadOBJ, loadGLB } from "../../lib"
+import { expect, test } from "bun:test"
+import { loadGLB, loadOBJ, loadSTL } from "../../lib"
 
 test("STL loader should parse ASCII STL", () => {
   const asciiSTL = `solid cube
