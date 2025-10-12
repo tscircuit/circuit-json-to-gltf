@@ -38,7 +38,7 @@ test("circuit-with-offset-board-center-should-be-centered-at-origin", async () =
       glbResult as ArrayBuffer,
       {
         ...cameraOptions,
-        showGrid: true,
+        grid: true,
       } as any,
     ),
   ).toMatchPngSnapshot(import.meta.path)
