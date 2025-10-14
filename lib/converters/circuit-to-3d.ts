@@ -237,7 +237,7 @@ export async function convertCircuitJsonTo3D(
       (usingGlbCoordinates
         ? undefined // GLB loader has its own default transform
         : hasFootprinterModel
-          ? COORDINATE_TRANSFORMS.FOOTPRINT_MODEL_FIX
+          ? COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
           : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {

@@ -15,7 +15,7 @@ async function generateFootprinterMesh(
 ): Promise<STLMesh | OBJMesh | undefined> {
   const renderedModel = getJscadModelForFootprint(
     footprinterString,
-    jscadModeling as typeof import("@jscad/modeling"),
+    jscadModeling,
   )
 
   if (!renderedModel?.geometries?.length) {
@@ -24,7 +24,6 @@ async function generateFootprinterMesh(
 
   const glbResult = await convertJscadModelToGltf(renderedModel, {
     format: "glb",
-    axisTransform: "jscad_y+ -> gltf_z+",
   })
 
   if (!(glbResult.data instanceof ArrayBuffer)) {

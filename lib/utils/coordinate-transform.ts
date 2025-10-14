@@ -161,9 +161,9 @@ export const COORDINATE_TRANSFORMS = {
     axisMapping: { x: "x", y: "-z", z: "y" },
     flipZ: -1,
   } as CoordinateTransformConfig,
-  FOOTPRINT_MODEL_FIX: {
+  FOOTPRINTER_MODEL_TRANSFORM: {
     axisMapping: { x: "x", y: "-z", z: "y" },
     flipX: -1,
-    rotation: { x: 270, y: 180 },
+    rotation: { x: 180, y: 180 },
   } as CoordinateTransformConfig,
 } as const
