@@ -230,15 +230,15 @@ export async function convertCircuitJsonTo3D(
     // Try to load the mesh with default coordinate transform if none specified
     // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
     // STL/OBJ files need Z-up to Y-up conversion
-    const usingGlbCoordinates = Boolean(
-      model_glb_url || model_gltf_url || hasFootprinterModel,
-    )
+    const usingGlbCoordinates = Boolean(model_glb_url || model_gltf_url)
 
     const defaultTransform =
       coordinateTransform ??
       (usingGlbCoordinates
         ? undefined // GLB loader has its own default transform
-        : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
+        : hasFootprinterModel
+          ? COORDINATE_TRANSFORMS.FOOTPRINT_MODEL_FIX
+          : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
       box.mesh = await loadSTL(model_stl_url, defaultTransform)
