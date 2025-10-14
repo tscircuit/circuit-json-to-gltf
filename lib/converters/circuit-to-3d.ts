@@ -19,6 +19,7 @@ import { loadGLTF } from "../loaders/gltf"
 import { loadFootprinterModel } from "../loaders/footprinter"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
+import { scaleMesh } from "../utils/mesh-scale"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
@@ -145,12 +146,20 @@ export async function convertCircuitJsonTo3D(
     // Check if component is on bottom layer
     const isBottomLayer = pcbComponent?.layer === "bottom"
 
+    const modelScaleFactor = (cad as any).model_unit_to_mm_scale_factor ?? 1
+
     // Determine size
-    const size = cad.size ?? {
-      x: pcbComponent?.width ?? 2,
-      y: defaultComponentHeight,
-      z: pcbComponent?.height ?? 2,
-    }
+    const size = cad.size
+      ? {
+          x: cad.size.x * modelScaleFactor,
+          y: cad.size.y * modelScaleFactor,
+          z: cad.size.z * modelScaleFactor,
+        }
+      : {
+          x: pcbComponent?.width ?? 2,
+          y: defaultComponentHeight,
+          z: pcbComponent?.height ?? 2,
+        }
 
     // Determine position
     const center = cad.position
@@ -253,6 +262,10 @@ export async function convertCircuitJsonTo3D(
         cad.footprinter_string,
         defaultTransform,
       )
+    }
+
+    if (box.mesh && modelScaleFactor !== 1) {
+      box.mesh = scaleMesh(box.mesh, modelScaleFactor)
     }
 
     // Only set color if mesh loading failed (fallback to simple box)
