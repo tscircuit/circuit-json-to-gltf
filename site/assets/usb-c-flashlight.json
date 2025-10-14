@@ -2496,7 +2496,7 @@
     },
     "pcb_component_id": "pcb_component_1",
     "source_component_id": "source_component_1",
-    "footprinter_string": "0603"
+    "footprinter_string": "0603_color(red)"
   },
   {
     "type": "cad_component",
