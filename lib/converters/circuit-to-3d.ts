@@ -16,6 +16,7 @@ import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
+import { loadFootprinterModel } from "../loaders/footprinter"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
@@ -116,18 +117,25 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    let { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
+    const { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
 
-    let hasModelUrl = Boolean(
-      model_stl_url || model_obj_url || model_glb_url || model_gltf_url,
+    const hasFootprinterModel = Boolean(
+      cad.footprinter_string &&
+        !model_stl_url &&
+        !model_obj_url &&
+        !model_glb_url &&
+        !model_gltf_url,
     )
 
-    if (!hasModelUrl && cad.footprinter_string) {
-      model_glb_url = `https://modelcdn.tscircuit.com/jscad_models/${cad.footprinter_string}.glb`
-      hasModelUrl = true
-    }
+    const hasModelSource = Boolean(
+      model_stl_url ||
+        model_obj_url ||
+        model_glb_url ||
+        model_gltf_url ||
+        hasFootprinterModel,
+    )
 
-    if (!hasModelUrl) continue
+    if (!hasModelSource) continue
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
@@ -167,13 +175,20 @@ export async function convertCircuitJsonTo3D(
         ? "obj"
         : model_gltf_url
           ? "gltf"
-          : "glb"
+          : model_glb_url
+            ? "glb"
+            : hasFootprinterModel
+              ? "glb"
+              : undefined
     const box: Box3D = {
       center,
       size,
-      meshUrl:
-        model_stl_url! || model_obj_url || model_glb_url || model_gltf_url,
-      meshType: meshType as any,
+    }
+
+    if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {
+      box.meshUrl =
+        model_stl_url || model_obj_url || model_glb_url || model_gltf_url
+      box.meshType = meshType as any
     }
 
     // Add rotation if specified
@@ -181,7 +196,7 @@ export async function convertCircuitJsonTo3D(
       // For GLB/GLTF models, we need to remap rotation axes because the coordinate
       // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
       // model uses Y-up.
-      if (model_glb_url || model_gltf_url) {
+      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
         // Remap rotation: circuit Z -> model Y, circuit Y -> model Z
         box.rotation = convertRotationFromCadRotation({
           x: isBottomLayer ? cad.rotation.x + 180 : cad.rotation.x,
@@ -197,7 +212,7 @@ export async function convertCircuitJsonTo3D(
       }
     } else if (isBottomLayer) {
       // If no rotation specified but component is on bottom, flip it
-      if (model_glb_url || model_gltf_url) {
+      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
         box.rotation = convertRotationFromCadRotation({
           x: 180,
           y: 0,
@@ -215,11 +230,16 @@ export async function convertCircuitJsonTo3D(
     // Try to load the mesh with default coordinate transform if none specified
     // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
     // STL/OBJ files need Z-up to Y-up conversion
+    const usingGlbCoordinates = Boolean(
+      model_glb_url || model_gltf_url || hasFootprinterModel,
+    )
+
     const defaultTransform =
       coordinateTransform ??
-      (model_glb_url || model_gltf_url
+      (usingGlbCoordinates
         ? undefined // GLB loader has its own default transform
         : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
+
     if (model_stl_url) {
       box.mesh = await loadSTL(model_stl_url, defaultTransform)
     } else if (model_obj_url) {
@@ -228,6 +248,11 @@ export async function convertCircuitJsonTo3D(
       box.mesh = await loadGLB(model_glb_url, defaultTransform)
     } else if (model_gltf_url) {
       box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
+    } else if (hasFootprinterModel && cad.footprinter_string) {
+      box.mesh = await loadFootprinterModel(
+        cad.footprinter_string,
+        defaultTransform,
+      )
     }
 
     // Only set color if mesh loading failed (fallback to simple box)
