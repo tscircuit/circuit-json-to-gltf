@@ -113,8 +113,7 @@ export async function convertCircuitJsonTo3D(
   }
 
   // Process CAD components (3D models)
-  const cadComponents: CadComponent[] = (db.cad_component?.list?.() ??
-    []) as any
+  const cadComponents = (db.cad_component?.list?.() ?? []) as CadComponent[]
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
@@ -146,7 +145,7 @@ export async function convertCircuitJsonTo3D(
     // Check if component is on bottom layer
     const isBottomLayer = pcbComponent?.layer === "bottom"
 
-    const modelScaleFactor = (cad as any).model_unit_to_mm_scale_factor ?? 1
+    const modelScaleFactor = cad.model_unit_to_mm_scale_factor ?? 1
 
     // Determine size
     const size = cad.size
