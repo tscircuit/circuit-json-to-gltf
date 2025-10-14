@@ -5,17 +5,10 @@ import * as fs from "node:fs"
 import * as path from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
+import circuitJson from "../fixtures/circuit-with-footprinter.json"
 
 test("footprinter-component-snapshot", async () => {
-  const fixturePath = path.join(
-    __dirname,
-    "../fixtures/circuit-with-footprinter.json",
-  )
-
-  const circuitData = fs.readFileSync(fixturePath, "utf-8")
-  const circuitJson: CircuitJson = JSON.parse(circuitData)
-
-  const glbResult = await convertCircuitJsonToGltf(circuitJson, {
+  const glbResult = await convertCircuitJsonToGltf(circuitJson as CircuitJson, {
     format: "glb",
     boardTextureResolution: 512,
     includeModels: true,
@@ -27,7 +20,7 @@ test("footprinter-component-snapshot", async () => {
   expect(
     renderGLTFToPNGBufferFromGLBBuffer(
       glbResult as ArrayBuffer,
-      getBestCameraPosition(circuitJson),
+      getBestCameraPosition(circuitJson as CircuitJson),
     ),
   ).toMatchPngSnapshot(import.meta.path)
 })
