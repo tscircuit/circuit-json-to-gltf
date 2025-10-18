@@ -100,3 +100,4 @@ bun run examples/basic-conversion.ts
 - Pure GLTF 2.0 implementation without external 3D library dependencies
 - Supports both JSON (.gltf) and binary (.glb) formats
 - Embeds all assets (textures, buffers) directly in the output
+
