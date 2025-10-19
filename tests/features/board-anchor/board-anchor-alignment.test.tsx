@@ -13,7 +13,7 @@ test("board-anchor-alignment", async () => {
       boardAnchorPosition={{ x: 0, y: 0 }}
       boardAnchorAlignment="bottom_left"
     >
-      <resistor resistance="1k" footprint="0402" name="R1" pcbX={5} pcbY={5} />
+      <resistor resistance="1k" footprint="0402" name="R1" pcbX={2} pcbY={2} />
       <fabricationnotetext
         text="(5,5)"
         anchorAlignment="bottom_left"
