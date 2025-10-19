@@ -4,6 +4,8 @@ import { convertCircuitJsonToGltf } from "../../../lib"
 import { getBestCameraPosition } from "../../../lib/utils/camera-position"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
+import { convertCircuitJsonTo3D } from "../../../lib/converters/circuit-to-3d"
+
 test("board-anchor-alignment", async () => {
   const circuit = new Circuit()
   circuit.add(
@@ -47,6 +49,8 @@ test("board-anchor-alignment", async () => {
   const cameraOptions = {
     camPos: [15, 15, 15] as const,
     lookAt: [0, 0, 0] as const,
+    width: 1024,
+    height: 768,
   }
 
   expect(
