@@ -23,7 +23,7 @@ test("board without explicit center should default to (0,0)", async () => {
   const boardBox = scene.boxes[0]!
   expect(boardBox).toBeDefined()
   expect(boardBox.center).toBeDefined()
-  
+
   // (0,0) should be at the center
   expect(boardBox.center.x).toBe(0)
   expect(boardBox.center.z).toBe(0)
@@ -50,7 +50,7 @@ test("board with explicit center should still be positioned at (0,0,0)", async (
 
   const boardBox = scene.boxes[0]!
   expect(boardBox).toBeDefined()
-  
+
   // Board is ALWAYS at (0,0,0) in 3D space, regardless of board.center
   // board.center is used for PCB coordinate system, not 3D positioning
   expect(boardBox.center.x).toBe(0)
@@ -83,7 +83,7 @@ test("board with outline but no center should default to (0,0)", async () => {
 
   const boardBox = scene.boxes[0]!
   expect(boardBox).toBeDefined()
-  
+
   // (0,0) should be at the center
   expect(boardBox.center.x).toBe(0)
   expect(boardBox.center.z).toBe(0)

@@ -8,7 +8,7 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
   // Board has center at (25, 15) in PCB coordinates
   // But it should be rendered at (0,0,0) in 3D space
   // Components should be offset relative to board center
-  
+
   const circuitJson: CircuitJson = [
     {
       type: "pcb_board",
@@ -78,9 +78,6 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
   }
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glbResult as ArrayBuffer,
-      cameraOptions,
-    ),
+    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path)
 })

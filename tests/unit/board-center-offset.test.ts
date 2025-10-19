@@ -6,7 +6,7 @@ test("components should be positioned relative to board.center", async () => {
   // This is the real issue #46 test
   // Board center at (25, 15), component at (15, 10)
   // Component should be at (-10, -5) in 3D space
-  
+
   const board: PcbBoard = {
     type: "pcb_board",
     pcb_board_id: "board1",
