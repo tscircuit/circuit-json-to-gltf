@@ -26,6 +26,8 @@ test("components should be positioned relative to board.center", async () => {
     width: 8,
     height: 6,
     layer: "top",
+    rotation: 0,
+    obstructs_within_bounds: true,
   }
 
   const sourceComponent = {
@@ -33,6 +35,8 @@ test("components should be positioned relative to board.center", async () => {
     source_component_id: "src1",
     name: "R1",
     display_value: "10k",
+    ftype: "simple_resistor" as const,
+    resistance: 10000,
   }
 
   const circuit: CircuitJson = [board, component, sourceComponent]
@@ -77,12 +81,15 @@ test("components on board with no center should be positioned correctly", async 
     width: 8,
     height: 6,
     layer: "top",
+    rotation: 0,
+    obstructs_within_bounds: true,
   }
 
   const sourceComponent = {
     type: "source_component" as const,
     source_component_id: "src1",
     name: "R1",
+    ftype: "simple_chip" as const,
   }
 
   const circuit: CircuitJson = [board, component, sourceComponent]

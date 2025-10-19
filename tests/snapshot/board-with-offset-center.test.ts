@@ -17,6 +17,8 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
       width: 50,
       height: 30,
       thickness: 1.6,
+      num_layers: 2,
+      material: "fr4",
     },
     {
       type: "pcb_component",
@@ -26,6 +28,8 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
       width: 6,
       height: 6,
       layer: "top",
+      rotation: 0,
+      obstructs_within_bounds: true,
     },
     {
       type: "pcb_component",
@@ -35,6 +39,8 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
       width: 4,
       height: 4,
       layer: "top",
+      rotation: 0,
+      obstructs_within_bounds: true,
     },
     {
       type: "pcb_component",
@@ -44,21 +50,26 @@ test("board-with-offset-center - verify board at (0,0,0) with offset center", as
       width: 4,
       height: 4,
       layer: "top",
+      rotation: 0,
+      obstructs_within_bounds: true,
     },
     {
       type: "source_component",
       source_component_id: "src_center",
       name: "CENTER",
+      ftype: "simple_chip",
     },
     {
       type: "source_component",
       source_component_id: "src_tr",
       name: "TR",
+      ftype: "simple_chip",
     },
     {
       type: "source_component",
       source_component_id: "src_bl",
       name: "BL",
+      ftype: "simple_chip",
     },
   ]
 
