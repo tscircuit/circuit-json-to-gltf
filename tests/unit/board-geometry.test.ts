@@ -135,10 +135,11 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
   const boardBox = scene.boxes[0]!
   expect(boardBox.mesh).toBeDefined()
   expect(boardBox.mesh?.triangles.length ?? 0).toBeGreaterThan(0)
+  // Board is always positioned at (0,0,0) in 3D space
   expect(boardBox.center).toEqual({
-    x: board.center.x,
+    x: 0,
     y: 0,
-    z: board.center.y,
+    z: 0,
   })
   expect(boardBox.size.y).toBeCloseTo(board.thickness ?? 1.2, 6)
 })

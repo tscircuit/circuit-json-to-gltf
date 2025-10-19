@@ -73,11 +73,16 @@ export async function convertCircuitJsonTo3D(
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
     const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
 
+    // Board center in PCB coordinates (used to position components)
+    const boardCenter = pcbBoard.center ?? { x: 0, y: 0 }
+
+    // Board is always positioned at (0,0,0) in 3D space
+    // The boardCenter defines the PCB coordinate system's origin
     const boardBox: Box3D = {
       center: {
-        x: pcbBoard.center.x,
+        x: 0,
         y: 0,
-        z: pcbBoard.center.y,
+        z: 0,
       },
       size: {
         x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
@@ -115,6 +120,9 @@ export async function convertCircuitJsonTo3D(
   // Process CAD components (3D models)
   const cadComponents = (db.cad_component?.list?.() ?? []) as CadComponent[]
   const pcbComponentIdsWith3D = new Set<string>()
+
+  // Board center for positioning components (if no board, default to 0,0)
+  const boardCenterForCad = pcbBoard?.center ?? { x: 0, y: 0 }
 
   for (const cad of cadComponents) {
     const { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
@@ -160,21 +168,21 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.height ?? 2,
         }
 
-    // Determine position
+    // Determine position - components are positioned relative to board center
     const center = cad.position
       ? {
-          x: cad.position.x,
+          x: cad.position.x - boardCenterForCad.x,
           y: isBottomLayer
             ? -Math.abs(cad.position.z) // Ensure negative Y for bottom layer
             : cad.position.z,
-          z: cad.position.y,
+          z: cad.position.y - boardCenterForCad.y,
         }
       : {
-          x: pcbComponent?.center.x ?? 0,
+          x: (pcbComponent?.center.x ?? 0) - boardCenterForCad.x,
           y: isBottomLayer
             ? -(effectiveBoardThickness + size.y / 2)
             : effectiveBoardThickness / 2 + size.y / 2,
-          z: pcbComponent?.center.y ?? 0,
+          z: (pcbComponent?.center.y ?? 0) - boardCenterForCad.y,
         }
 
     const meshType = model_stl_url
@@ -276,6 +284,9 @@ export async function convertCircuitJsonTo3D(
   }
 
   // Add generic boxes for components without 3D models
+  // Board center in PCB coordinates (for offsetting components)
+  const boardCenterForComponents = pcbBoard?.center ?? { x: 0, y: 0 }
+
   for (const component of db.pcb_component.list()) {
     if (pcbComponentIdsWith3D.has(component.pcb_component_id)) continue
 
@@ -292,11 +303,11 @@ export async function convertCircuitJsonTo3D(
 
     boxes.push({
       center: {
-        x: component.center.x,
+        x: component.center.x - boardCenterForComponents.x,
         y: isBottomLayer
           ? -(effectiveBoardThickness + compHeight / 2)
           : effectiveBoardThickness / 2 + compHeight / 2,
-        z: component.center.y,
+        z: component.center.y - boardCenterForComponents.y,
       },
       size: {
         x: component.width,
@@ -313,6 +324,7 @@ export async function convertCircuitJsonTo3D(
   let camera: Camera3D
 
   if (pcbBoard) {
+    // Board is always at (0,0,0) in 3D space
     const boardDiagonal = Math.sqrt(
       pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
     )
@@ -320,14 +332,14 @@ export async function convertCircuitJsonTo3D(
 
     camera = {
       position: {
-        x: pcbBoard.center.x + cameraDistance * 0.5,
+        x: cameraDistance * 0.5,
         y: cameraDistance * 0.7,
-        z: pcbBoard.center.y + cameraDistance * 0.5,
+        z: cameraDistance * 0.5,
       },
       target: {
-        x: pcbBoard.center.x,
+        x: 0,
         y: 0,
-        z: pcbBoard.center.y,
+        z: 0,
       },
       up: { x: 0, y: 1, z: 0 },
       fov: 50,
