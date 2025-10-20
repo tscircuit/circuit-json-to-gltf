@@ -32,6 +32,13 @@ test("pcb rotation top-bottom resistor example with dual 3d views", async () => 
   circuit.render()
   const circuitJson = circuit.getCircuitJson()
 
+  const bottomCadComponent = circuitJson.find(
+    (item) => item.type === "cad_component" && item.position.z < 0,
+  )!
+  // bottomCadComponent.position.z = -1.5
+  // bottomCadComponent.rotation.z = 45
+  // bottomCadComponent.rotation.y = 0
+
   // Test 1: Top view (default camera angle)
   const glbResult = await convertCircuitJsonToGltf(circuitJson as CircuitJson, {
     format: "glb",
@@ -49,9 +56,11 @@ test("pcb rotation top-bottom resistor example with dual 3d views", async () => 
     renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "pcb-rotation-resistor-example-top")
 
+  console.log(circuitJson.filter((item) => item.type === "cad_component"))
+
   expect(
     renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
-      camPos: [15, -15, 15],
+      camPos: [8, -8, 8],
     }),
   ).toMatchPngSnapshot(import.meta.path, "pcb-rotation-resistor-example-bottom")
 })
