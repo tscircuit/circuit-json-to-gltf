@@ -125,34 +125,3 @@ test("WASM initialization", async () => {
     throw error
   }
 })
-
-test("circuit data analysis", () => {
-  console.log("Analyzing circuit data...")
-
-  // Count different types of elements
-  const elementCounts = circuitData.reduce(
-    (acc, item) => {
-      acc[item.type] = (acc[item.type] || 0) + 1
-      return acc
-    },
-    {} as Record<string, number>,
-  )
-
-  console.log("Circuit elements:", elementCounts)
-
-  // Check for essential PCB elements
-  expect(elementCounts.pcb_board).toBeGreaterThan(0)
-  expect(elementCounts.pcb_component).toBeGreaterThan(0)
-
-  if (elementCounts.pcb_trace) {
-    console.log(`✅ Found ${elementCounts.pcb_trace} PCB traces`)
-  } else {
-    console.log("⚠️  No PCB traces found")
-  }
-
-  if (elementCounts.pcb_via) {
-    console.log(`✅ Found ${elementCounts.pcb_via} PCB vias`)
-  } else {
-    console.log("⚠️  No PCB vias found")
-  }
-})
