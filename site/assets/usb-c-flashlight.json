@@ -2474,8 +2474,8 @@
     },
     "rotation": {
       "x": 0,
-      "y": 0,
-      "z": 180
+      "y": 180,
+      "z": 0
     },
     "pcb_component_id": "pcb_component_0",
     "source_component_id": "source_component_0",

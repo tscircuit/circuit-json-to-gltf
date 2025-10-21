@@ -30,7 +30,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
-    "circuit-json": "^0.0.278",
+    "circuit-json": "^0.0.289",
     "circuit-to-svg": "^0.0.240",
     "graphics-debug": "^0.0.65",
     "looks-same": "^9.0.1",
@@ -39,7 +39,7 @@
     "react-cosmos": "^7.0.0",
     "react-cosmos-plugin-vite": "^7.0.0",
     "react-dom": "^19.1.1",
-    "tscircuit": "^0.0.750",
+    "tscircuit": "^0.0.800",
     "tsup": "^8.5.0",
     "vite": "^7.1.1"
   },

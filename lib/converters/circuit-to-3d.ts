@@ -202,22 +202,11 @@ export async function convertCircuitJsonTo3D(
       // For GLB/GLTF models, we need to remap rotation axes because the coordinate
       // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
       // model uses Y-up.
-      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
-        // Remap rotation: circuit Z -> model Y, circuit Y -> model Z
-        // Note: Circuit JSON already provides rotation.y=180 for bottom components (flipped)
-        // which gets mapped to scene Z. We don't need to add another flip.
-        box.rotation = convertRotationFromCadRotation({
-          x: cad.rotation.x,
-          y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
-          z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
-        })
-      } else {
-        box.rotation = convertRotationFromCadRotation({
-          x: isBottomLayer ? cad.rotation.x + 180 : cad.rotation.x,
-          y: cad.rotation.y,
-          z: cad.rotation.z,
-        })
-      }
+      box.rotation = convertRotationFromCadRotation({
+        x: cad.rotation.x,
+        y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
+        z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
+      })
     } else if (isBottomLayer) {
       // If no rotation specified but component is on bottom, flip it
       if (model_glb_url || model_gltf_url || hasFootprinterModel) {

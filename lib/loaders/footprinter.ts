@@ -13,7 +13,6 @@ async function generateFootprinterMesh(
   footprinterString: string,
   transform?: CoordinateTransformConfig,
 ): Promise<STLMesh | OBJMesh | undefined> {
-  console.log(`Generating footprinter model for ${footprinterString}`)
   const renderedModel = getJscadModelForFootprint(
     footprinterString,
     jscadModeling,
