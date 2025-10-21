@@ -49,7 +49,7 @@ export async function convertCircuitJsonTo3D(
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
     coordinateTransform,
-    showBoundingBoxes = false,
+    showBoundingBoxes = true,
   } = options
 
   const db: any = cju(circuitJson)
