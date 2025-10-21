@@ -241,7 +241,7 @@ export async function convertCircuitJsonTo3D(
         : hasFootprinterModel
           ? COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
           : usingObjFormat
-            ? COORDINATE_TRANSFORMS.Z_OUT_OF_TOP
+            ? COORDINATE_TRANSFORMS.OBJ_Z_UP_TO_Y_UP
             : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {

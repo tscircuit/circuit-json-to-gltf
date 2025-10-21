@@ -166,4 +166,9 @@ export const COORDINATE_TRANSFORMS = {
     flipX: -1,
     rotation: { x: 180, y: 180 },
   } as CoordinateTransformConfig,
+
+  // OBJ models: Z-up to Y-up with Y→Z (no negation to preserve winding order)
+  OBJ_Z_UP_TO_Y_UP: {
+    axisMapping: { x: "x", y: "z", z: "y" },
+  } as CoordinateTransformConfig,
 } as const
