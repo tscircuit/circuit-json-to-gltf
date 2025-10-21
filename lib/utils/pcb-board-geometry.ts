@@ -203,9 +203,14 @@ const createHoleGeoms = (
   }
 
   for (const plated of platedHoles) {
-    const relX = plated.x - boardCenter.x
-    const relY = -(plated.y - boardCenter.y) // Negate y to account for rotateX(-PI/2)
     const platedRecord = plated as unknown as Record<string, unknown>
+
+    // Get hole offset (for cases where hole is offset from pad center)
+    const holeOffsetX = getNumberProperty(platedRecord, "hole_offset_x") ?? 0
+    const holeOffsetY = getNumberProperty(platedRecord, "hole_offset_y") ?? 0
+
+    const relX = plated.x - boardCenter.x + holeOffsetX
+    const relY = -(plated.y - boardCenter.y + holeOffsetY) // Negate y to account for rotateX(-PI/2)
 
     if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
       const holeWidth =
