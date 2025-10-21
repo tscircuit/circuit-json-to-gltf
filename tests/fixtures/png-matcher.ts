@@ -49,19 +49,19 @@ async function toMatchPngSnapshot(
 
   const existingSnapshot = fs.readFileSync(filePath)
 
-  const result: any = await looksSame(
+  const result = await looksSame(
     Buffer.from(received),
     Buffer.from(existingSnapshot),
     {
       strict: false,
       tolerance: 5,
       antialiasingTolerance: 4,
-      ignoreCaret: true,
+      ignoreAntialiasing: true,
       shouldCluster: true,
       clustersSize: 10,
+      createDiffImage: true,
     },
   )
-
   if (updateSnapshot) {
     if (!forceUpdate && result.equal) {
       return {
@@ -84,62 +84,34 @@ async function toMatchPngSnapshot(
     }
   }
 
+  let diffArea = 0
+  for (const cluster of result.diffClusters) {
+    diffArea += (cluster.right - cluster.left) * (cluster.bottom - cluster.top)
+  }
+
   // Calculate diff percentage for cross-platform tolerance
-  if (result.diffBounds) {
-    // Get image dimensions from the PNG buffer
-    const width = existingSnapshot.readUInt32BE(16)
-    const height = existingSnapshot.readUInt32BE(20)
-    const totalPixels = width * height
+  const diffFraction = diffArea / result.totalPixels
 
-    const diffArea =
-      (result.diffBounds.right - result.diffBounds.left) *
-      (result.diffBounds.bottom - result.diffBounds.top)
-    const diffPercentage = (diffArea / totalPixels) * 100
+  // Allow up to 5% pixel difference for cross-platform rendering variations
+  const ACCEPTABLE_DIFF_FRACTION = 0.05
 
-    // Allow up to 5% pixel difference for cross-platform rendering variations
-    const ACCEPTABLE_DIFF_PERCENTAGE = 5.0
-
-    if (diffPercentage <= ACCEPTABLE_DIFF_PERCENTAGE) {
-      console.log(
-        `✓ PNG snapshot matches (${diffPercentage.toFixed(3)}% difference, within ${ACCEPTABLE_DIFF_PERCENTAGE}% threshold)`,
-      )
-      return {
-        message: () =>
-          `PNG snapshot matches (${diffPercentage.toFixed(3)}% difference)`,
-        pass: true,
-      }
-    }
-
-    // If difference is too large, create diff image
-    const diffPath = filePath.replace(/\.snap\.png$/, ".diff.png")
-    await looksSame.createDiff({
-      reference: Buffer.from(existingSnapshot),
-      current: Buffer.from(received),
-      diff: diffPath,
-      highlightColor: "#ff00ff",
-    })
-
+  if (diffFraction <= ACCEPTABLE_DIFF_FRACTION) {
+    console.log(
+      `✓ PNG snapshot matches (${diffFraction.toFixed(3)}% difference, within ${ACCEPTABLE_DIFF_FRACTION}% threshold)`,
+    )
     return {
       message: () =>
-        `PNG snapshot differs by ${diffPercentage.toFixed(3)}% (threshold: ${ACCEPTABLE_DIFF_PERCENTAGE}%). Diff saved at ${diffPath}. Use BUN_UPDATE_SNAPSHOTS=1 to update the snapshot.`,
-      pass: false,
+        `PNG snapshot matches (${diffFraction.toFixed(3)}% difference)`,
+      pass: true,
     }
   }
 
-  // Fallback if diffBounds isn't available
   const diffPath = filePath.replace(/\.snap\.png$/, ".diff.png")
-  await looksSame.createDiff({
-    reference: Buffer.from(existingSnapshot),
-    current: Buffer.from(received),
-    diff: diffPath,
-    highlightColor: "#ff00ff",
-  })
-
-  console.log(`📸 Snapshot mismatch (no diff bounds available)`)
-  console.log(`   Diff saved: ${diffPath}`)
+  result.diffImage.save(diffPath)
 
   return {
-    message: () => `PNG snapshot does not match. Diff saved at ${diffPath}`,
+    message: () =>
+      `PNG snapshot differs by ${diffFraction.toFixed(3)}% (threshold: ${ACCEPTABLE_DIFF_FRACTION}%). Diff saved at ${diffPath}. Use BUN_UPDATE_SNAPSHOTS=1 to update the snapshot.`,
     pass: false,
   }
 }
