@@ -29,10 +29,10 @@ jobs:
         
       - name: Upload test artifacts (snapshots and diffs)
         uses: actions/upload-artifact@v4
-        if: always()
+        if: failure()
         with:
           name: test-snapshots-and-diffs
           path: |
-            tests/snapshot/__snapshots__/**/*.snap.png
-            tests/snapshot/__snapshots__/**/*.diff.png
+            tests/snapshot/**/*.snap.png
+            tests/snapshot/**/*.diff.png
           retention-days: 7
