@@ -14,10 +14,13 @@ test("silkscreen-text-snapshot", async () => {
       width: 10,
       height: 10,
       thickness: 1.6,
+      num_layers: 2,
+      material: "fr4",
     },
     {
       type: "pcb_silkscreen_text",
       pcb_silkscreen_text_id: "text1",
+      pcb_component_id: "board1",
       anchor_alignment: "center",
       anchor_position: { x: 0, y: 2 },
       font: "tscircuit2024",
@@ -29,6 +32,7 @@ test("silkscreen-text-snapshot", async () => {
     {
       type: "pcb_silkscreen_text",
       pcb_silkscreen_text_id: "text2",
+      pcb_component_id: "board1",
       anchor_alignment: "center",
       anchor_position: { x: 0, y: 0 },
       font: "tscircuit2024",
@@ -40,6 +44,7 @@ test("silkscreen-text-snapshot", async () => {
     {
       type: "pcb_silkscreen_text",
       pcb_silkscreen_text_id: "text3",
+      pcb_component_id: "board1",
       anchor_alignment: "center",
       anchor_position: { x: 0, y: -2 },
       font: "tscircuit2024",
