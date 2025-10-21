@@ -137,6 +137,7 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
+  showBoundingBoxes?: boolean
 }
 
 export interface BoardRenderOptions {

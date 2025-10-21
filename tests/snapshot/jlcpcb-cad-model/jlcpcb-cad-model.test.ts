@@ -22,6 +22,8 @@ test("jlcpcb-cad-model-pcb-snapshot", async () => {
     backgroundColor: "#000000",
   })
 
+  Bun.write("jlcpcb-cad-model.glb", Buffer.from(glbResult as ArrayBuffer))
+
   // Ensure we got a valid GLB buffer
   expect(glbResult).toBeInstanceOf(ArrayBuffer)
   expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)

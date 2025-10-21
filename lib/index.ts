@@ -21,6 +21,7 @@ export async function convertCircuitJsonToGltf(
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
     coordinateTransform: options.coordinateTransform,
+    showBoundingBoxes,
   })
 
   // Convert 3D scene to GLTF
