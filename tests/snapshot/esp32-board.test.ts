@@ -17,7 +17,7 @@ test("esp32-board-pcb-snapshot", async () => {
     format: "glb",
     boardTextureResolution: 1024,
     includeModels: true,
-    showBoundingBoxes: false,
+    showBoundingBoxes: true,
   })
 
   // Ensure we got a valid GLB buffer
