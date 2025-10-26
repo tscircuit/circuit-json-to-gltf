@@ -21,8 +21,17 @@ export async function loadOBJ(
   if (objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
-  const response = await fetch(url)
-  const text = await response.text()
+  let text: string
+  if (
+    url.startsWith("http:") ||
+    url.startsWith("https:") ||
+    url.startsWith("data:")
+  ) {
+    const response = await fetch(url)
+    text = await response.text()
+  } else {
+    text = await Bun.file(url).text()
+  }
   const mesh = parseOBJ(text, transform)
   objCache.set(cacheKey, mesh)
   return mesh

@@ -38,3 +38,4 @@ bun.lock
 relevant-repos
 .vercel
 *.diff.png
+.aider*

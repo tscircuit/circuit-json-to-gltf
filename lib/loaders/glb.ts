@@ -22,8 +22,17 @@ export async function loadGLB(
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetch(url)
-  const buffer = await response.arrayBuffer()
+  let buffer: ArrayBuffer
+  if (
+    url.startsWith("http:") ||
+    url.startsWith("https:") ||
+    url.startsWith("data:")
+  ) {
+    const response = await fetch(url)
+    buffer = await response.arrayBuffer()
+  } else {
+    buffer = await Bun.file(url).arrayBuffer()
+  }
   const mesh = parseGLB(buffer, transform)
   glbCache.set(cacheKey, mesh)
   return mesh

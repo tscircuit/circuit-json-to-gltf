@@ -1,12 +1,20 @@
 import type { CoordinateTransformConfig, STLMesh, OBJMesh } from "../types"
 import { parseGLB } from "./glb"
+import * as path from "path"
 
 async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+  if (
+    url.startsWith("http:") ||
+    url.startsWith("https:") ||
+    url.startsWith("data:")
+  ) {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
+    }
+    return response.arrayBuffer()
   }
-  return response.arrayBuffer()
+  return Bun.file(url).arrayBuffer()
 }
 
 function dataUriToArrayBuffer(uri: string): ArrayBuffer {
@@ -23,11 +31,18 @@ function dataUriToArrayBuffer(uri: string): ArrayBuffer {
 export async function fetchGltfAndConvertToGlb(
   url: string,
 ): Promise<ArrayBuffer> {
-  const gltfResponse = await fetch(url)
-  if (!gltfResponse.ok) {
-    throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
-  }
-  const gltf = await gltfResponse.json()
+  const isWeb = url.startsWith("http:") || url.startsWith("https:")
+
+  const gltf = await (async () => {
+    if (isWeb) {
+      const gltfResponse = await fetch(url)
+      if (!gltfResponse.ok) {
+        throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
+      }
+      return gltfResponse.json()
+    }
+    return Bun.file(url).json()
+  })()
 
   const bufferPromises: Promise<ArrayBuffer>[] = []
   if (gltf.buffers) {
@@ -36,7 +51,12 @@ export async function fetchGltfAndConvertToGlb(
         if (buffer.uri.startsWith("data:")) {
           bufferPromises.push(Promise.resolve(dataUriToArrayBuffer(buffer.uri)))
         } else {
-          const bufferUrl = new URL(buffer.uri, url).toString()
+          let bufferUrl: string
+          if (isWeb) {
+            bufferUrl = new URL(buffer.uri, url).toString()
+          } else {
+            bufferUrl = path.resolve(path.dirname(url), buffer.uri)
+          }
           bufferPromises.push(fetchAsArrayBuffer(bufferUrl))
         }
       }
