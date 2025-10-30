@@ -1,3 +1,4 @@
+import type { ResvgRenderOptions } from "@resvg/resvg-js"
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
 
 let wasmInitialized = false
@@ -65,8 +66,11 @@ export async function svgToPng(
 ): Promise<Uint8Array> {
   await ensureWasmInitialized()
 
-  const opts = {
+  const opts: ResvgRenderOptions = {
     background: options.background,
+    font: {
+      loadSystemFonts: false,
+    },
     fitTo: options.width
       ? {
           mode: "width" as const,

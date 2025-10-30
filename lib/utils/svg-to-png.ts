@@ -1,4 +1,4 @@
-import { Resvg } from "@resvg/resvg-js"
+import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
 
 export interface SvgToPngOptions {
   width?: number
@@ -11,7 +11,7 @@ export async function svgToPng(
   svgString: string,
   options: SvgToPngOptions = {},
 ): Promise<Buffer> {
-  const opts = {
+  const opts: ResvgRenderOptions = {
     background: options.background,
     fitTo: options.width
       ? {
@@ -26,6 +26,7 @@ export async function svgToPng(
         : undefined,
     font: {
       fontFiles: options.fonts || [],
+      loadSystemFonts: false,
     },
   }
 
