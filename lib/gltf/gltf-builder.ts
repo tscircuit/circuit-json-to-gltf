@@ -289,6 +289,7 @@ export class GLTFBuilder {
     const materials: {
       triangles: NonNullable<typeof box.mesh>["triangles"]
       materialIndex: number
+      face: "top" | "bottom" | "side"
     }[] = []
 
     // Top material with texture
@@ -316,6 +317,7 @@ export class GLTFBuilder {
       materials.push({
         triangles: topTriangles,
         materialIndex: topMaterialIndex,
+        face: "top",
       })
     }
 
@@ -344,6 +346,7 @@ export class GLTFBuilder {
       materials.push({
         triangles: bottomTriangles,
         materialIndex: bottomMaterialIndex,
+        face: "bottom",
       })
     }
 
@@ -362,6 +365,7 @@ export class GLTFBuilder {
       materials.push({
         triangles: sideTriangles,
         materialIndex: sideMaterialIndex,
+        face: "side",
       })
     }
 
@@ -391,7 +395,7 @@ export class GLTFBuilder {
     const sizeX = maxX - minX
     const sizeZ = maxZ - minZ
 
-    for (const { triangles, materialIndex } of materials) {
+    for (const { triangles, materialIndex, face } of materials) {
       const positions: number[] = []
       const normals: number[] = []
       const texcoords: number[] = []
@@ -406,7 +410,10 @@ export class GLTFBuilder {
           // Generate UV coordinates based on X/Z position for top/bottom faces
           const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
           const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
-          texcoords.push(u, 1 - v_coord) // Flip V coordinate
+
+          const texU = face === "top" ? 1 - u : u
+          const texV = 1 - v_coord // Flip V coordinate
+          texcoords.push(texU, texV)
         }
 
         indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
