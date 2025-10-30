@@ -24,6 +24,7 @@ import {
   createBoxMeshByFaces,
   createMeshFromSTL,
   createMeshFromOBJ,
+  convertMeshToGLTFOrientation,
   transformMesh,
   getBounds,
   type MeshData,
@@ -109,6 +110,7 @@ export class GLTFBuilder {
 
     // Apply transformations
     meshData = transformMesh(meshData, box.center, box.rotation)
+    meshData = convertMeshToGLTFOrientation(meshData)
 
     // Create material
     let materialIndex = defaultMaterialIndex
@@ -192,10 +194,8 @@ export class GLTFBuilder {
     const primitives: any[] = []
 
     for (const { meshData, materialIndex } of meshDataArray) {
-      const transformedMeshData = transformMesh(
-        meshData,
-        box.center,
-        box.rotation,
+      const transformedMeshData = convertMeshToGLTFOrientation(
+        transformMesh(meshData, box.center, box.rotation),
       )
 
       const positionAccessorIndex = this.addAccessor(
@@ -414,10 +414,8 @@ export class GLTFBuilder {
       }
 
       const meshData: MeshData = { positions, normals, texcoords, indices }
-      const transformedMeshData = transformMesh(
-        meshData,
-        box.center,
-        box.rotation,
+      const transformedMeshData = convertMeshToGLTFOrientation(
+        transformMesh(meshData, box.center, box.rotation),
       )
 
       const positionAccessorIndex = this.addAccessor(
@@ -567,10 +565,8 @@ export class GLTFBuilder {
 
     for (const [faceName, faceData] of Object.entries(faceMeshes)) {
       // Apply transformations to each face
-      const transformedFaceData = transformMesh(
-        faceData,
-        box.center,
-        box.rotation,
+      const transformedFaceData = convertMeshToGLTFOrientation(
+        transformMesh(faceData, box.center, box.rotation),
       )
 
       // Create accessors for this face

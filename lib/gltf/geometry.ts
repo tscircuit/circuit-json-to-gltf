@@ -464,6 +464,45 @@ export function transformMesh(
   return result
 }
 
+export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
+  const result: MeshData = {
+    positions: [...mesh.positions],
+    normals: [...mesh.normals],
+    texcoords: [...mesh.texcoords],
+    indices: [...mesh.indices],
+  }
+
+  if (mesh.colors) {
+    result.colors = [...mesh.colors]
+  }
+
+  for (let i = 0; i < result.positions.length; i += 3) {
+    const x = result.positions[i]
+    if (typeof x === "number") {
+      result.positions[i] = -x
+    }
+  }
+
+  for (let i = 0; i < result.normals.length; i += 3) {
+    const nx = result.normals[i]
+    if (typeof nx === "number") {
+      result.normals[i] = -nx
+    }
+  }
+
+  for (let i = 0; i < result.indices.length; i += 3) {
+    const i1 = result.indices[i + 1]
+    const i2 = result.indices[i + 2]
+
+    if (typeof i1 === "number" && typeof i2 === "number") {
+      result.indices[i + 1] = i2
+      result.indices[i + 2] = i1
+    }
+  }
+
+  return result
+}
+
 export function getBounds(positions: number[]): { min: Point3; max: Point3 } {
   if (positions.length === 0) {
     return {
