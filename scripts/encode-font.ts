@@ -8,7 +8,7 @@ const __dirname = dirname(__filename)
 // Read the TTF font file
 const fontPath = join(
   __dirname,
-  "../node_modules/@tscircuit/alphabet/TscircuitAlphabet.ttf",
+  "../node_modules/@tscircuit/alphabet/dist/TscircuitAlphabet.ttf",
 )
 const fontBuffer = readFileSync(fontPath)
 
