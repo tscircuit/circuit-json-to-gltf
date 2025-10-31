@@ -93,7 +93,6 @@ test("createBoardMesh subtracts drilled and plated holes", () => {
 
   expect(topArea).toBeCloseTo(expectedArea, 1)
 })
-
 test("convertCircuitJsonTo3D includes board mesh for outline boards", async () => {
   const board: PcbBoard = {
     type: "pcb_board",

@@ -3,7 +3,6 @@ import {
   polygon,
   rectangle,
   roundedRectangle,
-  cylinder,
 } from "@jscad/modeling/src/primitives"
 import {
   translate,
@@ -17,31 +16,30 @@ import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
 import type { PcbBoard, PcbHole, PCBPlatedHole, Point } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
+import {
+  arePointsClockwise,
+  createCircularHole,
+  createCutoutGeoms,
+  DEFAULT_SEGMENTS,
+} from "./pcb-board-cutouts"
+import type { BoardCutout } from "./pcb-board-cutouts"
 
-const DEFAULT_SEGMENTS = 64
 const RADIUS_EPSILON = 1e-4
+
+export { arePointsClockwise } from "./pcb-board-cutouts"
+export type { BoardCutout } from "./pcb-board-cutouts"
 
 export interface BoardGeometryOptions {
   thickness: number
   holes?: PcbHole[]
   platedHoles?: PCBPlatedHole[]
+  cutouts?: BoardCutout[]
 }
 
 const toVec2 = (point: Point, center: { x: number; y: number }): Vec2 => [
   point.x - center.x,
   point.y - center.y,
 ]
-
-export const arePointsClockwise = (points: Vec2[]): boolean => {
-  let area = 0
-  for (let i = 0; i < points.length; i++) {
-    const j = (i + 1) % points.length
-    area += points[i]![0] * points[j]![1]
-    area -= points[j]![0] * points[i]![1]
-  }
-  const signedArea = area / 2
-  return signedArea <= 0
-}
 
 const getNumberProperty = (
   obj: Record<string, unknown>,
@@ -74,19 +72,6 @@ const createBoardOutlineGeom = (
   geom = translate([0, 0, -thickness / 2], geom)
   return geom
 }
-
-const createCircularHole = (
-  x: number,
-  y: number,
-  radius: number,
-  thickness: number,
-): Geom3 =>
-  cylinder({
-    center: [x, y, 0],
-    height: thickness + 1,
-    radius,
-    segments: DEFAULT_SEGMENTS,
-  })
 
 const createPillHole = (
   x: number,
@@ -300,14 +285,16 @@ export const createBoardMesh = (
   board: PcbBoard,
   options: BoardGeometryOptions,
 ): STLMesh => {
-  const { thickness, holes = [], platedHoles = [] } = options
+  const { thickness, holes = [], platedHoles = [], cutouts = [] } = options
   const center = board.center ?? { x: 0, y: 0 }
 
   let boardGeom = createBoardOutlineGeom(board, center, thickness)
 
   const holeGeoms = createHoleGeoms(center, thickness, holes, platedHoles)
-  if (holeGeoms.length > 0) {
-    boardGeom = subtract(boardGeom, ...holeGeoms)
+  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts)
+  const subtractGeoms = [...holeGeoms, ...cutoutGeoms]
+  if (subtractGeoms.length > 0) {
+    boardGeom = subtract(boardGeom, ...subtractGeoms)
   }
 
   boardGeom = rotateX(-Math.PI / 2, boardGeom)
