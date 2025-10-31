@@ -109,7 +109,6 @@ export async function svgToPng(
         : undefined,
   }
 
-  console.log("rendering...")
   const resvg = new Resvg(svgString, opts)
   const pngData = resvg.render()
   const pngBuffer = pngData.asPng()
