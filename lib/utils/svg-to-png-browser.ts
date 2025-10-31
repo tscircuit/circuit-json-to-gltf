@@ -92,7 +92,9 @@ export async function svgToPng(
     font: {
       loadSystemFonts: false,
       fontBuffers: [fontBuffer],
-      sansSerifFamily: "sans-serif",
+      defaultFontFamily: "TscircuitAlphabet",
+      monospaceFamily: "TscircuitAlphabet",
+      sansSerifFamily: "TscircuitAlphabet",
     },
     fitTo: options.width
       ? {
@@ -107,6 +109,7 @@ export async function svgToPng(
         : undefined,
   }
 
+  console.log("rendering...")
   const resvg = new Resvg(svgString, opts)
   const pngData = resvg.render()
   const pngBuffer = pngData.asPng()

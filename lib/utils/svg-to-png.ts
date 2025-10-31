@@ -68,7 +68,9 @@ export async function svgToPng(
           ? [tempFontPath, ...(options.fonts || [])]
           : options.fonts || [],
         loadSystemFonts: false,
-        sansSerifFamily: "sans-serif",
+        defaultFontFamily: "TscircuitAlphabet",
+        monospaceFamily: "TscircuitAlphabet",
+        sansSerifFamily: "TscircuitAlphabet",
       },
     }
 

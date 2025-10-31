@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react"
 import "@google/model-viewer"
 import usbCFlashlightCircuit from "./assets/usb-c-flashlight.json"
+import { convertCircuitJsonToGltf } from "../lib"
 
 // Declare model-viewer as a JSX element
 declare global {
@@ -57,13 +58,10 @@ export default function CircuitToGltfDemo() {
     try {
       const circuit = JSON.parse(circuitJson)
 
-      // Import the converter
-      const { convertCircuitJsonToGltf } = await import("../lib")
-
       // Now we can use texture rendering with WASM!
       const result = await convertCircuitJsonToGltf(circuit, {
         format,
-        boardTextureResolution: 512, // Lower resolution for performance
+        boardTextureResolution: 1024, // Lower resolution for performance
       })
 
       // Create blob URL for model-viewer

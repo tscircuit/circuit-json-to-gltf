@@ -52,8 +52,12 @@ async function convertSvgToPng(
 ): Promise<string> {
   // Check if we're in a browser environment
   if (typeof window !== "undefined" && typeof document !== "undefined") {
-    // Browser: Use Canvas API (works better for complex SVGs)
-    return convertSvgToCanvasBrowser(svgString, resolution, backgroundColor)
+    const { svgToPngDataUrl } = await import("../utils/svg-to-png-browser")
+
+    return await svgToPngDataUrl(svgString, {
+      width: resolution,
+      background: backgroundColor,
+    })
   } else {
     // Node.js/Bun: Use native Resvg for high-quality rendering
     try {
