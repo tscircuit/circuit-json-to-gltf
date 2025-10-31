@@ -1,4 +1,8 @@
 import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
+import { mkdtempSync, unlinkSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
+import tscircuitFont from "../assets/tscircuit-font"
 
 export interface SvgToPngOptions {
   width?: number
@@ -11,30 +15,46 @@ export async function svgToPng(
   svgString: string,
   options: SvgToPngOptions = {},
 ): Promise<Buffer> {
-  const opts: ResvgRenderOptions = {
-    background: options.background,
-    fitTo: options.width
-      ? {
-          mode: "width" as const,
-          value: options.width,
-        }
-      : options.height
+  // Decode the base64-encoded font and write to a temporary file
+  const fontBuffer = Buffer.from(tscircuitFont, "base64")
+  const tempDir = mkdtempSync(join(tmpdir(), "resvg-font-"))
+  const tempFontPath = join(tempDir, "tscircuit-font.ttf")
+  writeFileSync(tempFontPath, fontBuffer)
+
+  try {
+    const opts: ResvgRenderOptions = {
+      background: options.background,
+      fitTo: options.width
         ? {
-            mode: "height" as const,
-            value: options.height,
+            mode: "width" as const,
+            value: options.width,
           }
-        : undefined,
-    font: {
-      fontFiles: options.fonts || [],
-      loadSystemFonts: false,
-    },
+        : options.height
+          ? {
+              mode: "height" as const,
+              value: options.height,
+            }
+          : undefined,
+      font: {
+        fontFiles: [tempFontPath, ...(options.fonts || [])],
+        loadSystemFonts: false,
+        sansSerifFamily: "sans-serif",
+      },
+    }
+
+    const resvg = new Resvg(svgString, opts)
+    const pngData = resvg.render()
+    const pngBuffer = pngData.asPng()
+
+    return Buffer.from(pngBuffer)
+  } finally {
+    // Clean up temporary font file
+    try {
+      unlinkSync(tempFontPath)
+    } catch {
+      // Ignore errors during cleanup
+    }
   }
-
-  const resvg = new Resvg(svgString, opts)
-  const pngData = resvg.render()
-  const pngBuffer = pngData.asPng()
-
-  return Buffer.from(pngBuffer)
 }
 
 export async function svgToPngDataUrl(

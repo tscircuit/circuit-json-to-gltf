@@ -1,5 +1,6 @@
 import type { ResvgRenderOptions } from "@resvg/resvg-js"
 import { Resvg, initWasm } from "@resvg/resvg-wasm"
+import tscircuitFont from "../assets/tscircuit-font"
 
 let wasmInitialized = false
 
@@ -66,10 +67,32 @@ export async function svgToPng(
 ): Promise<Uint8Array> {
   await ensureWasmInitialized()
 
-  const opts: ResvgRenderOptions = {
+  // Decode the base64-encoded font to Uint8Array
+  const base64ToUint8Array = (base64: string): Uint8Array => {
+    const binaryString = atob(base64)
+    const len = binaryString.length
+    const bytes = new Uint8Array(len)
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i)
+    }
+    return bytes
+  }
+
+  const fontBuffer = base64ToUint8Array(tscircuitFont)
+
+  // Note: fontBuffers is supported by resvg-wasm but not in the base types
+  const opts: ResvgRenderOptions & {
+    font?: {
+      fontBuffers?: Uint8Array[]
+      loadSystemFonts?: boolean
+      sansSerifFamily?: string
+    }
+  } = {
     background: options.background,
     font: {
       loadSystemFonts: false,
+      fontBuffers: [fontBuffer],
+      sansSerifFamily: "sans-serif",
     },
     fitTo: options.width
       ? {
