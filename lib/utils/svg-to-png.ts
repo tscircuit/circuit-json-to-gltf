@@ -1,7 +1,4 @@
 import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
-import { mkdtempSync, unlinkSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
-import { join } from "node:path"
 import tscircuitFont from "../assets/tscircuit-font"
 
 export interface SvgToPngOptions {
@@ -11,15 +8,46 @@ export interface SvgToPngOptions {
   fonts?: string[]
 }
 
+// Helper to check if we're in a Node.js environment
+const isNode =
+  typeof process !== "undefined" && process.versions && process.versions.node
+
 export async function svgToPng(
   svgString: string,
   options: SvgToPngOptions = {},
 ): Promise<Buffer> {
-  // Decode the base64-encoded font and write to a temporary file
   const fontBuffer = Buffer.from(tscircuitFont, "base64")
-  const tempDir = mkdtempSync(join(tmpdir(), "resvg-font-"))
-  const tempFontPath = join(tempDir, "tscircuit-font.ttf")
-  writeFileSync(tempFontPath, fontBuffer)
+
+  let tempFontPath: string | undefined
+  let cleanupFn: (() => void) | undefined
+
+  // In Node.js, write font to a temporary file
+  if (isNode) {
+    try {
+      const [fs, os, path] = await Promise.all([
+        import("node:fs"),
+        import("node:os"),
+        import("node:path"),
+      ])
+
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "resvg-font-"))
+      tempFontPath = path.join(tempDir, "tscircuit-font.ttf")
+      fs.writeFileSync(tempFontPath, fontBuffer)
+
+      cleanupFn = () => {
+        try {
+          fs.unlinkSync(tempFontPath!)
+        } catch {
+          // Ignore errors during cleanup
+        }
+      }
+    } catch (err) {
+      console.warn(
+        "Failed to create temporary font file, falling back to browser mode:",
+        err,
+      )
+    }
+  }
 
   try {
     const opts: ResvgRenderOptions = {
@@ -36,7 +64,9 @@ export async function svgToPng(
             }
           : undefined,
       font: {
-        fontFiles: [tempFontPath, ...(options.fonts || [])],
+        fontFiles: tempFontPath
+          ? [tempFontPath, ...(options.fonts || [])]
+          : options.fonts || [],
         loadSystemFonts: false,
         sansSerifFamily: "sans-serif",
       },
@@ -49,10 +79,8 @@ export async function svgToPng(
     return Buffer.from(pngBuffer)
   } finally {
     // Clean up temporary font file
-    try {
-      unlinkSync(tempFontPath)
-    } catch {
-      // Ignore errors during cleanup
+    if (cleanupFn) {
+      cleanupFn()
     }
   }
 }
