@@ -141,3 +141,77 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
   })
   expect(boardBox.size.y).toBeCloseTo(board.thickness ?? 1.2, 6)
 })
+
+test("convertCircuitJsonTo3D handles pcb panels with multiple boards", async () => {
+  const circuit: CircuitJson = [
+    {
+      type: "pcb_panel",
+      pcb_panel_id: "panel_0",
+      width: 100,
+      height: 100,
+    } as any,
+    {
+      type: "pcb_board",
+      pcb_board_id: "board_0",
+      center: { x: -25, y: 25 },
+      width: 40,
+      height: 40,
+      thickness: 1.6,
+      material: "fr4",
+      num_layers: 2,
+    },
+    {
+      type: "pcb_board",
+      pcb_board_id: "board_1",
+      center: { x: 25, y: 25 },
+      width: 40,
+      height: 40,
+      thickness: 1.6,
+      material: "fr4",
+      num_layers: 2,
+    },
+    {
+      type: "pcb_board",
+      pcb_board_id: "board_2",
+      center: { x: -25, y: -25 },
+      width: 40,
+      height: 40,
+      thickness: 1.6,
+      material: "fr4",
+      num_layers: 2,
+    },
+    {
+      type: "pcb_board",
+      pcb_board_id: "board_3",
+      center: { x: 25, y: -25 },
+      width: 40,
+      height: 40,
+      thickness: 1.6,
+      material: "fr4",
+      num_layers: 2,
+    },
+  ]
+
+  const scene = await convertCircuitJsonTo3D(circuit, {
+    renderBoardTextures: false,
+  })
+
+  expect(scene.boxes).toHaveLength(4)
+
+  const expectedCenters = [
+    { x: -25, z: 25 },
+    { x: 25, z: 25 },
+    { x: -25, z: -25 },
+    { x: 25, z: -25 },
+  ]
+
+  for (const expected of expectedCenters) {
+    expect(
+      scene.boxes.some(
+        (box) =>
+          Math.abs(box.center.x - expected.x) < 1e-6 &&
+          Math.abs(box.center.z - expected.z) < 1e-6,
+      ),
+    ).toBe(true)
+  }
+})

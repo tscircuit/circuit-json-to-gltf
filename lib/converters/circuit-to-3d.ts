@@ -1,6 +1,7 @@
 import {
   type CircuitJson,
   type CadComponent,
+  type PcbBoard,
   type PcbHole,
   type PCBPlatedHole,
   type PcbCutout,
@@ -71,30 +72,50 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
-  // Get PCB board (optional)
-  const pcbBoard = db.pcb_board?.list?.()[0]
-  const effectiveBoardThickness = pcbBoard?.thickness ?? boardThickness
+  const pcbBoards = (db.pcb_board?.list?.() ?? []) as PcbBoard[]
+  const primaryBoard = pcbBoards[0]
+  const primaryBoardThickness =
+    primaryBoard?.thickness ?? boardThickness ?? DEFAULT_BOARD_THICKNESS
+  const boardThicknessById = new Map<string, number>()
 
-  if (pcbBoard) {
-    // Create the main PCB board box
-    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PCBPlatedHole[]
-    const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
-    const boardCutouts = pcbCutouts.filter((cutout) => {
-      const cutoutBoardId = (cutout as Record<string, any>).pcb_board_id
-      return (
-        !cutoutBoardId ||
-        cutoutBoardId ===
-          (pcbBoard as unknown as Record<string, any>).pcb_board_id
-      )
+  const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
+  const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
+  const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+
+  const shouldRenderBoardTextures =
+    shouldRenderTextures && textureResolution > 0 && pcbBoards.length === 1
+
+  const filterByBoard = <T extends Record<string, any>>(
+    items: T[],
+    boardId: string | undefined,
+  ): T[] =>
+    items.filter((item) => {
+      const itemBoardId = item.pcb_board_id as string | undefined
+      return !itemBoardId || itemBoardId === boardId
     })
+
+  for (const pcbBoard of pcbBoards) {
+    const boardId = (pcbBoard as unknown as Record<string, any>).pcb_board_id
+    const effectiveBoardThickness = pcbBoard.thickness ?? primaryBoardThickness
+
+    if (boardId) {
+      boardThicknessById.set(boardId, effectiveBoardThickness)
+    }
 
     const boardMesh = createBoardMesh(pcbBoard, {
       thickness: effectiveBoardThickness,
-      holes: pcbHoles,
-      platedHoles: pcbPlatedHoles,
-      cutouts: boardCutouts,
+      holes: filterByBoard(
+        pcbHoles as unknown as Record<string, any>[],
+        boardId,
+      ) as any,
+      platedHoles: filterByBoard(
+        pcbPlatedHoles as unknown as Record<string, any>[],
+        boardId,
+      ) as any,
+      cutouts: filterByBoard(
+        pcbCutouts as unknown as Record<string, any>[],
+        boardId,
+      ) as any,
     })
 
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
@@ -115,8 +136,7 @@ export async function convertCircuitJsonTo3D(
       color: pcbColor,
     }
 
-    // Render board textures if requested and resolution > 0
-    if (shouldRenderTextures && textureResolution > 0) {
+    if (shouldRenderBoardTextures) {
       try {
         const textures = await renderBoardTextures(
           circuitJson,
@@ -128,24 +148,31 @@ export async function convertCircuitJsonTo3D(
         }
       } catch (error) {
         console.warn("Failed to render board textures:", error)
-        // If texture rendering fails, use the fallback color
         boardBox.color = pcbColor
       }
     } else {
-      // No textures requested, use solid color
       boardBox.color = pcbColor
     }
 
     boxes.push(boardBox)
   }
 
+  const getBoardThickness = (pcbBoardId?: string | null): number => {
+    if (pcbBoardId && boardThicknessById.has(pcbBoardId)) {
+      return boardThicknessById.get(pcbBoardId)!
+    }
+    return primaryBoardThickness
+  }
+
   const pcbPours = (db.pcb_copper_pour?.list?.() ?? []) as PcbCopperPour[]
 
   for (const pour of pcbPours) {
     const isBottomLayer = pour.layer === "bottom"
+    const boardId = (pour as unknown as Record<string, any>).pcb_board_id
+    const boardThickness = getBoardThickness(boardId)
     const y = isBottomLayer
-      ? -(effectiveBoardThickness / 2) - COPPER_THICKNESS / 2
-      : effectiveBoardThickness / 2 + COPPER_THICKNESS / 2
+      ? -(boardThickness / 2) - COPPER_THICKNESS / 2
+      : boardThickness / 2 + COPPER_THICKNESS / 2
 
     if (pour.shape === "rect") {
       const box: Box3D = {
@@ -256,6 +283,10 @@ export async function convertCircuitJsonTo3D(
         }
 
     // Determine position
+    const boardThicknessForComponent = getBoardThickness(
+      pcbComponent?.pcb_board_id,
+    )
+
     const center = cad.position
       ? {
           x: cad.position.x,
@@ -265,8 +296,8 @@ export async function convertCircuitJsonTo3D(
       : {
           x: pcbComponent?.center.x ?? 0,
           y: isBottomLayer
-            ? -(effectiveBoardThickness / 2 + size.y / 2)
-            : effectiveBoardThickness / 2 + size.y / 2,
+            ? -(boardThicknessForComponent / 2 + size.y / 2)
+            : boardThicknessForComponent / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
 
@@ -395,8 +426,8 @@ export async function convertCircuitJsonTo3D(
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(effectiveBoardThickness + compHeight / 2)
-            : effectiveBoardThickness / 2 + compHeight / 2,
+            ? -(getBoardThickness(component.pcb_board_id) + compHeight / 2)
+            : getBoardThickness(component.pcb_board_id) / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
@@ -414,22 +445,23 @@ export async function convertCircuitJsonTo3D(
   // Create a default camera positioned to view the board or components
   let camera: Camera3D
 
-  if (pcbBoard) {
+  if (primaryBoard) {
     const boardDiagonal = Math.sqrt(
-      pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
+      primaryBoard.width * primaryBoard.width +
+        primaryBoard.height * primaryBoard.height,
     )
     const cameraDistance = boardDiagonal * 1.5
 
     camera = {
       position: {
-        x: pcbBoard.center.x + cameraDistance * 0.5,
+        x: primaryBoard.center.x + cameraDistance * 0.5,
         y: cameraDistance * 0.7,
-        z: pcbBoard.center.y + cameraDistance * 0.5,
+        z: primaryBoard.center.y + cameraDistance * 0.5,
       },
       target: {
-        x: pcbBoard.center.x,
+        x: primaryBoard.center.x,
         y: 0,
-        z: pcbBoard.center.y,
+        z: primaryBoard.center.y,
       },
       up: { x: 0, y: 1, z: 0 },
       fov: 50,
