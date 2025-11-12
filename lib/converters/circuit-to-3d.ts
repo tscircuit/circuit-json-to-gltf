@@ -6,6 +6,7 @@ import {
   type PCBPlatedHole,
   type PcbCutout,
   type PcbCopperPour,
+  type PcbPanel,
 } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type {
@@ -28,6 +29,7 @@ import {
   createBoardMesh,
   createBoundingBox,
   geom3ToTriangles,
+  type BoardCutout,
 } from "../utils/pcb-board-geometry"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
 import { polygon } from "@jscad/modeling/src/primitives"
@@ -40,6 +42,16 @@ import type { Vec2 } from "@jscad/modeling/src/maths/types"
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
 const COPPER_THICKNESS = 0.035
+const PANEL_CUTOUT_CLEARANCE = 0.25
+
+const toFiniteNumber = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value)) return value
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value)
+    if (Number.isFinite(parsed)) return parsed
+  }
+  return undefined
+}
 
 function convertRotationFromCadRotation(rot: {
   x: number
@@ -73,10 +85,25 @@ export async function convertCircuitJsonTo3D(
   const boxes: Box3D[] = []
 
   const pcbBoards = (db.pcb_board?.list?.() ?? []) as PcbBoard[]
+  const pcbPanels = (db.pcb_panel?.list?.() ?? []) as PcbPanel[]
   const primaryBoard = pcbBoards[0]
   const primaryBoardThickness =
     primaryBoard?.thickness ?? boardThickness ?? DEFAULT_BOARD_THICKNESS
   const boardThicknessById = new Map<string, number>()
+
+  const boardsByPanelId = new Map<string, PcbBoard[]>()
+  const boardsWithoutPanel: PcbBoard[] = []
+
+  for (const pcbBoard of pcbBoards) {
+    const record = pcbBoard as unknown as Record<string, any>
+    const panelId = record.pcb_panel_id as string | undefined
+    if (panelId) {
+      if (!boardsByPanelId.has(panelId)) boardsByPanelId.set(panelId, [])
+      boardsByPanelId.get(panelId)!.push(pcbBoard)
+    } else {
+      boardsWithoutPanel.push(pcbBoard)
+    }
+  }
 
   const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
   const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
@@ -93,6 +120,102 @@ export async function convertCircuitJsonTo3D(
       const itemBoardId = item.pcb_board_id as string | undefined
       return !itemBoardId || itemBoardId === boardId
     })
+
+  let unassignedBoardsConsumed = false
+
+  for (const panel of pcbPanels) {
+    const panelRecord = panel as unknown as Record<string, any>
+    const panelId = panel.pcb_panel_id
+    const panelCenter = (panelRecord.center as
+      | { x: number; y: number }
+      | undefined) ?? { x: 0, y: 0 }
+    const panelWidth = toFiniteNumber(panel.width)
+    const panelHeight = toFiniteNumber(panel.height)
+    if (!panelWidth || !panelHeight) continue
+
+    const panelThickness =
+      toFiniteNumber(panelRecord.thickness) ?? primaryBoardThickness
+
+    const explicitCutouts = Array.isArray(panelRecord.cutouts)
+      ? (panelRecord.cutouts as BoardCutout[])
+      : []
+
+    const boardsForPanel = (() => {
+      const linkedBoards = boardsByPanelId.get(panelId) ?? []
+      if (linkedBoards.length > 0) {
+        return linkedBoards
+      }
+      if (!unassignedBoardsConsumed && boardsWithoutPanel.length > 0) {
+        unassignedBoardsConsumed = true
+        return boardsWithoutPanel
+      }
+      return []
+    })()
+
+    const boardCutouts: BoardCutout[] = boardsForPanel.map((board, index) => {
+      const boardCenter = board.center ?? { x: 0, y: 0 }
+      if (Array.isArray(board.outline) && board.outline.length >= 3) {
+        return {
+          type: "pcb_cutout",
+          pcb_cutout_id: `${panelId ?? "panel"}-cutout-${
+            board.pcb_board_id ?? index
+          }`,
+          shape: "polygon",
+          points: board.outline.map((point) => ({ x: point.x, y: point.y })),
+        } as BoardCutout
+      }
+
+      const width =
+        toFiniteNumber(board.width) ??
+        (typeof board.width === "number" ? board.width : 0)
+      const height =
+        toFiniteNumber(board.height) ??
+        (typeof board.height === "number" ? board.height : 0)
+
+      return {
+        type: "pcb_cutout",
+        pcb_cutout_id: `${panelId ?? "panel"}-cutout-${
+          board.pcb_board_id ?? index
+        }`,
+        shape: "rect",
+        center: { x: boardCenter.x, y: boardCenter.y },
+        width: width + PANEL_CUTOUT_CLEARANCE,
+        height: height + PANEL_CUTOUT_CLEARANCE,
+      } as BoardCutout
+    })
+
+    const panelLikeBoard: PcbBoard = {
+      ...(panelRecord as unknown as PcbBoard),
+      center: panelCenter,
+      width: panelWidth,
+      height: panelHeight,
+      thickness: panelThickness,
+    }
+
+    const panelMesh = createBoardMesh(panelLikeBoard, {
+      thickness: panelThickness,
+      cutouts: [...explicitCutouts, ...boardCutouts],
+    })
+
+    const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
+    const meshHeight = panelMesh.boundingBox.max.z - panelMesh.boundingBox.min.z
+
+    const panelColor =
+      panel.covered_with_solder_mask === false
+        ? "rgba(194,155,96,0.9)"
+        : pcbColor
+
+    boxes.push({
+      center: { x: panelCenter.x, y: 0, z: panelCenter.y },
+      size: {
+        x: Number.isFinite(meshWidth) ? meshWidth : panelWidth,
+        y: panelThickness,
+        z: Number.isFinite(meshHeight) ? meshHeight : panelHeight,
+      },
+      mesh: panelMesh,
+      color: panelColor,
+    })
+  }
 
   for (const pcbBoard of pcbBoards) {
     const boardId = (pcbBoard as unknown as Record<string, any>).pcb_board_id
