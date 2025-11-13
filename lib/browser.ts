@@ -29,6 +29,7 @@ import { convertSceneToGLTF } from "./converters/scene-to-gltf"
 
 const DEFAULT_BOARD_THICKNESS = 1.6
 const DEFAULT_COMPONENT_HEIGHT = 2
+const DEFAULT_BOARD_DIMENSION = 100 // mm
 
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
@@ -50,8 +51,8 @@ export async function convertCircuitJsonTo3D(
     throw new Error("No pcb_board found in circuit JSON")
   }
 
-  const boardWidth = pcbBoard.width ?? 100
-  const boardHeight = pcbBoard.height ?? 100
+  const boardWidth = pcbBoard.width ?? DEFAULT_BOARD_DIMENSION
+  const boardHeight = pcbBoard.height ?? DEFAULT_BOARD_DIMENSION
 
   // Create the main PCB board box (without textures in browser)
   boxes.push({

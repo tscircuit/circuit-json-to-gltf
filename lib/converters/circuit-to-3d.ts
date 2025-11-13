@@ -48,6 +48,7 @@ import type { Vec2 } from "@jscad/modeling/src/maths/types"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
+const DEFAULT_BOARD_DIMENSION = 100 // mm
 const COPPER_THICKNESS = 0.035
 const PANEL_CUTOUT_CLEARANCE = 0.25
 
@@ -58,8 +59,8 @@ function getBestCameraPositionFromCircuitJson(
   if (pcbPanels.length > 0) {
     const panel = pcbPanels[0]!
     const panelCenter = panel.center ?? { x: 0, y: 0 }
-    const panelWidth = panel.width ?? 100
-    const panelHeight = panel.height ?? 100
+    const panelWidth = panel.width ?? DEFAULT_BOARD_DIMENSION
+    const panelHeight = panel.height ?? DEFAULT_BOARD_DIMENSION
 
     const panelDiagonal = Math.sqrt(
       panelWidth * panelWidth + panelHeight * panelHeight,
@@ -86,8 +87,8 @@ function getBestCameraPositionFromCircuitJson(
 
   if (pcbBoards.length > 0) {
     const board = pcbBoards[0]!
-    const boardWidth = board.width ?? 100
-    const boardHeight = board.height ?? 100
+    const boardWidth = board.width ?? DEFAULT_BOARD_DIMENSION
+    const boardHeight = board.height ?? DEFAULT_BOARD_DIMENSION
     const boardDiagonal = Math.sqrt(
       boardWidth * boardWidth + boardHeight * boardHeight,
     )
@@ -203,33 +204,43 @@ export async function convertCircuitJsonTo3D(
       return []
     })()
 
-    const boardCutouts: BoardCutout[] = boardsForPanel.map((board, index) => {
-      const boardCenter = board.center ?? { x: 0, y: 0 }
-      if (Array.isArray(board.outline) && board.outline.length >= 3) {
+    const boardCutouts: BoardCutout[] = boardsForPanel
+      .map((board, index) => {
+        const boardCenter = board.center ?? { x: 0, y: 0 }
+        if (Array.isArray(board.outline) && board.outline.length >= 3) {
+          return {
+            type: "pcb_cutout",
+            pcb_cutout_id: `${panelId ?? "panel"}-cutout-${
+              board.pcb_board_id ?? index
+            }`,
+            shape: "polygon",
+            points: board.outline.map((point) => ({ x: point.x, y: point.y })),
+          } as BoardCutout
+        }
+
+        const width = board.width ?? 0
+        const height = board.height ?? 0
+
+        // Warn if board has no dimensions
+        if (width <= 0 || height <= 0) {
+          console.warn(
+            `Board ${board.pcb_board_id ?? index} has invalid dimensions (${width}x${height}), skipping cutout`,
+          )
+          return null
+        }
+
         return {
           type: "pcb_cutout",
           pcb_cutout_id: `${panelId ?? "panel"}-cutout-${
             board.pcb_board_id ?? index
           }`,
-          shape: "polygon",
-          points: board.outline.map((point) => ({ x: point.x, y: point.y })),
+          shape: "rect",
+          center: { x: boardCenter.x, y: boardCenter.y },
+          width: width + PANEL_CUTOUT_CLEARANCE * 2,
+          height: height + PANEL_CUTOUT_CLEARANCE * 2,
         } as BoardCutout
-      }
-
-      const width = board.width ?? 0
-      const height = board.height ?? 0
-
-      return {
-        type: "pcb_cutout",
-        pcb_cutout_id: `${panelId ?? "panel"}-cutout-${
-          board.pcb_board_id ?? index
-        }`,
-        shape: "rect",
-        center: { x: boardCenter.x, y: boardCenter.y },
-        width: width + PANEL_CUTOUT_CLEARANCE,
-        height: height + PANEL_CUTOUT_CLEARANCE,
-      } as BoardCutout
-    })
+      })
+      .filter((cutout): cutout is BoardCutout => cutout !== null)
 
     const panelLikeBoard: Partial<PcbBoard> = {
       center: panelCenter,
@@ -254,9 +265,9 @@ export async function convertCircuitJsonTo3D(
     boxes.push({
       center: { x: panelCenter.x, y: 0, z: panelCenter.y },
       size: {
-        x: Number.isFinite(meshWidth) ? meshWidth : panelWidth,
+        x: meshWidth > 0 ? meshWidth : panelWidth,
         y: panelThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : panelHeight,
+        z: meshHeight > 0 ? meshHeight : panelHeight,
       },
       mesh: panelMesh,
       color: panelColor,
@@ -289,9 +300,15 @@ export async function convertCircuitJsonTo3D(
         z: pcbBoard.center.y,
       },
       size: {
-        x: Number.isFinite(meshWidth) ? meshWidth : (pcbBoard.width ?? 100),
+        x:
+          meshWidth > 0
+            ? meshWidth
+            : (pcbBoard.width ?? DEFAULT_BOARD_DIMENSION),
         y: pcbThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : (pcbBoard.height ?? 100),
+        z:
+          meshHeight > 0
+            ? meshHeight
+            : (pcbBoard.height ?? DEFAULT_BOARD_DIMENSION),
       },
       mesh: boardMesh,
       color: pcbColor,
@@ -318,18 +335,15 @@ export async function convertCircuitJsonTo3D(
     boxes.push(boardBox)
   }
 
-  const getBoardThickness = (): number => pcbThickness
-
   const pcbPours = (db.pcb_copper_pour?.list?.() ??
     []) as PcbCopperPourWithBoardId[]
 
   for (const pour of pcbPours) {
     const isBottomLayer = pour.layer === "bottom"
     const boardId = pour.pcb_board_id
-    const boardThickness = getBoardThickness()
     const y = isBottomLayer
-      ? -(boardThickness / 2) - COPPER_THICKNESS / 2
-      : boardThickness / 2 + COPPER_THICKNESS / 2
+      ? -(pcbThickness / 2) - COPPER_THICKNESS / 2
+      : pcbThickness / 2 + COPPER_THICKNESS / 2
 
     if (pour.shape === "rect") {
       const box: Box3D = {
@@ -439,8 +453,6 @@ export async function convertCircuitJsonTo3D(
         }
 
     // Determine position
-    const boardThicknessForComponent = getBoardThickness()
-
     const center = cad.position
       ? {
           x: cad.position.x,
@@ -450,8 +462,8 @@ export async function convertCircuitJsonTo3D(
       : {
           x: pcbComponent?.center.x ?? 0,
           y: isBottomLayer
-            ? -(boardThicknessForComponent / 2 + size.y / 2)
-            : boardThicknessForComponent / 2 + size.y / 2,
+            ? -(pcbThickness / 2 + size.y / 2)
+            : pcbThickness / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
 
@@ -580,8 +592,8 @@ export async function convertCircuitJsonTo3D(
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(getBoardThickness() / 2 + compHeight / 2)
-            : getBoardThickness() / 2 + compHeight / 2,
+            ? -(pcbThickness / 2 + compHeight / 2)
+            : pcbThickness / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
