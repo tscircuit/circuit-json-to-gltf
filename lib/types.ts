@@ -90,7 +90,7 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj" | "glb"
+  meshType?: "stl" | "obj" | "glb" | "gltf"
   label?: string
   labelColor?: Color
 }
@@ -149,4 +149,45 @@ export interface BoardRenderOptions {
   silkscreenColor?: string
   padColor?: string
   drillColor?: string
+}
+
+import type {
+  PcbBoard,
+  PcbPanel,
+  PcbHole,
+  PCBPlatedHole,
+  PcbCutout,
+  PcbCopperPour,
+} from "circuit-json"
+import type { BoardCutout } from "./utils/pcb-board-geometry"
+
+export type PcbBoardWithId = PcbBoard & {
+  pcb_board_id?: string
+}
+
+export type PcbPanelWithExtras = PcbPanel & {
+  pcb_panel_id: string
+  center?: { x: number; y: number }
+  thickness?: number
+  cutouts?: BoardCutout[]
+}
+
+export type PcbHoleWithBoardId = PcbHole & {
+  pcb_board_id?: string
+}
+
+export type PcbPlatedHoleWithBoardId = PCBPlatedHole & {
+  pcb_board_id?: string
+}
+
+export type PcbCutoutWithBoardId = PcbCutout & {
+  pcb_board_id?: string
+}
+
+export type PcbCopperPourWithBoardId = PcbCopperPour & {
+  pcb_board_id?: string
+}
+
+export type PcbBoardExtended = PcbBoard & {
+  pcb_panel_id?: string
 }

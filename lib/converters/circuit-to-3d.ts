@@ -16,6 +16,13 @@ import type {
   Camera3D,
   Light3D,
   STLMesh,
+  PcbBoardWithId,
+  PcbPanelWithExtras,
+  PcbHoleWithBoardId,
+  PcbPlatedHoleWithBoardId,
+  PcbCutoutWithBoardId,
+  PcbCopperPourWithBoardId,
+  PcbBoardExtended,
 } from "../types"
 import { loadSTL } from "../loaders/stl"
 import { loadOBJ } from "../loaders/obj"
@@ -44,13 +51,75 @@ const DEFAULT_COMPONENT_HEIGHT = 2 // mm
 const COPPER_THICKNESS = 0.035
 const PANEL_CUTOUT_CLEARANCE = 0.25
 
-const toFiniteNumber = (value: unknown): number | undefined => {
-  if (typeof value === "number" && Number.isFinite(value)) return value
-  if (typeof value === "string") {
-    const parsed = Number.parseFloat(value)
-    if (Number.isFinite(parsed)) return parsed
+function getBestCameraPositionFromCircuitJson(
+  pcbBoards: PcbBoard[],
+  pcbPanels: PcbPanelWithExtras[],
+): Camera3D {
+  if (pcbPanels.length > 0) {
+    const panel = pcbPanels[0]!
+    const panelCenter = panel.center ?? { x: 0, y: 0 }
+    const panelWidth = panel.width ?? 100
+    const panelHeight = panel.height ?? 100
+
+    const panelDiagonal = Math.sqrt(
+      panelWidth * panelWidth + panelHeight * panelHeight,
+    )
+    const cameraDistance = panelDiagonal * 1.5
+
+    return {
+      position: {
+        x: panelCenter.x + cameraDistance * 0.5,
+        y: cameraDistance * 0.7,
+        z: panelCenter.y + cameraDistance * 0.5,
+      },
+      target: {
+        x: panelCenter.x,
+        y: 0,
+        z: panelCenter.y,
+      },
+      up: { x: 0, y: 1, z: 0 },
+      fov: 50,
+      near: 0.1,
+      far: cameraDistance * 4,
+    }
   }
-  return undefined
+
+  if (pcbBoards.length > 0) {
+    const board = pcbBoards[0]!
+    const boardWidth = board.width ?? 100
+    const boardHeight = board.height ?? 100
+    const boardDiagonal = Math.sqrt(
+      boardWidth * boardWidth + boardHeight * boardHeight,
+    )
+    const cameraDistance = boardDiagonal * 1.5
+
+    return {
+      position: {
+        x: board.center.x + cameraDistance * 0.5,
+        y: cameraDistance * 0.7,
+        z: board.center.y + cameraDistance * 0.5,
+      },
+      target: {
+        x: board.center.x,
+        y: 0,
+        z: board.center.y,
+      },
+      up: { x: 0, y: 1, z: 0 },
+      fov: 50,
+      near: 0.1,
+      far: cameraDistance * 4,
+    }
+  }
+
+  // Fallback to default camera
+  return {
+    position: { x: 30, y: 30, z: 25 },
+    target: { x: 0, y: 0, z: 0 },
+    up: { x: 0, y: 1, z: 0 },
+    fov: 50,
+    near: 0.1,
+    far: 120,
+  }
 }
 
 function convertRotationFromCadRotation(rot: {
@@ -84,19 +153,15 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
-  const pcbBoards = (db.pcb_board?.list?.() ?? []) as PcbBoard[]
-  const pcbPanels = (db.pcb_panel?.list?.() ?? []) as PcbPanel[]
-  const primaryBoard = pcbBoards[0]
-  const primaryBoardThickness =
-    primaryBoard?.thickness ?? boardThickness ?? DEFAULT_BOARD_THICKNESS
-  const boardThicknessById = new Map<string, number>()
+  const pcbBoards = (db.pcb_board?.list?.() ?? []) as PcbBoardExtended[]
+  const pcbPanels = (db.pcb_panel?.list?.() ?? []) as PcbPanelWithExtras[]
+  const pcbThickness = boardThickness ?? DEFAULT_BOARD_THICKNESS
 
-  const boardsByPanelId = new Map<string, PcbBoard[]>()
-  const boardsWithoutPanel: PcbBoard[] = []
+  const boardsByPanelId = new Map<string, PcbBoardExtended[]>()
+  const boardsWithoutPanel: PcbBoardExtended[] = []
 
   for (const pcbBoard of pcbBoards) {
-    const record = pcbBoard as unknown as Record<string, any>
-    const panelId = record.pcb_panel_id as string | undefined
+    const panelId = pcbBoard.pcb_panel_id
     if (panelId) {
       if (!boardsByPanelId.has(panelId)) boardsByPanelId.set(panelId, [])
       boardsByPanelId.get(panelId)!.push(pcbBoard)
@@ -105,40 +170,26 @@ export async function convertCircuitJsonTo3D(
     }
   }
 
-  const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-  const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
-  const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+  const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHoleWithBoardId[]
+  const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
+    []) as PcbPlatedHoleWithBoardId[]
+  const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutoutWithBoardId[]
 
   const shouldRenderBoardTextures =
     shouldRenderTextures && textureResolution > 0 && pcbBoards.length === 1
 
-  const filterByBoard = <T extends Record<string, any>>(
-    items: T[],
-    boardId: string | undefined,
-  ): T[] =>
-    items.filter((item) => {
-      const itemBoardId = item.pcb_board_id as string | undefined
-      return !itemBoardId || itemBoardId === boardId
-    })
-
   let unassignedBoardsConsumed = false
 
   for (const panel of pcbPanels) {
-    const panelRecord = panel as unknown as Record<string, any>
     const panelId = panel.pcb_panel_id
-    const panelCenter = (panelRecord.center as
-      | { x: number; y: number }
-      | undefined) ?? { x: 0, y: 0 }
-    const panelWidth = toFiniteNumber(panel.width)
-    const panelHeight = toFiniteNumber(panel.height)
+    const panelCenter = panel.center ?? { x: 0, y: 0 }
+    const panelWidth = panel.width
+    const panelHeight = panel.height
     if (!panelWidth || !panelHeight) continue
 
-    const panelThickness =
-      toFiniteNumber(panelRecord.thickness) ?? primaryBoardThickness
+    const panelThickness = panel.thickness ?? pcbThickness
 
-    const explicitCutouts = Array.isArray(panelRecord.cutouts)
-      ? (panelRecord.cutouts as BoardCutout[])
-      : []
+    const explicitCutouts = Array.isArray(panel.cutouts) ? panel.cutouts : []
 
     const boardsForPanel = (() => {
       const linkedBoards = boardsByPanelId.get(panelId) ?? []
@@ -165,12 +216,8 @@ export async function convertCircuitJsonTo3D(
         } as BoardCutout
       }
 
-      const width =
-        toFiniteNumber(board.width) ??
-        (typeof board.width === "number" ? board.width : 0)
-      const height =
-        toFiniteNumber(board.height) ??
-        (typeof board.height === "number" ? board.height : 0)
+      const width = board.width ?? 0
+      const height = board.height ?? 0
 
       return {
         type: "pcb_cutout",
@@ -184,15 +231,14 @@ export async function convertCircuitJsonTo3D(
       } as BoardCutout
     })
 
-    const panelLikeBoard: PcbBoard = {
-      ...(panelRecord as unknown as PcbBoard),
+    const panelLikeBoard: Partial<PcbBoard> = {
       center: panelCenter,
       width: panelWidth,
       height: panelHeight,
       thickness: panelThickness,
     }
 
-    const panelMesh = createBoardMesh(panelLikeBoard, {
+    const panelMesh = createBoardMesh(panelLikeBoard as PcbBoard, {
       thickness: panelThickness,
       cutouts: [...explicitCutouts, ...boardCutouts],
     })
@@ -218,27 +264,19 @@ export async function convertCircuitJsonTo3D(
   }
 
   for (const pcbBoard of pcbBoards) {
-    const boardId = (pcbBoard as unknown as Record<string, any>).pcb_board_id
-    const effectiveBoardThickness = pcbBoard.thickness ?? primaryBoardThickness
-
-    if (boardId) {
-      boardThicknessById.set(boardId, effectiveBoardThickness)
-    }
+    const boardId = pcbBoard.pcb_board_id
 
     const boardMesh = createBoardMesh(pcbBoard, {
-      thickness: effectiveBoardThickness,
-      holes: filterByBoard(
-        pcbHoles as unknown as Record<string, any>[],
-        boardId,
-      ) as any,
-      platedHoles: filterByBoard(
-        pcbPlatedHoles as unknown as Record<string, any>[],
-        boardId,
-      ) as any,
-      cutouts: filterByBoard(
-        pcbCutouts as unknown as Record<string, any>[],
-        boardId,
-      ) as any,
+      thickness: pcbThickness,
+      holes: pcbHoles.filter(
+        (item) => !item.pcb_board_id || item.pcb_board_id === boardId,
+      ) as PcbHole[],
+      platedHoles: pcbPlatedHoles.filter(
+        (item) => !item.pcb_board_id || item.pcb_board_id === boardId,
+      ) as PCBPlatedHole[],
+      cutouts: pcbCutouts.filter(
+        (item) => !item.pcb_board_id || item.pcb_board_id === boardId,
+      ) as PcbCutout[],
     })
 
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
@@ -251,9 +289,9 @@ export async function convertCircuitJsonTo3D(
         z: pcbBoard.center.y,
       },
       size: {
-        x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
-        y: effectiveBoardThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
+        x: Number.isFinite(meshWidth) ? meshWidth : (pcbBoard.width ?? 100),
+        y: pcbThickness,
+        z: Number.isFinite(meshHeight) ? meshHeight : (pcbBoard.height ?? 100),
       },
       mesh: boardMesh,
       color: pcbColor,
@@ -280,19 +318,15 @@ export async function convertCircuitJsonTo3D(
     boxes.push(boardBox)
   }
 
-  const getBoardThickness = (pcbBoardId?: string | null): number => {
-    if (pcbBoardId && boardThicknessById.has(pcbBoardId)) {
-      return boardThicknessById.get(pcbBoardId)!
-    }
-    return primaryBoardThickness
-  }
+  const getBoardThickness = (): number => pcbThickness
 
-  const pcbPours = (db.pcb_copper_pour?.list?.() ?? []) as PcbCopperPour[]
+  const pcbPours = (db.pcb_copper_pour?.list?.() ??
+    []) as PcbCopperPourWithBoardId[]
 
   for (const pour of pcbPours) {
     const isBottomLayer = pour.layer === "bottom"
-    const boardId = (pour as unknown as Record<string, any>).pcb_board_id
-    const boardThickness = getBoardThickness(boardId)
+    const boardId = pour.pcb_board_id
+    const boardThickness = getBoardThickness()
     const y = isBottomLayer
       ? -(boardThickness / 2) - COPPER_THICKNESS / 2
       : boardThickness / 2 + COPPER_THICKNESS / 2
@@ -320,19 +354,18 @@ export async function convertCircuitJsonTo3D(
       const { points } = pour
 
       // calculate center of polygon
-      let center_x = 0
-      let center_y = 0
+      let centerX = 0
+      let centerY = 0
       for (const p of points) {
-        center_x += p.x
-        center_y += p.y
+        centerX += p.x
+        centerY += p.y
       }
-      center_x /= points.length
-      center_y /= points.length
+      centerX /= points.length
+      centerY /= points.length
 
-      const relativePoints: Vec2[] = points.map((p) => [
-        p.x - center_x,
-        -(p.y - center_y),
-      ])
+      const relativePoints: Vec2[] = points.map(
+        (p: { x: number; y: number }) => [p.x - centerX, -(p.y - centerY)],
+      )
       if (arePointsClockwise(relativePoints)) {
         relativePoints.reverse()
       }
@@ -348,7 +381,7 @@ export async function convertCircuitJsonTo3D(
       const mesh: STLMesh = { triangles, boundingBox: bbox }
 
       const box: Box3D = {
-        center: { x: center_x, y, z: center_y },
+        center: { x: centerX, y, z: centerY },
         size: { x: 1, y: 1, z: 1 }, // size doesn't matter much as we provide mesh
         mesh,
         color: pour.covered_with_solder_mask ? pcbColor : copperColor,
@@ -406,9 +439,7 @@ export async function convertCircuitJsonTo3D(
         }
 
     // Determine position
-    const boardThicknessForComponent = getBoardThickness(
-      pcbComponent?.pcb_board_id,
-    )
+    const boardThicknessForComponent = getBoardThickness()
 
     const center = cad.position
       ? {
@@ -443,7 +474,7 @@ export async function convertCircuitJsonTo3D(
     if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {
       box.meshUrl =
         model_stl_url || model_obj_url || model_glb_url || model_gltf_url
-      box.meshType = meshType as any
+      box.meshType = meshType
     }
 
     // Add rotation if specified
@@ -549,8 +580,8 @@ export async function convertCircuitJsonTo3D(
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(getBoardThickness(component.pcb_board_id) + compHeight / 2)
-            : getBoardThickness(component.pcb_board_id) / 2 + compHeight / 2,
+            ? -(getBoardThickness() / 2 + compHeight / 2)
+            : getBoardThickness() / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
@@ -565,81 +596,8 @@ export async function convertCircuitJsonTo3D(
     }
   }
 
-  // Create a default camera positioned to view the board or components
-  let camera: Camera3D
-
-  if (primaryBoard) {
-    const boardDiagonal = Math.sqrt(
-      primaryBoard.width * primaryBoard.width +
-        primaryBoard.height * primaryBoard.height,
-    )
-    const cameraDistance = boardDiagonal * 1.5
-
-    camera = {
-      position: {
-        x: primaryBoard.center.x + cameraDistance * 0.5,
-        y: cameraDistance * 0.7,
-        z: primaryBoard.center.y + cameraDistance * 0.5,
-      },
-      target: {
-        x: primaryBoard.center.x,
-        y: 0,
-        z: primaryBoard.center.y,
-      },
-      up: { x: 0, y: 1, z: 0 },
-      fov: 50,
-      near: 0.1,
-      far: cameraDistance * 4,
-    }
-  } else {
-    const hasBoxes = boxes.length > 0
-
-    if (hasBoxes) {
-      let minX = Infinity
-      let minZ = Infinity
-      let maxX = -Infinity
-      let maxZ = -Infinity
-
-      for (const box of boxes) {
-        const halfX = (box.size?.x ?? 0) / 2
-        const halfZ = (box.size?.z ?? 0) / 2
-
-        minX = Math.min(minX, box.center.x - halfX)
-        maxX = Math.max(maxX, box.center.x + halfX)
-        minZ = Math.min(minZ, box.center.z - halfZ)
-        maxZ = Math.max(maxZ, box.center.z + halfZ)
-      }
-
-      const width = Math.max(maxX - minX, 1)
-      const height = Math.max(maxZ - minZ, 1)
-      const diagonal = Math.sqrt(width * width + height * height)
-      const distance = diagonal * 1.5
-      const centerX = (minX + maxX) / 2
-      const centerZ = (minZ + maxZ) / 2
-
-      camera = {
-        position: {
-          x: centerX + distance * 0.5,
-          y: distance * 0.7,
-          z: centerZ + distance * 0.5,
-        },
-        target: { x: centerX, y: 0, z: centerZ },
-        up: { x: 0, y: 1, z: 0 },
-        fov: 50,
-        near: 0.1,
-        far: distance * 4,
-      }
-    } else {
-      camera = {
-        position: { x: 30, y: 30, z: 25 },
-        target: { x: 0, y: 0, z: 0 },
-        up: { x: 0, y: 1, z: 0 },
-        fov: 50,
-        near: 0.1,
-        far: 120,
-      }
-    }
-  }
+  // Create a default camera positioned to view the board or panel
+  const camera = getBestCameraPositionFromCircuitJson(pcbBoards, pcbPanels)
 
   // Add some default lights
   const lights: Light3D[] = [
