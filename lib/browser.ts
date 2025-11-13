@@ -50,6 +50,9 @@ export async function convertCircuitJsonTo3D(
     throw new Error("No pcb_board found in circuit JSON")
   }
 
+  const boardWidth = pcbBoard.width ?? 100
+  const boardHeight = pcbBoard.height ?? 100
+
   // Create the main PCB board box (without textures in browser)
   boxes.push({
     center: {
@@ -58,9 +61,9 @@ export async function convertCircuitJsonTo3D(
       z: pcbBoard.center.y,
     },
     size: {
-      x: pcbBoard.width,
+      x: boardWidth,
       y: boardThickness,
-      z: pcbBoard.height,
+      z: boardHeight,
     },
     color: pcbColor,
   })
@@ -94,7 +97,7 @@ export async function convertCircuitJsonTo3D(
 
   // Create a default camera
   const boardDiagonal = Math.sqrt(
-    pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
+    boardWidth * boardWidth + boardHeight * boardHeight,
   )
   const cameraDistance = boardDiagonal * 1.5
 

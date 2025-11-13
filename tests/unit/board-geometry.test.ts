@@ -86,6 +86,10 @@ test("createBoardMesh subtracts drilled and plated holes", () => {
       return sum + triangleArea(a, b, c)
     }, 0)
 
+  if (board.width === undefined || board.height === undefined) {
+    throw new Error("Test board must define width and height")
+  }
+
   const outlineArea = board.width * board.height
   const drilledArea = Math.PI * (drilledDiameter / 2) ** 2
   const platedArea = Math.PI * (platedHoleDiameter / 2) ** 2
