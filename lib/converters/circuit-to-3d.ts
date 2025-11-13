@@ -156,13 +156,21 @@ export async function convertCircuitJsonTo3D(
 
   const pcbBoards = (db.pcb_board?.list?.() ?? []) as PcbBoardExtended[]
   const pcbPanels = (db.pcb_panel?.list?.() ?? []) as PcbPanelWithExtras[]
-  const pcbThickness = boardThickness ?? DEFAULT_BOARD_THICKNESS
+  const defaultThickness = boardThickness ?? DEFAULT_BOARD_THICKNESS
 
   const boardsByPanelId = new Map<string, PcbBoardExtended[]>()
+  const boardThicknessById = new Map<string, number>()
   const boardsWithoutPanel: PcbBoardExtended[] = []
 
   for (const pcbBoard of pcbBoards) {
     const panelId = pcbBoard.pcb_panel_id
+    const boardId = pcbBoard.pcb_board_id
+    const effectiveBoardThickness = pcbBoard.thickness ?? defaultThickness
+
+    if (boardId) {
+      boardThicknessById.set(boardId, effectiveBoardThickness)
+    }
+
     if (panelId) {
       if (!boardsByPanelId.has(panelId)) boardsByPanelId.set(panelId, [])
       boardsByPanelId.get(panelId)!.push(pcbBoard)
@@ -176,6 +184,14 @@ export async function convertCircuitJsonTo3D(
     []) as PcbPlatedHoleWithBoardId[]
   const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutoutWithBoardId[]
 
+  // Helper to get thickness for a specific board or default
+  const getThicknessForBoard = (boardId?: string | null): number => {
+    if (boardId && boardThicknessById.has(boardId)) {
+      return boardThicknessById.get(boardId)!
+    }
+    return defaultThickness
+  }
+
   const shouldRenderBoardTextures =
     shouldRenderTextures && textureResolution > 0 && pcbBoards.length === 1
 
@@ -188,7 +204,7 @@ export async function convertCircuitJsonTo3D(
     const panelHeight = panel.height
     if (!panelWidth || !panelHeight) continue
 
-    const panelThickness = panel.thickness ?? pcbThickness
+    const panelThickness = panel.thickness ?? defaultThickness
 
     const explicitCutouts = Array.isArray(panel.cutouts) ? panel.cutouts : []
 
@@ -276,9 +292,10 @@ export async function convertCircuitJsonTo3D(
 
   for (const pcbBoard of pcbBoards) {
     const boardId = pcbBoard.pcb_board_id
+    const boardThickness = getThicknessForBoard(boardId)
 
     const boardMesh = createBoardMesh(pcbBoard, {
-      thickness: pcbThickness,
+      thickness: boardThickness,
       holes: pcbHoles.filter(
         (item) => !item.pcb_board_id || item.pcb_board_id === boardId,
       ) as PcbHole[],
@@ -304,7 +321,7 @@ export async function convertCircuitJsonTo3D(
           meshWidth > 0
             ? meshWidth
             : (pcbBoard.width ?? DEFAULT_BOARD_DIMENSION),
-        y: pcbThickness,
+        y: boardThickness,
         z:
           meshHeight > 0
             ? meshHeight
@@ -341,9 +358,10 @@ export async function convertCircuitJsonTo3D(
   for (const pour of pcbPours) {
     const isBottomLayer = pour.layer === "bottom"
     const boardId = pour.pcb_board_id
+    const boardThickness = getThicknessForBoard(boardId)
     const y = isBottomLayer
-      ? -(pcbThickness / 2) - COPPER_THICKNESS / 2
-      : pcbThickness / 2 + COPPER_THICKNESS / 2
+      ? -(boardThickness / 2) - COPPER_THICKNESS / 2
+      : boardThickness / 2 + COPPER_THICKNESS / 2
 
     if (pour.shape === "rect") {
       const box: Box3D = {
@@ -453,6 +471,9 @@ export async function convertCircuitJsonTo3D(
         }
 
     // Determine position
+    const componentBoardId = pcbComponent?.pcb_board_id
+    const componentBoardThickness = getThicknessForBoard(componentBoardId)
+
     const center = cad.position
       ? {
           x: cad.position.x,
@@ -462,8 +483,8 @@ export async function convertCircuitJsonTo3D(
       : {
           x: pcbComponent?.center.x ?? 0,
           y: isBottomLayer
-            ? -(pcbThickness / 2 + size.y / 2)
-            : pcbThickness / 2 + size.y / 2,
+            ? -(componentBoardThickness / 2 + size.y / 2)
+            : componentBoardThickness / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
 
@@ -587,13 +608,16 @@ export async function convertCircuitJsonTo3D(
 
       // Check if component is on bottom layer
       const isBottomLayer = component.layer === "bottom"
+      const componentBoardThickness = getThicknessForBoard(
+        component.pcb_board_id,
+      )
 
       boxes.push({
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(pcbThickness / 2 + compHeight / 2)
-            : pcbThickness / 2 + compHeight / 2,
+            ? -(componentBoardThickness / 2 + compHeight / 2)
+            : componentBoardThickness / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
