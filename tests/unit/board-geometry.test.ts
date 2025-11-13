@@ -129,6 +129,7 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
 
   const scene = await convertCircuitJsonTo3D(circuit, {
     renderBoardTextures: false,
+    boardThickness: board.thickness,
   })
 
   const boardBox = scene.boxes[0]!
