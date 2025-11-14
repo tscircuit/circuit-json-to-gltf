@@ -4,7 +4,7 @@ import { convertCircuitJsonToGltf } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
-test("repro for silkscreen text font issue", async () => {
+test("silkscreen text font sizing behavior", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="10mm" height="10mm">
