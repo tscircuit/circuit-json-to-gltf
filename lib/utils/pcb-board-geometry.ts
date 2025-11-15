@@ -67,7 +67,7 @@ const createBoardOutlineGeom = (
     return geom
   }
 
-  const baseRect = rectangle({ size: [board.width, board.height] })
+  const baseRect = rectangle({ size: [board.width!, board.height!] })
   let geom = extrudeLinear({ height: thickness }, baseRect)
   geom = translate([0, 0, -thickness / 2], geom)
   return geom
