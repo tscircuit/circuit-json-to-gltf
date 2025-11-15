@@ -94,7 +94,7 @@ export async function convertCircuitJsonTo3D(
 
   // Create a default camera
   const boardDiagonal = Math.sqrt(
-    pcbBoard.width! * pcbBoard.width!  + pcbBoard.height! * pcbBoard.height!,
+    pcbBoard.width! * pcbBoard.width! + pcbBoard.height! * pcbBoard.height!,
   )
   const cameraDistance = boardDiagonal * 1.5
 
