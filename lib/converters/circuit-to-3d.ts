@@ -5,9 +5,13 @@ import {
   type PCBPlatedHole,
   type PcbCutout,
   type PcbCopperPour,
+  type PcbBoard,
 } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
-import { getPrimarySurface } from "../utils/get-primary-surface"
+import {
+  getPrimarySurface,
+  filterCutoutsForBoard,
+} from "../utils/get-primary-surface"
 import type {
   Box3D,
   Scene3D,
@@ -84,7 +88,10 @@ export async function convertCircuitJsonTo3D(
   const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
 
   if (primarySurface) {
-    const surfaceCutouts = primarySurface.type === "pcb_board" ? pcbCutouts : []
+    const surfaceCutouts =
+      primarySurface.type === "pcb_board"
+        ? filterCutoutsForBoard(pcbCutouts, primarySurface as PcbBoard)
+        : []
 
     const boardMesh = createBoardMesh(primarySurface, {
       thickness: effectiveBoardThickness,
