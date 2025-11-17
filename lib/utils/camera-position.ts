@@ -1,4 +1,5 @@
 import type { CircuitJson } from "circuit-json"
+import { getPrimarySurface } from "./get-primary-surface"
 
 /**
  * Calculate optimal camera position for PCB viewing based on circuit dimensions
@@ -7,10 +8,10 @@ export function getBestCameraPosition(circuitJson: CircuitJson): {
   camPos: readonly [number, number, number]
   lookAt: readonly [number, number, number]
 } {
-  // Find PCB board to get dimensions
-  const board = circuitJson.find((item) => item.type === "pcb_board")
+  // Get primary surface: panel takes priority, otherwise use first board
+  const PcbSurface = getPrimarySurface(circuitJson)
 
-  if (!board || board.type !== "pcb_board") {
+  if (!PcbSurface) {
     // Default fallback for circuits without explicit board
     return {
       camPos: [30, 30, 25] as const,
@@ -18,7 +19,7 @@ export function getBestCameraPosition(circuitJson: CircuitJson): {
     }
   }
 
-  const { width, height, center } = board
+  const { width, height, center } = PcbSurface
 
   // Validate required properties
   if (!width || !height || !center) {

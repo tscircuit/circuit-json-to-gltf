@@ -14,7 +14,13 @@ import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
-import type { PcbBoard, PcbHole, PCBPlatedHole, Point } from "circuit-json"
+import type {
+  PcbBoard,
+  PcbHole,
+  PCBPlatedHole,
+  Point,
+  PcbPanel,
+} from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
 import {
   arePointsClockwise,
@@ -50,12 +56,14 @@ const getNumberProperty = (
 }
 
 const createBoardOutlineGeom = (
-  board: PcbBoard,
+  board: PcbPanel | PcbBoard,
   center: { x: number; y: number },
   thickness: number,
 ): Geom3 => {
-  if (board.outline && board.outline.length >= 3) {
-    let outlinePoints: Vec2[] = board.outline.map((pt) => toVec2(pt, center))
+  // Boards may have custom outline, panels do not
+  const outline = "outline" in board ? board.outline : undefined
+  if (outline && outline.length >= 3) {
+    let outlinePoints: Vec2[] = outline.map((pt: Point) => toVec2(pt, center))
 
     if (arePointsClockwise(outlinePoints)) {
       outlinePoints = outlinePoints.slice().reverse()
@@ -285,7 +293,7 @@ export const createBoundingBox = (bbox: [number[], number[]]): BoundingBox => {
 }
 
 export const createBoardMesh = (
-  board: PcbBoard,
+  board: PcbPanel | PcbBoard,
   options: BoardGeometryOptions,
 ): STLMesh => {
   const { thickness, holes = [], platedHoles = [], cutouts = [] } = options
