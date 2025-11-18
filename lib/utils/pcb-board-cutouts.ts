@@ -3,7 +3,7 @@ import { polygon, rectangle, cylinder } from "@jscad/modeling/src/primitives"
 import { translate, rotateZ } from "@jscad/modeling/src/operations/transforms"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
-import type { PcbCutout, Point } from "circuit-json"
+import type { PcbCutout, Point, PcbBoard } from "circuit-json"
 
 export const DEFAULT_SEGMENTS = 64
 
@@ -182,4 +182,16 @@ export const createCutoutGeoms = (
   }
 
   return geoms
+}
+
+/**
+ * Filter cutouts to only include those applicable to a specific board
+ */
+export const filterCutoutsForBoard = (
+  cutouts: PcbCutout[],
+  board: PcbBoard,
+): PcbCutout[] => {
+  return cutouts.filter((cutout) => {
+    return !cutout.pcb_board_id || cutout.pcb_board_id === board.pcb_board_id
+  })
 }

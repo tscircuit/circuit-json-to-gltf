@@ -5,13 +5,10 @@ import {
   type PCBPlatedHole,
   type PcbCutout,
   type PcbCopperPour,
-  type PcbBoard,
+  type PcbPanel,
 } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
-import {
-  getPrimarySurface,
-  filterCutoutsForBoard,
-} from "../utils/get-primary-surface"
+import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import type {
   Box3D,
   Scene3D,
@@ -30,6 +27,7 @@ import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
 import {
   createBoardMesh,
+  createPanelMesh,
   createBoundingBox,
   geom3ToTriangles,
 } from "../utils/pcb-board-geometry"
@@ -76,35 +74,83 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
-  const primarySurface = getPrimarySurface(circuitJson)
+  const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
+  const pcbBoard = db.pcb_board?.list?.()[0]
 
   let effectiveBoardThickness = boardThickness
-  if (primarySurface) {
-    if (primarySurface.type === "pcb_panel") {
-      // Panels don't have thickness, so use first board's thickness
-      const firstBoard = db.pcb_board?.list?.()[0] as PcbBoard | undefined
-      effectiveBoardThickness = firstBoard?.thickness ?? boardThickness
-    } else if ("thickness" in primarySurface) {
-      // Board has thickness property
-      effectiveBoardThickness = primarySurface.thickness
-    }
+  if (pcbPanel) {
+    // Panels don't have thickness, use first board's thickness
+    const firstBoard = db.pcb_board?.list?.()[0]
+    effectiveBoardThickness = firstBoard?.thickness ?? boardThickness
+  } else if (pcbBoard) {
+    effectiveBoardThickness = pcbBoard.thickness ?? boardThickness
   }
 
-  const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-  const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
-  const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+  // Render panel if present (panel takes priority)
+  if (pcbPanel) {
+    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
+    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
+      []) as PCBPlatedHole[]
 
-  if (primarySurface) {
-    const surfaceCutouts =
-      primarySurface.type === "pcb_board"
-        ? filterCutoutsForBoard(pcbCutouts, primarySurface as PcbBoard)
-        : []
-
-    const boardMesh = createBoardMesh(primarySurface, {
+    const panelMesh = createPanelMesh(pcbPanel, {
       thickness: effectiveBoardThickness,
       holes: pcbHoles,
       platedHoles: pcbPlatedHoles,
-      cutouts: surfaceCutouts,
+    })
+
+    const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
+    const meshHeight = panelMesh.boundingBox.max.z - panelMesh.boundingBox.min.z
+
+    const panelBox: Box3D = {
+      center: {
+        x: pcbPanel.center.x,
+        y: 0,
+        z: pcbPanel.center.y,
+      },
+      size: {
+        x: Number.isFinite(meshWidth) ? meshWidth : pcbPanel.width,
+        y: effectiveBoardThickness,
+        z: Number.isFinite(meshHeight) ? meshHeight : pcbPanel.height,
+      },
+      mesh: panelMesh,
+      color: pcbColor,
+    }
+
+    // Render panel textures if requested and resolution > 0
+    if (shouldRenderTextures && textureResolution > 0) {
+      try {
+        const textures = await renderBoardTextures(
+          circuitJson,
+          textureResolution,
+        )
+        panelBox.texture = {
+          top: textures.top,
+          bottom: textures.bottom,
+        }
+      } catch (error) {
+        console.warn("Failed to render panel textures:", error)
+        // If texture rendering fails, use the fallback color
+        panelBox.color = pcbColor
+      }
+    } else {
+      // No textures requested, use solid color
+      panelBox.color = pcbColor
+    }
+
+    boxes.push(panelBox)
+  } else if (pcbBoard) {
+    // Create the main PCB board box
+    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
+    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
+      []) as PCBPlatedHole[]
+    const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+    const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
+
+    const boardMesh = createBoardMesh(pcbBoard, {
+      thickness: effectiveBoardThickness,
+      holes: pcbHoles,
+      platedHoles: pcbPlatedHoles,
+      cutouts: boardCutouts,
     })
 
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
@@ -112,14 +158,14 @@ export async function convertCircuitJsonTo3D(
 
     const boardBox: Box3D = {
       center: {
-        x: primarySurface.center.x,
+        x: pcbBoard.center.x,
         y: 0,
-        z: primarySurface.center.y,
+        z: pcbBoard.center.y,
       },
       size: {
-        x: Number.isFinite(meshWidth) ? meshWidth : 0,
+        x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
         y: effectiveBoardThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : 0,
+        z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
       },
       mesh: boardMesh,
       color: pcbColor,
@@ -424,24 +470,22 @@ export async function convertCircuitJsonTo3D(
   // Create a default camera positioned to view the board or components
   let camera: Camera3D
 
-  if (primarySurface) {
-    const surfaceWidth = primarySurface.width ?? 0
-    const surfaceHeight = primarySurface.height ?? 0
+  if (pcbBoard) {
     const boardDiagonal = Math.sqrt(
-      surfaceWidth * surfaceWidth + surfaceHeight * surfaceHeight,
+      pcbBoard.width * pcbBoard.width + pcbBoard.height * pcbBoard.height,
     )
     const cameraDistance = boardDiagonal * 1.5
 
     camera = {
       position: {
-        x: primarySurface.center.x + cameraDistance * 0.5,
+        x: pcbBoard.center.x + cameraDistance * 0.5,
         y: cameraDistance * 0.7,
-        z: primarySurface.center.y + cameraDistance * 0.5,
+        z: pcbBoard.center.y + cameraDistance * 0.5,
       },
       target: {
-        x: primarySurface.center.x,
+        x: pcbBoard.center.x,
         y: 0,
-        z: primarySurface.center.y,
+        z: pcbBoard.center.y,
       },
       up: { x: 0, y: 1, z: 0 },
       fov: 50,
