@@ -117,11 +117,9 @@ export async function convertCircuitJsonTo3D(
         z: primarySurface.center.y,
       },
       size: {
-        x: primarySurface.width ?? (Number.isFinite(meshWidth) ? meshWidth : 0),
+        x: Number.isFinite(meshWidth) ? meshWidth : 0,
         y: effectiveBoardThickness,
-        z:
-          primarySurface.height ??
-          (Number.isFinite(meshHeight) ? meshHeight : 0),
+        z: Number.isFinite(meshHeight) ? meshHeight : 0,
       },
       mesh: boardMesh,
       color: pcbColor,
