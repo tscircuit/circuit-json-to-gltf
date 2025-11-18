@@ -78,10 +78,17 @@ export async function convertCircuitJsonTo3D(
 
   const primarySurface = getPrimarySurface(circuitJson)
 
-  const effectiveBoardThickness =
-    primarySurface && "thickness" in primarySurface
-      ? primarySurface.thickness
-      : boardThickness
+  let effectiveBoardThickness = boardThickness
+  if (primarySurface) {
+    if (primarySurface.type === "pcb_panel") {
+      // Panels don't have thickness, so use first board's thickness
+      const firstBoard = db.pcb_board?.list?.()[0] as PcbBoard | undefined
+      effectiveBoardThickness = firstBoard?.thickness ?? boardThickness
+    } else if ("thickness" in primarySurface) {
+      // Board has thickness property
+      effectiveBoardThickness = primarySurface.thickness
+    }
+  }
 
   const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
   const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PCBPlatedHole[]
