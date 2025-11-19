@@ -27,10 +27,10 @@ import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
 import {
   createBoardMesh,
-  createPanelMesh,
   createBoundingBox,
   geom3ToTriangles,
 } from "../utils/pcb-board-geometry"
+import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
 import { polygon } from "@jscad/modeling/src/primitives"
 import { rotateX, translate } from "@jscad/modeling/src/operations/transforms"

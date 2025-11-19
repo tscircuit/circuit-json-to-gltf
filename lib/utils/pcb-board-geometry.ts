@@ -55,7 +55,7 @@ const getNumberProperty = (
   return typeof value === "number" ? value : undefined
 }
 
-const createBoardOutlineGeom = (
+export const createBoardOutlineGeom = (
   board: PcbPanel | PcbBoard,
   center: { x: number; y: number },
   thickness: number,
@@ -108,7 +108,7 @@ const createPillHole = (
   return translate([x, y, 0], hole3d)
 }
 
-const createHoleGeoms = (
+export const createHoleGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
   holes: PcbHole[] = [],
@@ -314,36 +314,6 @@ export const createBoardMesh = (
   const triangles = geom3ToTriangles(boardGeom, polygons)
 
   const bboxValues = measureBoundingBox(boardGeom)
-  const boundingBox = createBoundingBox(bboxValues)
-
-  return {
-    triangles,
-    boundingBox,
-  }
-}
-
-export const createPanelMesh = (
-  panel: PcbPanel,
-  options: BoardGeometryOptions,
-): STLMesh => {
-  // Panels are solid rectangles with no cutouts
-  const { thickness, holes = [], platedHoles = [] } = options
-  const center = panel.center ?? { x: 0, y: 0 }
-
-  let panelGeom = createBoardOutlineGeom(panel, center, thickness)
-
-  // Panels may have holes for mounting, but never have cutouts
-  const holeGeoms = createHoleGeoms(center, thickness, holes, platedHoles)
-  if (holeGeoms.length > 0) {
-    panelGeom = subtract(panelGeom, ...holeGeoms)
-  }
-
-  panelGeom = rotateX(-Math.PI / 2, panelGeom)
-
-  const polygons = geom3.toPolygons(panelGeom)
-  const triangles = geom3ToTriangles(panelGeom, polygons)
-
-  const bboxValues = measureBoundingBox(panelGeom)
   const boundingBox = createBoundingBox(bboxValues)
 
   return {
