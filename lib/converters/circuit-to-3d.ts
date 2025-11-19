@@ -77,14 +77,8 @@ export async function convertCircuitJsonTo3D(
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
   const pcbBoard = db.pcb_board?.list?.()[0]
 
-  let effectiveBoardThickness = boardThickness
-  if (pcbPanel) {
-    // Panels don't have thickness, use first board's thickness
-    const firstBoard = db.pcb_board?.list?.()[0]
-    effectiveBoardThickness = firstBoard?.thickness ?? boardThickness
-  } else if (pcbBoard) {
-    effectiveBoardThickness = pcbBoard.thickness ?? boardThickness
-  }
+  // Panels don't have thickness, so always use board's thickness as fallback
+  const effectiveBoardThickness = pcbBoard?.thickness ?? boardThickness
 
   // Render panel if present (panel takes priority)
   if (pcbPanel) {
