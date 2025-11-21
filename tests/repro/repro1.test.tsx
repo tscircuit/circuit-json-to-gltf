@@ -17,6 +17,12 @@ test("silkscreen text font sizing behavior", async () => {
   // Convert circuit to GLTF (GLB format for rendering)
   const glb = await convertCircuitJsonToGltf(circuitJson, {
     format: "glb",
+    boardTextureResolution: 1024,
+    includeModels: true,
+    showBoundingBoxes: false,
+  })
+  const gltf = await convertCircuitJsonToGltf(circuitJson, {
+    format: "gltf",
     boardTextureResolution: 512,
     includeModels: true,
     showBoundingBoxes: false,
@@ -25,7 +31,7 @@ test("silkscreen text font sizing behavior", async () => {
   // Ensure we got a valid GLB buffer
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
-
+  await Bun.write("test_output.gltf", JSON.stringify(gltf, null, 2))
   // Render the GLB to PNG with camera position derived from circuit dimensions
   const cameraOptions = getBestCameraPosition(circuitJson)
 

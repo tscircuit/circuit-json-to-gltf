@@ -296,7 +296,7 @@ export class GLTFBuilder {
       const topMaterialIndex = this.addMaterial({
         name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
@@ -352,7 +352,7 @@ export class GLTFBuilder {
       const sideMaterialIndex = this.addMaterial({
         name: `GreenSideMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [0.0, 0.55, 0.0, 1.0],
+          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
@@ -497,7 +497,7 @@ export class GLTFBuilder {
       const topMaterialIndex = this.addMaterial({
         name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
@@ -523,7 +523,7 @@ export class GLTFBuilder {
       const bottomMaterialIndex = this.addMaterial({
         name: `BottomMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
@@ -548,7 +548,7 @@ export class GLTFBuilder {
     const greenMaterialIndex = this.addMaterial({
       name: `GreenSideMaterial_${this.materials.length}`,
       pbrMetallicRoughness: {
-        baseColorFactor: [0.0, 0.55, 0.0, 1.0], // Green color for PCB sides
+        baseColorFactor: [0.04, 0.16, 0.08, 1.0], // Green color for PCB sides
         metallicFactor: 0.0,
         roughnessFactor: 0.8,
       },
