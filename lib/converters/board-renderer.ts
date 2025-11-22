@@ -125,12 +125,12 @@ export async function renderBoardTextures(
     renderBoardLayer(circuitJson, {
       layer: "top",
       resolution,
-      backgroundColor: "#008C00", // Green PCB background
+      backgroundColor: "#0F3812", // Green PCB background
     }),
     renderBoardLayer(circuitJson, {
       layer: "bottom",
       resolution,
-      backgroundColor: "#006600", // Darker green for bottom layer
+      backgroundColor: "#0F3812", // Darker green for bottom layer
     }),
   ])
 

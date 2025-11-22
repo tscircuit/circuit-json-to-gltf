@@ -296,7 +296,7 @@ export class GLTFBuilder {
       const topMaterialIndex = this.addMaterial({
         name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
+          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
@@ -324,7 +324,9 @@ export class GLTFBuilder {
       const bottomMaterialIndex = this.addMaterial({
         name: `BottomMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
+          // baseColorFactor: [     0.04,
+          //   0.16,
+          //   0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
