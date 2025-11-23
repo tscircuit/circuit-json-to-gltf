@@ -2470,12 +2470,12 @@
     "position": {
       "x": 0,
       "y": -12.78749940000003,
-      "z": 0.7
+      "z": 0
     },
     "rotation": {
       "x": 0,
-      "y": 180,
-      "z": 0
+      "y": 0,
+      "z": 180
     },
     "pcb_component_id": "pcb_component_0",
     "source_component_id": "source_component_0",

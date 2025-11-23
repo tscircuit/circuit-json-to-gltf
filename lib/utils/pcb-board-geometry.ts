@@ -63,7 +63,11 @@ export const createBoardOutlineGeom = (
   // Boards may have custom outline, panels do not
   const outline = "outline" in board ? board.outline : undefined
   if (outline && outline.length >= 3) {
-    let outlinePoints: Vec2[] = outline.map((pt: Point) => toVec2(pt, center))
+    // Negate Y to account for rotateX(-PI/2) at the end, matching hole coordinate system
+    let outlinePoints: Vec2[] = outline.map((pt: Point) => [
+      pt.x - center.x,
+      -(pt.y - center.y),
+    ])
 
     if (arePointsClockwise(outlinePoints)) {
       outlinePoints = outlinePoints.slice().reverse()
