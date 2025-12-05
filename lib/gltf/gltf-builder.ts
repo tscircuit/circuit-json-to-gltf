@@ -115,11 +115,11 @@ export class GLTFBuilder {
     // Create material
     let materialIndex = defaultMaterialIndex
     if (box.color) {
-      materialIndex = this.addMaterialFromColor(
-        box.color,
-        !box.mesh,
-        box.isTranslucent,
-      )
+      materialIndex = this.addMaterialFromColor({
+        color: box.color,
+        makeTransparent: !box.mesh,
+        isTranslucent: box.isTranslucent,
+      })
     } else if (box.mesh) {
       // For meshes without a color, use a light gray material
       const opacity = box.isTranslucent ? 0.5 : 1.0
@@ -770,11 +770,12 @@ export class GLTFBuilder {
     return index
   }
 
-  private addMaterialFromColor(
-    color: Color,
-    makeTransparent = false,
-    isTranslucent = false,
-  ): number {
+  private addMaterialFromColor(opts: {
+    color: Color
+    makeTransparent?: boolean
+    isTranslucent?: boolean
+  }): number {
+    const { color, makeTransparent = false, isTranslucent = false } = opts
     const baseColor: [number, number, number, number] =
       typeof color === "string"
         ? this.parseColorString(color)

@@ -4,13 +4,27 @@ import { convertCircuitJsonToGltf } from "../../../lib"
 import { getBestCameraPosition } from "../../../lib/utils/camera-position"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
-test("translucent-glb-model-single", async () => {
+test("translucent-vs-opaque-glb-models", async () => {
   const circuit = new Circuit()
   circuit.add(
-    <board width="10mm" height="10mm">
+    <board width="20mm" height="10mm">
+      {/* Opaque GLB model */}
       <chip
         footprint="soic8"
-        name="U1"
+        name="U1_Opaque"
+        pcbX={-5}
+        pcbY={0}
+        cadModel={{
+          glbUrl: "https://modelcdn.tscircuit.com/jscad_models/soic8.glb",
+        }}
+      />
+
+      {/* Translucent GLB model */}
+      <chip
+        footprint="soic8"
+        name="U2_Translucent"
+        pcbX={5}
+        pcbY={0}
         showAsTranslucentModel
         cadModel={{
           glbUrl: "https://modelcdn.tscircuit.com/jscad_models/soic8.glb",
@@ -37,6 +51,6 @@ test("translucent-glb-model-single", async () => {
 
   expect(pngBuffer).toMatchPngSnapshot(
     import.meta.path,
-    "translucent-glb-model-single",
+    "translucent-vs-opaque-glb-models",
   )
 })

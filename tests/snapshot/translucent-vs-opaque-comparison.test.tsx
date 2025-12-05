@@ -4,48 +4,37 @@ import { convertCircuitJsonToGltf } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
-test("translucent-models-3d-view", async () => {
+test("translucent-vs-opaque-comparison", async () => {
   const circuit = new Circuit()
   circuit.add(
-    <board width="30mm" height="30mm">
-      {/* Opaque chip on the left */}
-      <chip name="U1" footprint="soic8" pcbX={-8} pcbY={0} />
+    <board width="25mm" height="15mm">
+      {/* Opaque chip */}
+      <chip name="U1_Opaque" footprint="soic8" pcbX={-6} pcbY={0} />
 
-      {/* Translucent chip in the middle */}
+      {/* Translucent chip */}
       <chip
-        name="U2"
+        name="U2_Translucent"
         footprint="soic8"
-        pcbX={0}
+        pcbX={6}
         pcbY={0}
         showAsTranslucentModel
       />
 
-      {/* Opaque resistor */}
-      <resistor name="R1" footprint="0805" pcbX={8} pcbY={5} resistance="10k" />
-
-      {/* Translucent resistor */}
-      <resistor
-        name="R2"
-        footprint="0805"
-        pcbX={8}
-        pcbY={-5}
-        resistance="22k"
-        showAsTranslucentModel
+      <fabricationnotetext
+        text="OPAQUE"
+        anchorAlignment="center"
+        fontSize="1mm"
+        pcbX={-6}
+        pcbY={-6}
       />
 
-      {/* Translucent capacitor */}
-      <capacitor
-        name="C1"
-        footprint="0603"
-        pcbX={-8}
-        pcbY={-8}
-        capacitance="10uF"
-        showAsTranslucentModel
+      <fabricationnotetext
+        text="TRANSLUCENT"
+        anchorAlignment="center"
+        fontSize="1mm"
+        pcbX={6}
+        pcbY={-6}
       />
-
-      {/* Add some traces */}
-      <trace from={".U1 > .pin1"} to={".R1 > .pin1"} />
-      <trace from={".U2 > .pin8"} to={".C1 > .pin1"} />
     </board>,
   )
 
@@ -70,6 +59,6 @@ test("translucent-models-3d-view", async () => {
 
   expect(pngBuffer).toMatchPngSnapshot(
     import.meta.path,
-    "translucent-models-3d-view",
+    "translucent-vs-opaque-comparison",
   )
 })
