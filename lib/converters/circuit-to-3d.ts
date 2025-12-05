@@ -266,6 +266,7 @@ export async function convertCircuitJsonTo3D(
     const box: Box3D = {
       center,
       size,
+      isTranslucent: cad.show_as_translucent_model,
     }
 
     if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {

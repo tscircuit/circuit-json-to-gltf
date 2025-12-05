@@ -93,6 +93,7 @@ export interface Box3D {
   meshType?: "stl" | "obj" | "glb"
   label?: string
   labelColor?: Color
+  isTranslucent?: boolean
 }
 
 export interface Scene3D {

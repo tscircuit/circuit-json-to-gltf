@@ -115,17 +115,23 @@ export class GLTFBuilder {
     // Create material
     let materialIndex = defaultMaterialIndex
     if (box.color) {
-      materialIndex = this.addMaterialFromColor(box.color, !box.mesh)
+      materialIndex = this.addMaterialFromColor(
+        box.color,
+        !box.mesh,
+        box.isTranslucent,
+      )
     } else if (box.mesh) {
-      // For meshes without a color, use an opaque light gray material
+      // For meshes without a color, use a light gray material
+      const opacity = box.isTranslucent ? 0.5 : 1.0
       materialIndex = this.addMaterial({
         name: `MeshMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
-          baseColorFactor: [0.7, 0.7, 0.7, 1.0],
+          baseColorFactor: [0.7, 0.7, 0.7, opacity],
           metallicFactor: 0.1,
           roughnessFactor: 0.9,
         },
-        alphaMode: "OPAQUE",
+        alphaMode: box.isTranslucent ? "BLEND" : "OPAQUE",
+        doubleSided: box.isTranslucent ? true : undefined,
       })
     }
 
@@ -169,10 +175,14 @@ export class GLTFBuilder {
       }
 
       // Override with dissolve if explicitly set
-      const alpha =
+      let alpha =
         objMaterial.dissolve !== undefined
           ? 1.0 - objMaterial.dissolve
           : baseColor[3]
+
+      if (box.isTranslucent) {
+        alpha = 0.5
+      }
       baseColor[3] = alpha
 
       const gltfMaterialIndex = this.addMaterial({
@@ -183,6 +193,7 @@ export class GLTFBuilder {
           roughnessFactor: 0.95,
         },
         alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
+        doubleSided: box.isTranslucent ? true : undefined,
       })
 
       // Get the correct material index from the OBJ parsing
@@ -759,7 +770,11 @@ export class GLTFBuilder {
     return index
   }
 
-  private addMaterialFromColor(color: Color, makeTransparent = false): number {
+  private addMaterialFromColor(
+    color: Color,
+    makeTransparent = false,
+    isTranslucent = false,
+  ): number {
     const baseColor: [number, number, number, number] =
       typeof color === "string"
         ? this.parseColorString(color)
@@ -777,7 +792,8 @@ export class GLTFBuilder {
         metallicFactor: 0.05,
         roughnessFactor: 0.95,
       },
-      alphaMode: makeTransparent ? "BLEND" : "OPAQUE",
+      alphaMode: makeTransparent || isTranslucent ? "BLEND" : "OPAQUE",
+      doubleSided: isTranslucent ? true : undefined,
     })
   }
 
