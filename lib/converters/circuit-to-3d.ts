@@ -340,16 +340,6 @@ export async function convertCircuitJsonTo3D(
       box.mesh = scaleMesh(box.mesh, modelScaleFactor)
     }
 
-    // Adjust position if mesh was loaded and position was explicitly set
-    // OBJ models typically have their origin at the bottom, so when position.z is specified,
-    // it should be treated as the bottom of the component rather than the center
-    if (box.mesh && cad.position && usingObjFormat) {
-      const meshBottom = box.mesh.boundingBox.min.y
-      // Adjust center Y so that (center.y + meshBottom) equals the intended position
-      // This makes the bottom of the mesh align with position.z
-      box.center.y -= meshBottom
-    }
-
     // Only set color if mesh loading failed (fallback to simple box)
     if (!box.mesh) {
       box.color = componentColor

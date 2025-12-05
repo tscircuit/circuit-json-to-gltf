@@ -20,11 +20,8 @@ export async function renderBoardLayer(
     matchBoardAspectRatio: true,
     backgroundColor,
     drawPaddingOutsideBoard: false,
+    showSolderMask: true,
     colorOverrides: {
-      soldermask: {
-        top: "#4CAF50",
-        bottom: "#4CAF50",
-      },
       copper: {
         top: copperColor,
         bottom: copperColor,
