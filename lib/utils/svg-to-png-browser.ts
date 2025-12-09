@@ -1,8 +1,9 @@
 import type { ResvgRenderOptions } from "@resvg/resvg-js"
-import { Resvg, initWasm } from "@resvg/resvg-wasm"
 import tscircuitFont from "../assets/tscircuit-font"
 
 let wasmInitialized = false
+let Resvg: typeof import("@resvg/resvg-wasm").Resvg
+let initWasm: typeof import("@resvg/resvg-wasm").initWasm
 
 async function ensureWasmInitialized() {
   if (!wasmInitialized) {
@@ -12,6 +13,11 @@ async function ensureWasmInitialized() {
         // Dynamically import Node.js modules only in Node.js environment
         const { readFileSync } = await import("fs")
         const { dirname, join } = await import("path")
+
+        // Dynamically import the resvg-wasm module
+        const resvgModule = await import("@resvg/resvg-wasm")
+        Resvg = resvgModule.Resvg
+        initWasm = resvgModule.initWasm
 
         // Try to resolve the WASM file path relative to the package
         try {
@@ -35,15 +41,30 @@ async function ensureWasmInitialized() {
       } else {
         // Browser environment - try to load from URL
         try {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // Dynamically import the resvg-wasm module
+          const resvgModule = await import("@resvg/resvg-wasm")
+          Resvg = resvgModule.Resvg
+          initWasm = resvgModule.initWasm
+
           // @ts-ignore - Vite will handle this import
           const wasmUrl = await import("@resvg/resvg-wasm/index_bg.wasm?url")
           await initWasm(fetch(wasmUrl.default))
         } catch {
-          // Fallback to CDN
-          await initWasm(
-            fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"),
-          )
+          // Fallback to CDN - load the entire module from CDN
+          try {
+            const cdnUrl = "https://esm.sh/@resvg/resvg-wasm@2.6.2"
+            // @ts-ignore - Dynamic CDN import not recognized by TypeScript
+            const resvgModule = await import(/* @vite-ignore */ cdnUrl)
+            Resvg = resvgModule.Resvg
+            initWasm = resvgModule.initWasm
+            await initWasm(
+              fetch("https://unpkg.com/@resvg/resvg-wasm@2.6.2/index_bg.wasm"),
+            )
+          } catch (cdnError) {
+            throw new Error(
+              `Failed to load resvg-wasm from CDN: ${(cdnError as Error).message}`,
+            )
+          }
         }
       }
       wasmInitialized = true
