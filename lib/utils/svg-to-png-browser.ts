@@ -52,7 +52,8 @@ async function ensureWasmInitialized() {
         } catch {
           // Fallback to CDN - load the entire module from CDN
           try {
-            const cdnUrl = "https://esm.sh/@resvg/resvg-wasm@2.6.2"
+            const cdnUrl =
+              "https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.6.2/+esm"
             // @ts-ignore - Dynamic CDN import not recognized by TypeScript
             const resvgModule = await import(/* @vite-ignore */ cdnUrl)
             Resvg = resvgModule.Resvg
