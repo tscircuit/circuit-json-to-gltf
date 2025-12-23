@@ -17,23 +17,17 @@ export async function loadGLB(
   url: string,
   transform?: CoordinateTransformConfig,
 ): Promise<STLMesh | OBJMesh> {
-  console.log(`[GLB-LOADER] loadGLB called with url: ${url}`)
   const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
   if (glbCache.has(cacheKey)) {
-    console.log(`[GLB-LOADER] Returning cached mesh for: ${url}`)
     return glbCache.get(cacheKey)!
   }
 
-  console.log(`[GLB-LOADER] Fetching GLB from: ${url}`)
   const response = await fetch(url)
-  console.log(`[GLB-LOADER] Fetch response status: ${response.status} ${response.statusText}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch GLB: ${response.status} ${response.statusText}`)
   }
   const buffer = await response.arrayBuffer()
-  console.log(`[GLB-LOADER] Received ${buffer.byteLength} bytes`)
   const mesh = parseGLB(buffer, transform)
-  console.log(`[GLB-LOADER] Parsed GLB, triangles: ${mesh.triangles.length}`)
   glbCache.set(cacheKey, mesh)
   return mesh
 }
@@ -92,12 +86,40 @@ export function parseGLB(
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
+  // Debug: Log raw triangle data before transform
+  if (triangles.length > 0) {
+    const t0 = triangles[0]!
+    console.log(`[GLB-LOADER] RAW triangles (before coordinate transform):`, {
+      firstTriangle: {
+        v0: t0.vertices[0],
+        v1: t0.vertices[1],
+        v2: t0.vertices[2],
+        normal: t0.normal,
+      },
+      triangleCount: triangles.length,
+    })
+  }
+
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
   const finalConfig = transform ?? {
     axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
   }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
+
+  // Debug: Log transformed triangle data
+  if (transformedTriangles.length > 0) {
+    const t0 = transformedTriangles[0]!
+    console.log(`[GLB-LOADER] TRANSFORMED triangles (after Y/Z swap):`, {
+      firstTriangle: {
+        v0: t0.vertices[0],
+        v1: t0.vertices[1],
+        v2: t0.vertices[2],
+        normal: t0.normal,
+      },
+      axisMapping: finalConfig.axisMapping,
+    })
+  }
 
   // Check if any triangles have colors (materials)
   const hasColors = transformedTriangles.some((t) => t.color !== undefined)

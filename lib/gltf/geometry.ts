@@ -317,24 +317,6 @@ export function createMeshFromOBJ(
     return [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
   }
 
-  // Debug: Check first triangle for NaN
-  if (objMesh.triangles.length > 0) {
-    const firstTriangle = objMesh.triangles[0]!
-    const v0 = firstTriangle.vertices[0]!
-    const v1 = firstTriangle.vertices[1]!
-    const v2 = firstTriangle.vertices[2]!
-    console.log(`[GEOMETRY] createMeshFromOBJ - first triangle vertices:`, {
-      v0: { x: v0.x, y: v0.y, z: v0.z },
-      v1: { x: v1.x, y: v1.y, z: v1.z },
-      v2: { x: v2.x, y: v2.y, z: v2.z },
-      normal: firstTriangle.normal,
-      v0NaN: isNaN(v0.x) || isNaN(v0.y) || isNaN(v0.z),
-      v1NaN: isNaN(v1.x) || isNaN(v1.y) || isNaN(v1.z),
-      v2NaN: isNaN(v2.x) || isNaN(v2.y) || isNaN(v2.z),
-      triangleCount: objMesh.triangles.length,
-    })
-  }
-
   const materialMeshes = new Map<number, MeshData>()
 
   for (const triangle of objMesh.triangles) {

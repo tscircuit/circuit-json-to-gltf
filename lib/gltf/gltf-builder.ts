@@ -66,8 +66,6 @@ export class GLTFBuilder {
   }
 
   async buildFromScene3D(scene3D: Scene3D): Promise<void> {
-    console.log(`[GLTF-BUILDER] Building from scene with ${scene3D.boxes.length} boxes`)
-
     // Add default material
     const defaultMaterialIndex = this.addMaterial({
       name: "Default",
@@ -82,19 +80,8 @@ export class GLTFBuilder {
     // Process boxes
     for (let i = 0; i < scene3D.boxes.length; i++) {
       const box = scene3D.boxes[i]!
-      console.log(`[GLTF-BUILDER] Processing box ${i}:`, {
-        label: box.label,
-        hasMesh: !!box.mesh,
-        meshTriangles: box.mesh?.triangles?.length ?? 0,
-        hasMaterials: box.mesh && "materials" in box.mesh ? !!box.mesh.materials : false,
-        hasTexture: !!box.texture,
-        meshType: box.meshType,
-        meshUrl: box.meshUrl,
-      })
       await this.addBox(box, defaultMaterialIndex)
     }
-
-    console.log(`[GLTF-BUILDER] Final: ${this.nodes.length} nodes, ${this.meshes.length} meshes`)
   }
 
   private async addBox(
@@ -168,40 +155,7 @@ export class GLTFBuilder {
     box: Box3D,
     objMesh: OBJMesh,
   ): Promise<void> {
-    console.log(`[GLTF-BUILDER] addOBJMeshWithMaterials called`, {
-      triangleCount: objMesh.triangles.length,
-      materialsCount: objMesh.materials?.size ?? 0,
-      boxCenter: box.center,
-      boxSize: box.size,
-      boxRotation: box.rotation,
-      boxLabel: box.label,
-    })
-
-    // Debug: Log mesh bounding box before transformation
-    let meshMinX = Infinity, meshMaxX = -Infinity
-    let meshMinY = Infinity, meshMaxY = -Infinity
-    let meshMinZ = Infinity, meshMaxZ = -Infinity
-    for (const tri of objMesh.triangles) {
-      for (const v of tri.vertices) {
-        meshMinX = Math.min(meshMinX, v.x)
-        meshMaxX = Math.max(meshMaxX, v.x)
-        meshMinY = Math.min(meshMinY, v.y)
-        meshMaxY = Math.max(meshMaxY, v.y)
-        meshMinZ = Math.min(meshMinZ, v.z)
-        meshMaxZ = Math.max(meshMaxZ, v.z)
-      }
-    }
-    console.log(`[GLTF-BUILDER] Original mesh bounding box:`, {
-      min: { x: meshMinX, y: meshMinY, z: meshMinZ },
-      max: { x: meshMaxX, y: meshMaxY, z: meshMaxZ },
-      center: {
-        x: (meshMinX + meshMaxX) / 2,
-        y: (meshMinY + meshMaxY) / 2,
-        z: (meshMinZ + meshMaxZ) / 2
-      },
-    })
     const meshDataArray = createMeshFromOBJ(objMesh)
-    console.log(`[GLTF-BUILDER] createMeshFromOBJ returned ${meshDataArray.length} mesh groups`)
 
     // Create materials from OBJ materials
     const objMaterialIndices = new Map<number, number>()
@@ -253,38 +207,37 @@ export class GLTFBuilder {
     const primitives: any[] = []
 
     for (const { meshData, materialIndex } of meshDataArray) {
-      // Calculate bounding box of original mesh
-      let minX = Infinity, maxX = -Infinity
-      let minY = Infinity, maxY = -Infinity
-      let minZ = Infinity, maxZ = -Infinity
-      for (let i = 0; i < meshData.positions.length; i += 3) {
-        minX = Math.min(minX, meshData.positions[i]!)
-        maxX = Math.max(maxX, meshData.positions[i]!)
-        minY = Math.min(minY, meshData.positions[i+1]!)
-        maxY = Math.max(maxY, meshData.positions[i+1]!)
-        minZ = Math.min(minZ, meshData.positions[i+2]!)
-        maxZ = Math.max(maxZ, meshData.positions[i+2]!)
-      }
-      console.log(`[GLTF-BUILDER] Processing mesh group materialIndex=${materialIndex}`, {
-        positionsLength: meshData.positions.length,
-        normalsLength: meshData.normals.length,
-        texcoordsLength: meshData.texcoords.length,
-        indicesLength: meshData.indices.length,
-        vertexCount: meshData.positions.length / 3,
-        maxIndex: Math.max(...meshData.indices),
-        boundingBox: { min: {x: minX, y: minY, z: minZ}, max: {x: maxX, y: maxY, z: maxZ} },
-        size: { x: maxX - minX, y: maxY - minY, z: maxZ - minZ },
+      // Debug: Sample first few vertices at each stage
+      const sampleVertex = (positions: number[], idx: number) => ({
+        x: positions[idx * 3],
+        y: positions[idx * 3 + 1],
+        z: positions[idx * 3 + 2],
       })
 
-      // Apply translation and rotation
-      // Note: GLB meshes are loaded with Y/Z swap in the loader (to convert from GLTF Y-up
-      // to our internal coords). For export, we need to swap Y/Z back.
-      // We DON'T use convertMeshToGLTFOrientation here because that does X negation,
-      // which is wrong for externally loaded GLB models.
+      console.log(`[GLTF-BUILDER] BEFORE transformMesh:`, {
+        v0: sampleVertex(meshData.positions, 0),
+        v1: sampleVertex(meshData.positions, 1),
+        v2: sampleVertex(meshData.positions, 2),
+        boxCenter: box.center,
+        boxRotation: box.rotation,
+      })
+
+      // Apply translation and rotation, then convert to GLTF orientation
       const translatedMesh = transformMesh(meshData, box.center, box.rotation)
 
-      // Swap Y and Z back to GLTF coordinates (inverse of the GLB loader's Y/Z swap)
-      const transformedMeshData = swapYZForGLTFExport(translatedMesh)
+      console.log(`[GLTF-BUILDER] AFTER transformMesh:`, {
+        v0: sampleVertex(translatedMesh.positions, 0),
+        v1: sampleVertex(translatedMesh.positions, 1),
+        v2: sampleVertex(translatedMesh.positions, 2),
+      })
+
+      const transformedMeshData = convertMeshToGLTFOrientation(translatedMesh)
+
+      console.log(`[GLTF-BUILDER] AFTER convertMeshToGLTFOrientation:`, {
+        v0: sampleVertex(transformedMeshData.positions, 0),
+        v1: sampleVertex(transformedMeshData.positions, 1),
+        v2: sampleVertex(transformedMeshData.positions, 2),
+      })
 
       const positionAccessorIndex = this.addAccessor(
         transformedMeshData.positions,
