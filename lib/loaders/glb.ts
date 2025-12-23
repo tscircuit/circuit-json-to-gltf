@@ -24,7 +24,9 @@ export async function loadGLB(
 
   const response = await fetch(url)
   if (!response.ok) {
-    throw new Error(`Failed to fetch GLB: ${response.status} ${response.statusText}`)
+    throw new Error(
+      `Failed to fetch GLB: ${response.status} ${response.statusText}`,
+    )
   }
   const buffer = await response.arrayBuffer()
   const mesh = parseGLB(buffer, transform)
@@ -241,11 +243,7 @@ function extractTrianglesFromGLTF(
       let indices: Float32Array | undefined
       if (primitive.indices !== undefined) {
         const indexAccessor = gltf.accessors[primitive.indices]
-        indices = getAccessorData(
-          indexAccessor,
-          gltf.bufferViews,
-          binaryBuffer,
-        )
+        indices = getAccessorData(indexAccessor, gltf.bufferViews, binaryBuffer)
       }
 
       // Build triangles

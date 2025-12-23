@@ -503,42 +503,6 @@ export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
   return result
 }
 
-/**
- * Swap Y and Z coordinates back to GLTF format.
- * This is the inverse of the Y/Z swap applied in the GLB loader.
- * Used for GLB meshes when exporting to GLTF.
- */
-export function swapYZForGLTFExport(mesh: MeshData): MeshData {
-  const result: MeshData = {
-    positions: [...mesh.positions],
-    normals: [...mesh.normals],
-    texcoords: [...mesh.texcoords],
-    indices: [...mesh.indices],
-  }
-
-  if (mesh.colors) {
-    result.colors = [...mesh.colors]
-  }
-
-  // Swap Y and Z for positions
-  for (let i = 0; i < result.positions.length; i += 3) {
-    const y = result.positions[i + 1]!
-    const z = result.positions[i + 2]!
-    result.positions[i + 1] = z
-    result.positions[i + 2] = y
-  }
-
-  // Swap Y and Z for normals
-  for (let i = 0; i < result.normals.length; i += 3) {
-    const ny = result.normals[i + 1]!
-    const nz = result.normals[i + 2]!
-    result.normals[i + 1] = nz
-    result.normals[i + 2] = ny
-  }
-
-  return result
-}
-
 export function getBounds(positions: number[]): { min: Point3; max: Point3 } {
   if (positions.length === 0) {
     return {

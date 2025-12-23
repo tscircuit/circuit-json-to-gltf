@@ -25,7 +25,6 @@ import {
   createMeshFromSTL,
   createMeshFromOBJ,
   convertMeshToGLTFOrientation,
-  swapYZForGLTFExport,
   transformMesh,
   getBounds,
   type MeshData,
