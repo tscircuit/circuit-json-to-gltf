@@ -86,40 +86,12 @@ export function parseGLB(
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
-  // Debug: Log raw triangle data before transform
-  if (triangles.length > 0) {
-    const t0 = triangles[0]!
-    console.log(`[GLB-LOADER] RAW triangles (before coordinate transform):`, {
-      firstTriangle: {
-        v0: t0.vertices[0],
-        v1: t0.vertices[1],
-        v2: t0.vertices[2],
-        normal: t0.normal,
-      },
-      triangleCount: triangles.length,
-    })
-  }
-
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
   const finalConfig = transform ?? {
     axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
   }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
-
-  // Debug: Log transformed triangle data
-  if (transformedTriangles.length > 0) {
-    const t0 = transformedTriangles[0]!
-    console.log(`[GLB-LOADER] TRANSFORMED triangles (after Y/Z swap):`, {
-      firstTriangle: {
-        v0: t0.vertices[0],
-        v1: t0.vertices[1],
-        v2: t0.vertices[2],
-        normal: t0.normal,
-      },
-      axisMapping: finalConfig.axisMapping,
-    })
-  }
 
   // Check if any triangles have colors (materials)
   const hasColors = transformedTriangles.some((t) => t.color !== undefined)

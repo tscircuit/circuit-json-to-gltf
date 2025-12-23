@@ -207,37 +207,9 @@ export class GLTFBuilder {
     const primitives: any[] = []
 
     for (const { meshData, materialIndex } of meshDataArray) {
-      // Debug: Sample first few vertices at each stage
-      const sampleVertex = (positions: number[], idx: number) => ({
-        x: positions[idx * 3],
-        y: positions[idx * 3 + 1],
-        z: positions[idx * 3 + 2],
-      })
-
-      console.log(`[GLTF-BUILDER] BEFORE transformMesh:`, {
-        v0: sampleVertex(meshData.positions, 0),
-        v1: sampleVertex(meshData.positions, 1),
-        v2: sampleVertex(meshData.positions, 2),
-        boxCenter: box.center,
-        boxRotation: box.rotation,
-      })
-
       // Apply translation and rotation, then convert to GLTF orientation
       const translatedMesh = transformMesh(meshData, box.center, box.rotation)
-
-      console.log(`[GLTF-BUILDER] AFTER transformMesh:`, {
-        v0: sampleVertex(translatedMesh.positions, 0),
-        v1: sampleVertex(translatedMesh.positions, 1),
-        v2: sampleVertex(translatedMesh.positions, 2),
-      })
-
       const transformedMeshData = convertMeshToGLTFOrientation(translatedMesh)
-
-      console.log(`[GLTF-BUILDER] AFTER convertMeshToGLTFOrientation:`, {
-        v0: sampleVertex(transformedMeshData.positions, 0),
-        v1: sampleVertex(transformedMeshData.positions, 1),
-        v2: sampleVertex(transformedMeshData.positions, 2),
-      })
 
       const positionAccessorIndex = this.addAccessor(
         transformedMeshData.positions,
