@@ -118,18 +118,18 @@ export async function renderBoardTextures(
   top: string
   bottom: string
 }> {
-  const [top, bottom] = await Promise.all([
-    renderBoardLayer(circuitJson, {
-      layer: "top",
-      resolution,
-      backgroundColor: "#0F3812", // Green PCB background
-    }),
-    renderBoardLayer(circuitJson, {
-      layer: "bottom",
-      resolution,
-      backgroundColor: "#0F3812", // Darker green for bottom layer
-    }),
-  ])
+  // Render sequentially to avoid concurrent Resvg WASM usage
+  // which causes "recursive use of an object" Rust aliasing errors
+  const top = await renderBoardLayer(circuitJson, {
+    layer: "top",
+    resolution,
+    backgroundColor: "#0F3812", // Green PCB background
+  })
+  const bottom = await renderBoardLayer(circuitJson, {
+    layer: "bottom",
+    resolution,
+    backgroundColor: "#0F3812", // Darker green for bottom layer
+  })
 
   return { top, bottom }
 }

@@ -17,14 +17,23 @@ export async function loadGLB(
   url: string,
   transform?: CoordinateTransformConfig,
 ): Promise<STLMesh | OBJMesh> {
+  console.log(`[GLB-LOADER] loadGLB called with url: ${url}`)
   const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
   if (glbCache.has(cacheKey)) {
+    console.log(`[GLB-LOADER] Returning cached mesh for: ${url}`)
     return glbCache.get(cacheKey)!
   }
 
+  console.log(`[GLB-LOADER] Fetching GLB from: ${url}`)
   const response = await fetch(url)
+  console.log(`[GLB-LOADER] Fetch response status: ${response.status} ${response.statusText}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch GLB: ${response.status} ${response.statusText}`)
+  }
   const buffer = await response.arrayBuffer()
+  console.log(`[GLB-LOADER] Received ${buffer.byteLength} bytes`)
   const mesh = parseGLB(buffer, transform)
+  console.log(`[GLB-LOADER] Parsed GLB, triangles: ${mesh.triangles.length}`)
   glbCache.set(cacheKey, mesh)
   return mesh
 }
@@ -233,26 +242,16 @@ function extractTrianglesFromGLTF(
       }
 
       // Get indices (if present)
-      let indices: Uint16Array | Uint32Array | undefined
+      // Note: getAccessorData returns Float32Array with correct values
+      // We use it directly since the values are already correct integers stored as floats
+      let indices: Float32Array | undefined
       if (primitive.indices !== undefined) {
         const indexAccessor = gltf.accessors[primitive.indices]
-        const indexData = getAccessorData(
+        indices = getAccessorData(
           indexAccessor,
           gltf.bufferViews,
           binaryBuffer,
         )
-        indices =
-          indexAccessor.componentType === 5123
-            ? new Uint16Array(
-                indexData.buffer,
-                indexData.byteOffset,
-                indexData.length,
-              )
-            : new Uint32Array(
-                indexData.buffer,
-                indexData.byteOffset,
-                indexData.length,
-              )
       }
 
       // Build triangles

@@ -317,6 +317,24 @@ export function createMeshFromOBJ(
     return [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
   }
 
+  // Debug: Check first triangle for NaN
+  if (objMesh.triangles.length > 0) {
+    const firstTriangle = objMesh.triangles[0]!
+    const v0 = firstTriangle.vertices[0]!
+    const v1 = firstTriangle.vertices[1]!
+    const v2 = firstTriangle.vertices[2]!
+    console.log(`[GEOMETRY] createMeshFromOBJ - first triangle vertices:`, {
+      v0: { x: v0.x, y: v0.y, z: v0.z },
+      v1: { x: v1.x, y: v1.y, z: v1.z },
+      v2: { x: v2.x, y: v2.y, z: v2.z },
+      normal: firstTriangle.normal,
+      v0NaN: isNaN(v0.x) || isNaN(v0.y) || isNaN(v0.z),
+      v1NaN: isNaN(v1.x) || isNaN(v1.y) || isNaN(v1.z),
+      v2NaN: isNaN(v2.x) || isNaN(v2.y) || isNaN(v2.z),
+      triangleCount: objMesh.triangles.length,
+    })
+  }
+
   const materialMeshes = new Map<number, MeshData>()
 
   for (const triangle of objMesh.triangles) {
@@ -498,6 +516,42 @@ export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
       result.indices[i + 1] = i2
       result.indices[i + 2] = i1
     }
+  }
+
+  return result
+}
+
+/**
+ * Swap Y and Z coordinates back to GLTF format.
+ * This is the inverse of the Y/Z swap applied in the GLB loader.
+ * Used for GLB meshes when exporting to GLTF.
+ */
+export function swapYZForGLTFExport(mesh: MeshData): MeshData {
+  const result: MeshData = {
+    positions: [...mesh.positions],
+    normals: [...mesh.normals],
+    texcoords: [...mesh.texcoords],
+    indices: [...mesh.indices],
+  }
+
+  if (mesh.colors) {
+    result.colors = [...mesh.colors]
+  }
+
+  // Swap Y and Z for positions
+  for (let i = 0; i < result.positions.length; i += 3) {
+    const y = result.positions[i + 1]!
+    const z = result.positions[i + 2]!
+    result.positions[i + 1] = z
+    result.positions[i + 2] = y
+  }
+
+  // Swap Y and Z for normals
+  for (let i = 0; i < result.normals.length; i += 3) {
+    const ny = result.normals[i + 1]!
+    const nz = result.normals[i + 2]!
+    result.normals[i + 1] = nz
+    result.normals[i + 2] = ny
   }
 
   return result

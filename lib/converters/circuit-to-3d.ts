@@ -193,8 +193,17 @@ export async function convertCircuitJsonTo3D(
   const cadComponents = (db.cad_component?.list?.() ?? []) as CadComponent[]
   const pcbComponentIdsWith3D = new Set<string>()
 
+  console.log(`[GLB-DEBUG] Found ${cadComponents.length} cad_components`)
+
   for (const cad of cadComponents) {
     const { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
+    console.log(`[GLB-DEBUG] Processing cad_component:`, {
+      cad_component_id: cad.cad_component_id,
+      model_glb_url,
+      model_stl_url,
+      model_obj_url,
+      model_gltf_url,
+    })
 
     const hasFootprinterModel = Boolean(
       cad.footprinter_string &&
@@ -251,6 +260,15 @@ export async function convertCircuitJsonTo3D(
             : effectiveBoardThickness / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
+
+    console.log(`[GLB-DEBUG] Position calculation for cad_component:`, {
+      cad_component_id: cad.cad_component_id,
+      cadPosition: cad.position,
+      pcbComponentCenter: pcbComponent?.center,
+      computedCenter: center,
+      isBottomLayer,
+      effectiveBoardThickness,
+    })
 
     const meshType = model_stl_url
       ? "stl"
@@ -322,18 +340,30 @@ export async function convertCircuitJsonTo3D(
             : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
+      console.log(`[GLB-DEBUG] Loading STL from: ${model_stl_url}`)
       box.mesh = await loadSTL(model_stl_url, defaultTransform)
     } else if (model_obj_url) {
+      console.log(`[GLB-DEBUG] Loading OBJ from: ${model_obj_url}`)
       box.mesh = await loadOBJ(model_obj_url, defaultTransform)
     } else if (model_glb_url) {
-      box.mesh = await loadGLB(model_glb_url, defaultTransform)
+      console.log(`[GLB-DEBUG] Loading GLB from: ${model_glb_url}`)
+      try {
+        box.mesh = await loadGLB(model_glb_url, defaultTransform)
+        console.log(`[GLB-DEBUG] GLB loaded successfully, triangles: ${box.mesh?.triangles?.length ?? 0}`)
+      } catch (err) {
+        console.error(`[GLB-DEBUG] GLB load failed:`, err)
+      }
     } else if (model_gltf_url) {
+      console.log(`[GLB-DEBUG] Loading GLTF from: ${model_gltf_url}`)
       box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
     } else if (hasFootprinterModel && cad.footprinter_string) {
+      console.log(`[GLB-DEBUG] Loading footprinter model: ${cad.footprinter_string}`)
       box.mesh = await loadFootprinterModel(
         cad.footprinter_string,
         defaultTransform,
       )
+    } else {
+      console.log(`[GLB-DEBUG] No model source found for cad_component`)
     }
 
     if (box.mesh && modelScaleFactor !== 1) {
@@ -342,6 +372,7 @@ export async function convertCircuitJsonTo3D(
 
     // Only set color if mesh loading failed (fallback to simple box)
     if (!box.mesh) {
+      console.log(`[GLB-DEBUG] No mesh loaded, using fallback color`)
       box.color = componentColor
     }
 
