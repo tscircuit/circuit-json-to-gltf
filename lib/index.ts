@@ -14,6 +14,7 @@ export async function convertCircuitJsonToGltf(
     modelCache,
     backgroundColor,
     showBoundingBoxes = false,
+    drawFauxBoard = false,
   } = options
 
   // Convert circuit JSON to 3D scene
@@ -22,6 +23,7 @@ export async function convertCircuitJsonToGltf(
     textureResolution: boardTextureResolution,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
+    drawFauxBoard,
   })
 
   // Convert 3D scene to GLTF

@@ -8,6 +8,7 @@ export interface ConversionOptions {
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
+  drawFauxBoard?: boolean
 }
 
 export interface CoordinateTransformConfig {
@@ -128,6 +129,7 @@ export interface GLTFExportOptions {
   animations?: any[]
   forceIndices?: boolean
   includeCustomExtensions?: boolean
+  drawFauxBoard?: boolean
 }
 
 export interface CircuitTo3DOptions {
@@ -140,6 +142,7 @@ export interface CircuitTo3DOptions {
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
+  drawFauxBoard?: boolean
 }
 
 export interface BoardRenderOptions {

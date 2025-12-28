@@ -69,6 +69,7 @@ export async function convertCircuitJsonTo3D(
     textureResolution = 1024,
     coordinateTransform,
     showBoundingBoxes = true,
+    drawFauxBoard = false,
   } = options
 
   const db: any = cju(circuitJson)
@@ -79,6 +80,10 @@ export async function convertCircuitJsonTo3D(
 
   // Panels don't have thickness, so always use board's thickness as fallback
   const effectiveBoardThickness = pcbBoard?.thickness ?? boardThickness
+
+  // For faux boards, components should be positioned as if on a surface (thickness = 0)
+  // since faux boards are just visual guides without physical presence
+  const positioningBoardThickness = drawFauxBoard ? 0 : effectiveBoardThickness
 
   // Render panel if present (panel takes priority)
   if (pcbPanel) {
@@ -187,6 +192,77 @@ export async function convertCircuitJsonTo3D(
     }
 
     boxes.push(boardBox)
+  } else if (drawFauxBoard) {
+    // Create synthetic faux board when no real board exists
+    const pcbComponents = db.pcb_component?.list?.() ?? []
+
+    if (pcbComponents.length > 0) {
+      // Calculate bounds from component positions with 10% padding
+      let minX = Infinity
+      let minY = Infinity
+      let maxX = -Infinity
+      let maxY = -Infinity
+
+      for (const component of pcbComponents) {
+        const halfWidth = component.width / 2
+        const halfHeight = component.height / 2
+
+        minX = Math.min(minX, component.center.x - halfWidth)
+        minY = Math.min(minY, component.center.y - halfHeight)
+        maxX = Math.max(maxX, component.center.x + halfWidth)
+        maxY = Math.max(maxY, component.center.y + halfHeight)
+      }
+
+      // Add 10% padding
+      const paddingX = (maxX - minX) * 0.1
+      const paddingY = (maxY - minY) * 0.1
+
+      minX -= paddingX
+      minY -= paddingY
+      maxX += paddingX
+      maxY += paddingY
+
+      // Ensure minimum size of 20mm × 20mm
+      const width = Math.max(maxX - minX, 20)
+      const height = Math.max(maxY - minY, 20)
+      const centerX = (minX + maxX) / 2
+      const centerY = (minY + maxY) / 2
+
+      const fauxBoardBox: Box3D = {
+        center: {
+          x: centerX,
+          y: -boardThickness,
+          z: centerY,
+        },
+        size: {
+          x: width,
+          y: boardThickness,
+          z: height,
+        },
+        color: pcbColor,
+        isTranslucent: true, // Indicate this is a synthetic board
+      }
+
+      boxes.push(fauxBoardBox)
+    } else {
+      // No components found, create minimum 20mm × 20mm board at origin
+      const fauxBoardBox: Box3D = {
+        center: {
+          x: 0,
+          y: 0,
+          z: 0,
+        },
+        size: {
+          x: 20,
+          y: boardThickness,
+          z: 20,
+        },
+        color: pcbColor,
+        isTranslucent: true, // Indicate this is a synthetic board
+      }
+
+      boxes.push(fauxBoardBox)
+    }
   }
 
   // Process CAD components (3D models)
@@ -247,8 +323,8 @@ export async function convertCircuitJsonTo3D(
       : {
           x: pcbComponent?.center.x ?? 0,
           y: isBottomLayer
-            ? -(effectiveBoardThickness / 2 + size.y / 2)
-            : effectiveBoardThickness / 2 + size.y / 2,
+            ? -(positioningBoardThickness / 2 + size.y / 2)
+            : positioningBoardThickness / 2 + size.y / 2,
           z: pcbComponent?.center.y ?? 0,
         }
 
@@ -266,7 +342,9 @@ export async function convertCircuitJsonTo3D(
     const box: Box3D = {
       center,
       size,
-      isTranslucent: cad.show_as_translucent_model,
+      isTranslucent:
+        (cad as any).showAsTranslucentModel ||
+        (cad as any).show_as_translucent_model,
     }
 
     if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {
@@ -372,8 +450,8 @@ export async function convertCircuitJsonTo3D(
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(effectiveBoardThickness + compHeight / 2)
-            : effectiveBoardThickness / 2 + compHeight / 2,
+            ? -(positioningBoardThickness / 2 + compHeight / 2)
+            : positioningBoardThickness / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
