@@ -69,6 +69,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `modelCache`: Map for caching loaded models
 - `backgroundColor`: Background color for board rendering
 - `showBoundingBoxes`: Show bounding boxes for debugging
+- `drawFauxBoard`: When enabled, creates a synthetic translucent board based on component positions when no physical board is present in the circuit. Useful for visualizing component layouts without a defined PCB board - default: false
 
 ## Architecture
 

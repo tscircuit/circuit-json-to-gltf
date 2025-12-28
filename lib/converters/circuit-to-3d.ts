@@ -83,7 +83,8 @@ export async function convertCircuitJsonTo3D(
 
   // For faux boards, components should be positioned as if on a surface (thickness = 0)
   // since faux boards are just visual guides without physical presence
-  const positioningBoardThickness = drawFauxBoard ? 0 : effectiveBoardThickness
+  const positioningBoardThickness =
+    drawFauxBoard && !pcbBoard && !pcbPanel ? 0 : effectiveBoardThickness
 
   // Render panel if present (panel takes priority)
   if (pcbPanel) {
