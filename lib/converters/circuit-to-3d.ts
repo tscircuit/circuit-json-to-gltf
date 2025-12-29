@@ -23,7 +23,7 @@ import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
 import { loadFootprinterModel } from "../loaders/footprinter"
 import { renderBoardTextures } from "./board-renderer"
-import { createFauxBoardBox } from "../utils/faux-board"
+import { createFauxBoard } from "../utils/create-faux-board"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
 import {
@@ -191,7 +191,7 @@ export async function convertCircuitJsonTo3D(
     boxes.push(boardBox)
   } else if (drawFauxBoard) {
     const pcbComponents = db.pcb_component?.list?.() ?? []
-    const fauxBoardBox = createFauxBoardBox({
+    const fauxBoardBox = createFauxBoard({
       pcbComponents,
       boardThickness,
       pcbColor,
@@ -277,9 +277,7 @@ export async function convertCircuitJsonTo3D(
     const box: Box3D = {
       center,
       size,
-      isTranslucent:
-        (cad as any).showAsTranslucentModel ||
-        (cad as any).show_as_translucent_model,
+      isTranslucent: cad.show_as_translucent_model,
     }
 
     if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {

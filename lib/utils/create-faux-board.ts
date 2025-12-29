@@ -1,8 +1,9 @@
-import { getBoundsOfPcbElements } from "@tscircuit/circuit-json-util"
 import type { Box3D, Color } from "../types"
+import type { PcbComponent } from "circuit-json"
+import { getBoundsOfPcbElements } from "@tscircuit/circuit-json-util"
 
 interface FauxBoardParams {
-  pcbComponents: any[]
+  pcbComponents: PcbComponent[]
   boardThickness: number
   pcbColor: Color
 }
@@ -11,7 +12,7 @@ interface FauxBoardParams {
  * Build a translucent synthetic board box from component extents.
  * Returns undefined when no components are present.
  */
-export const createFauxBoardBox = ({
+export const createFauxBoard = ({
   pcbComponents,
   boardThickness,
   pcbColor,
