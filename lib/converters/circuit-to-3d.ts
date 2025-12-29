@@ -383,7 +383,7 @@ export async function convertCircuitJsonTo3D(
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(effectiveBoardThickness / 2 + compHeight / 2)
+            ? -(effectiveBoardThickness + compHeight / 2)
             : effectiveBoardThickness / 2 + compHeight / 2,
           z: component.center.y,
         },
