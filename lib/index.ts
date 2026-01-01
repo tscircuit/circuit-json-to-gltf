@@ -2,6 +2,12 @@ import type { CircuitJson } from "circuit-json"
 import type { ConversionOptions } from "./types"
 import { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
+import { injectFauxBoard } from "./utils/create-faux-board-json"
+import { cju } from "@tscircuit/circuit-json-util"
+
+function hasRealBoard(circuitJson: CircuitJson): boolean {
+  return circuitJson.some((element) => element.type === "pcb_board")
+}
 
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
@@ -17,8 +23,23 @@ export async function convertCircuitJsonToGltf(
     drawFauxBoard = false,
   } = options
 
+  // Early faux board injection
+  let processedCircuitJson = circuitJson
+  if (drawFauxBoard && !hasRealBoard(circuitJson)) {
+    // Need CAD components for bounds calculation
+    const db: any = cju(processedCircuitJson)
+    const cadComponents = (db.cad_component?.list?.() ?? []) as any[]
+
+    processedCircuitJson = await injectFauxBoard({
+      circuitJson: processedCircuitJson,
+      cadComponents,
+      thickness: 1.6,
+      padding: 2.0,
+    })
+  }
+
   // Convert circuit JSON to 3D scene
-  const scene3D = await convertCircuitJsonTo3D(circuitJson, {
+  const scene3D = await convertCircuitJsonTo3D(processedCircuitJson, {
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
     coordinateTransform: options.coordinateTransform,

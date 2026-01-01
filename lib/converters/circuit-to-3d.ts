@@ -23,7 +23,6 @@ import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
 import { loadFootprinterModel } from "../loaders/footprinter"
 import { renderBoardTextures } from "./board-renderer"
-import { createFauxBoard } from "../utils/create-faux-board"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
 import {
@@ -188,16 +187,13 @@ export async function convertCircuitJsonTo3D(
       boardBox.color = pcbColor
     }
 
-    boxes.push(boardBox)
-  } else if (drawFauxBoard) {
-    const pcbComponents = db.pcb_component?.list?.() ?? []
-    const fauxBoardBox = createFauxBoard({
-      pcbComponents,
-      boardThickness,
-      pcbColor,
-    })
+    // Detect faux boards and apply transparency
+    const isFauxBoard = (pcbBoard as any)._isFaux === true
+    if (isFauxBoard) {
+      boardBox.isTranslucent = true
+    }
 
-    if (fauxBoardBox) boxes.push(fauxBoardBox)
+    boxes.push(boardBox)
   }
 
   // Process CAD components (3D models)
