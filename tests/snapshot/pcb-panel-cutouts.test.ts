@@ -1,8 +1,8 @@
 import { test, expect } from "bun:test"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
-import { convertCircuitJsonToGltf } from "../lib/index"
-import { getBestCameraPosition } from "../lib/utils/camera-position"
 import type { CircuitJson } from "circuit-json"
+import { convertCircuitJsonToGltf } from "../../lib"
+import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 test("pcb-panel-cutouts", async () => {
   const circuitJson: CircuitJson = [
