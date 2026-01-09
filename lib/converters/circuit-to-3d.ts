@@ -2,7 +2,7 @@ import {
   type CircuitJson,
   type CadComponent,
   type PcbHole,
-  type PCBPlatedHole,
+  type PcbPlatedHole,
   type PcbCutout,
   type PcbCopperPour,
   type PcbPanel,
@@ -84,12 +84,16 @@ export async function convertCircuitJsonTo3D(
   if (pcbPanel) {
     const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
     const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PCBPlatedHole[]
+      []) as PcbPlatedHole[]
+    const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+    // For panels, include cutouts that don't have a specific board ID (global cutouts)
+    const panelCutouts = pcbCutouts.filter((cutout) => !cutout.pcb_board_id)
 
     const panelMesh = createPanelMesh(pcbPanel, {
       thickness: effectiveBoardThickness,
       holes: pcbHoles,
       platedHoles: pcbPlatedHoles,
+      cutouts: panelCutouts,
     })
 
     const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
@@ -136,7 +140,7 @@ export async function convertCircuitJsonTo3D(
     // Create the main PCB board box
     const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
     const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PCBPlatedHole[]
+      []) as PcbPlatedHole[]
     const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
     const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
 
