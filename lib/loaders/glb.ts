@@ -15,6 +15,8 @@ import {
   applyNodeTransform,
   buildMeshTransforms,
 } from "../utils/gltf-node-transforms"
+import { readFile } from "node:fs/promises"
+import { fileURLToPath } from "node:url"
 
 const glbCache = new Map<string, STLMesh | OBJMesh>()
 
@@ -27,13 +29,23 @@ export async function loadGLB(
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetch(url)
-  if (!response.ok) {
-    throw new Error(
-      `Failed to fetch GLB: ${response.status} ${response.statusText}`,
+  let buffer: ArrayBuffer
+  if (url.startsWith("file://")) {
+    const nodeBuffer = await readFile(fileURLToPath(url))
+    buffer = nodeBuffer.buffer.slice(
+      nodeBuffer.byteOffset,
+      nodeBuffer.byteOffset + nodeBuffer.byteLength,
     )
+  } else {
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(
+        `Failed to fetch GLB: ${response.status} ${response.statusText}`,
+      )
+    }
+    buffer = await response.arrayBuffer()
   }
-  const buffer = await response.arrayBuffer()
+
   const mesh = parseGLB(buffer, transform)
   glbCache.set(cacheKey, mesh)
   return mesh
