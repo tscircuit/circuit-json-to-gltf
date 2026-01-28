@@ -245,7 +245,7 @@ export async function convertCircuitJsonTo3D(
     const center = cad.position
       ? {
           x: cad.position.x,
-          y: cad.position.z,
+          y: isBottomLayer ? -effectiveBoardThickness / 2 : effectiveBoardThickness / 2,
           z: cad.position.y,
         }
       : {
@@ -346,6 +346,36 @@ export async function convertCircuitJsonTo3D(
 
     if (box.mesh && modelScaleFactor !== 1) {
       box.mesh = scaleMesh(box.mesh, modelScaleFactor)
+    }
+
+    // Place models against PCB surface.
+    // Match 3d-viewer semantics:
+    // - ignore cad.position.z for world height
+    // - top layer models sit on +thickness/2
+    // - bottom layer models sit on -thickness/2 (plus small extra offset in viewer, ignored here)
+    // - through-hole models should keep body on board while pins go through
+    if (box.mesh && cad.position) {
+      const bbox = box.mesh.boundingBox
+      if (bbox) {
+        const boardSurfaceY = isBottomLayer
+          ? -effectiveBoardThickness / 2
+          : effectiveBoardThickness / 2
+
+        const platedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PcbPlatedHole[]
+        const isThroughHole = platedHoles.some(
+          (h) => h.pcb_component_id === cad.pcb_component_id,
+        )
+
+        if (isThroughHole) {
+          // Assume model origin is the seating plane (common for through-hole CAD models).
+          // Leave bbox/pins alone; place y=0 at board surface.
+          box.center.y = boardSurfaceY
+        } else {
+          // SMT: align bottom of mesh to board surface.
+          const mountPlane = isBottomLayer ? bbox.max.y : bbox.min.y
+          box.center.y = boardSurfaceY - mountPlane
+        }
+      }
     }
 
     // Only set color if mesh loading failed (fallback to simple box)
