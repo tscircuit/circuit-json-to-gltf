@@ -30,6 +30,10 @@ export async function renderBoardLayer(
         top: silkscreenColor,
         bottom: silkscreenColor,
       },
+      soldermaskWithCopperUnderneath: {
+        top: "#69e778ff",
+        bottom: "#69e778ff",
+      },
       drill: drillColor,
     },
   })
