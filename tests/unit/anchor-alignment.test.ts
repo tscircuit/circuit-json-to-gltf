@@ -18,40 +18,41 @@ const SIMPLE_ASCII_STL = `solid test
   endfacet
 endsolid test`
 
-const makeBaseCircuit = (modelUrl: string) => [
-  {
-    type: "pcb_board",
-    pcb_board_id: "board1",
-    center: { x: 0, y: 0 },
-    width: 20,
-    height: 20,
-    thickness: 1.6,
-  },
-  {
-    type: "source_component",
-    source_component_id: "source1",
-    name: "Test",
-  },
-  {
-    type: "pcb_component",
-    pcb_component_id: "pcb1",
-    source_component_id: "source1",
-    center: { x: 0, y: 0 },
-    width: 2,
-    height: 2,
-    layer: "top",
-  },
-  {
-    type: "cad_component",
-    cad_component_id: "cad1",
-    pcb_component_id: "pcb1",
-    model_stl_url: modelUrl,
-    position: { x: 0, y: 0, z: 123 },
-    rotation: { x: 0, y: 0, z: 0 },
-    size: { x: 1, y: 1, z: 1 },
-    anchor_alignment: "xy_center_z_board",
-  },
-] as const
+const makeBaseCircuit = (modelUrl: string) =>
+  [
+    {
+      type: "pcb_board",
+      pcb_board_id: "board1",
+      center: { x: 0, y: 0 },
+      width: 20,
+      height: 20,
+      thickness: 1.6,
+    },
+    {
+      type: "source_component",
+      source_component_id: "source1",
+      name: "Test",
+    },
+    {
+      type: "pcb_component",
+      pcb_component_id: "pcb1",
+      source_component_id: "source1",
+      center: { x: 0, y: 0 },
+      width: 2,
+      height: 2,
+      layer: "top",
+    },
+    {
+      type: "cad_component",
+      cad_component_id: "cad1",
+      pcb_component_id: "pcb1",
+      model_stl_url: modelUrl,
+      position: { x: 0, y: 0, z: 123 },
+      rotation: { x: 0, y: 0, z: 0 },
+      size: { x: 1, y: 1, z: 1 },
+      anchor_alignment: "xy_center_z_board",
+    },
+  ] as const
 
 test("anchor_alignment xy_center_z_board snaps SMT to board surface", async () => {
   const server = Bun.serve({
