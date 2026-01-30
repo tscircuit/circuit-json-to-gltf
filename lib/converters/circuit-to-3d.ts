@@ -241,11 +241,17 @@ export async function convertCircuitJsonTo3D(
           z: pcbComponent?.height ?? 2,
         }
 
+    const useBoardSurface = cad.anchor_alignment === "xy_center_z_board"
+
     // Determine position
     const center = cad.position
       ? {
           x: cad.position.x,
-          y: isBottomLayer ? -effectiveBoardThickness / 2 : effectiveBoardThickness / 2,
+          y: useBoardSurface
+            ? isBottomLayer
+              ? -effectiveBoardThickness / 2
+              : effectiveBoardThickness / 2
+            : cad.position.z,
           z: cad.position.y,
         }
       : {
@@ -348,20 +354,17 @@ export async function convertCircuitJsonTo3D(
       box.mesh = scaleMesh(box.mesh, modelScaleFactor)
     }
 
-    // Place models against PCB surface.
-    // Match 3d-viewer semantics:
-    // - ignore cad.position.z for world height
-    // - top layer models sit on +thickness/2
-    // - bottom layer models sit on -thickness/2 (plus small extra offset in viewer, ignored here)
-    // - through-hole models should keep body on board while pins go through
-    if (box.mesh && cad.position) {
+    // Place models against PCB surface for xy_center_z_board.
+    // Match 3d-viewer semantics for that mode.
+    if (box.mesh && cad.position && useBoardSurface) {
       const bbox = box.mesh.boundingBox
       if (bbox) {
         const boardSurfaceY = isBottomLayer
           ? -effectiveBoardThickness / 2
           : effectiveBoardThickness / 2
 
-        const platedHoles = (db.pcb_plated_hole?.list?.() ?? []) as PcbPlatedHole[]
+        const platedHoles = (db.pcb_plated_hole?.list?.() ??
+          []) as PcbPlatedHole[]
         const isThroughHole = platedHoles.some(
           (h) => h.pcb_component_id === cad.pcb_component_id,
         )
