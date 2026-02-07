@@ -17,7 +17,7 @@
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
-    "jscad-electronics": "^0.0.113",
+    "jscad-electronics": "^0.0.120",
     "jscad-to-gltf": "^0.0.5"
   },
   "devDependencies": {
