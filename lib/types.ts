@@ -90,7 +90,7 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj" | "glb"
+  meshType?: "stl" | "obj" | "glb" | "step"
   label?: string
   labelColor?: Color
   isTranslucent?: boolean

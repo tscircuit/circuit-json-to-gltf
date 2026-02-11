@@ -38,6 +38,7 @@ import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
 import { arePointsClockwise } from "../utils/pcb-board-cutouts"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
+import { loadSTEP } from "../loaders/step"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -198,14 +199,21 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWith3D = new Set<string>()
 
   for (const cad of cadComponents) {
-    const { model_stl_url, model_obj_url, model_glb_url, model_gltf_url } = cad
+    const {
+      model_stl_url,
+      model_obj_url,
+      model_glb_url,
+      model_gltf_url,
+      model_step_url,
+    } = cad
 
     const hasFootprinterModel = Boolean(
       cad.footprinter_string &&
         !model_stl_url &&
         !model_obj_url &&
         !model_glb_url &&
-        !model_gltf_url,
+        !model_gltf_url &&
+        !model_step_url,
     )
 
     const hasModelSource = Boolean(
@@ -213,6 +221,7 @@ export async function convertCircuitJsonTo3D(
         model_obj_url ||
         model_glb_url ||
         model_gltf_url ||
+        model_step_url ||
         hasFootprinterModel,
     )
 
@@ -264,18 +273,30 @@ export async function convertCircuitJsonTo3D(
           ? "gltf"
           : model_glb_url
             ? "glb"
-            : hasFootprinterModel
-              ? "glb"
-              : undefined
+            : model_step_url
+              ? "step"
+              : hasFootprinterModel
+                ? "glb"
+                : undefined
     const box: Box3D = {
       center,
       size,
       isTranslucent: cad.show_as_translucent_model,
     }
 
-    if (model_stl_url || model_obj_url || model_glb_url || model_gltf_url) {
+    if (
+      model_stl_url ||
+      model_obj_url ||
+      model_glb_url ||
+      model_gltf_url ||
+      model_step_url
+    ) {
       box.meshUrl =
-        model_stl_url || model_obj_url || model_glb_url || model_gltf_url
+        model_stl_url ||
+        model_obj_url ||
+        model_glb_url ||
+        model_gltf_url ||
+        model_step_url
       box.meshType = meshType as any
     }
 
@@ -337,6 +358,12 @@ export async function convertCircuitJsonTo3D(
       }
     } else if (model_gltf_url) {
       box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
+    } else if (model_step_url) {
+      try {
+        box.mesh = await loadSTEP(model_step_url, defaultTransform)
+      } catch (err) {
+        console.error(`Failed to load STEP from ${model_step_url}:`, err)
+      }
     } else if (hasFootprinterModel && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(
         cad.footprinter_string,

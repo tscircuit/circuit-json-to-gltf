@@ -18,7 +18,8 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
     "jscad-electronics": "^0.0.120",
-    "jscad-to-gltf": "^0.0.5"
+    "jscad-to-gltf": "^0.0.5",
+    "occt-import-js": "^0.0.23"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
