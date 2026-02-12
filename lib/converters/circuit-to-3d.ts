@@ -24,9 +24,7 @@ import { loadFootprinterModel } from "../loaders/footprinter"
 import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
-import {
-  createBoardMesh,
-} from "../utils/pcb-board-geometry"
+import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import { loadSTEP } from "../loaders/step"
 
