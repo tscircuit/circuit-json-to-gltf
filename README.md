@@ -65,6 +65,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
+- `drawFauxBoard`: Draw a fallback board if no `pcb_board` or `pcb_panel` is present - default: false
 - `includeModels`: Whether to load external 3D models - default: true
 - `modelCache`: Map for caching loaded models
 - `backgroundColor`: Background color for board rendering

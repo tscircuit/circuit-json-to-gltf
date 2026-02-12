@@ -10,6 +10,7 @@ export async function convertCircuitJsonToGltf(
   const {
     format = "gltf",
     boardTextureResolution = 1024,
+    drawFauxBoard = false,
     includeModels = true,
     modelCache,
     backgroundColor,
@@ -20,6 +21,7 @@ export async function convertCircuitJsonToGltf(
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
+    drawFauxBoard,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
   })

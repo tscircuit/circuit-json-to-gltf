@@ -61,6 +61,7 @@ export async function convertCircuitJsonToGltf(
 
   // Convert circuit JSON to 3D scene (without textures)
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
+    ...options,
     renderBoardTextures: false,
     textureResolution: 0,
   })

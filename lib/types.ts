@@ -3,6 +3,7 @@ import type { CircuitJson } from "circuit-json"
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
+  drawFauxBoard?: boolean
   includeModels?: boolean
   modelCache?: Map<string, STLMesh | OBJMesh>
   backgroundColor?: string
@@ -135,6 +136,7 @@ export interface CircuitTo3DOptions {
   componentColor?: Color
   copperColor?: Color
   boardThickness?: number
+  drawFauxBoard?: boolean
   defaultComponentHeight?: number
   renderBoardTextures?: boolean
   textureResolution?: number
