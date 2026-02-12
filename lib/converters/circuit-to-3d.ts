@@ -208,8 +208,8 @@ export async function convertCircuitJsonTo3D(
     const fauxBoardBox: Box3D = {
       center: {
         x: fauxCenterX,
-        y: 0,
-        z: fauxCenterY,
+        y: fauxCenterY,
+        z: 0,
       },
       size: {
         x: fauxWidth,
@@ -232,7 +232,7 @@ export async function convertCircuitJsonTo3D(
           {
             type: "pcb_board",
             pcb_board_id: fauxBoardId,
-            center: { x: fauxCenterX, y: fauxCenterY },
+            center: { x: fauxCenterX, y: 0 },
             width: fauxWidth,
             height: fauxHeight,
             thickness: effectiveBoardThickness,
