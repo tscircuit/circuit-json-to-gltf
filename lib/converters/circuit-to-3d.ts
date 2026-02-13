@@ -232,7 +232,7 @@ export async function convertCircuitJsonTo3D(
           {
             type: "pcb_board",
             pcb_board_id: fauxBoardId,
-            center: { x: fauxCenterX, y: 0 },
+            center: { x: fauxCenterX, y: fauxCenterY },
             width: fauxWidth,
             height: fauxHeight,
             thickness: effectiveBoardThickness,
