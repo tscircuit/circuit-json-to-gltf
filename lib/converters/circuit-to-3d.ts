@@ -182,7 +182,9 @@ export async function convertCircuitJsonTo3D(
 
     boxes.push(boardBox)
   } else if (drawFauxBoard) {
-    const fauxBoardBox = await createFauxBoard(circuitJson, pcbComponents, {
+    const fauxBoardBox = await createFauxBoard({
+      circuitJson,
+      pcbComponents,
       effectiveBoardThickness,
       pcbColor,
       shouldRenderTextures,

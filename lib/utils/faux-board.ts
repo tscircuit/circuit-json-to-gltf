@@ -13,17 +13,21 @@ export interface CreateFauxBoardOptions {
   textureResolution: number
 }
 
+export interface CreateFauxBoardParams extends CreateFauxBoardOptions {
+  circuitJson: CircuitJson
+  pcbComponents: PcbComponent[]
+}
+
 export async function createFauxBoard(
-  circuitJson: CircuitJson,
-  pcbComponents: PcbComponent[],
-  options: CreateFauxBoardOptions,
+  params: CreateFauxBoardParams,
 ): Promise<Box3D> {
+  const { circuitJson, pcbComponents } = params
   const {
     effectiveBoardThickness,
     pcbColor,
     shouldRenderTextures,
     textureResolution,
-  } = options
+  } = params
 
   const hasComponentBounds = pcbComponents.length > 0
   const componentBounds = hasComponentBounds
