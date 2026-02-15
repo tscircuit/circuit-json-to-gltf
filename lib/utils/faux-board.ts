@@ -62,9 +62,7 @@ export async function createFauxBoard(
   if (shouldRenderTextures && textureResolution > 0) {
     try {
       const firstPcbBoard = circuitJson.find(
-        (
-          item,
-        ): item is Extract<CircuitJson[number], { type: "pcb_board" }> =>
+        (item): item is Extract<CircuitJson[number], { type: "pcb_board" }> =>
           item.type === "pcb_board",
       )
 
