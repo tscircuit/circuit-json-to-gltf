@@ -26,11 +26,12 @@ const circuitJson: CircuitJson = [
 ]
 
 test("relative model URL allowed when projectBaseUrl is provided", async () => {
-  try {
-    await convertCircuitJsonTo3D(circuitJson, {
-      projectBaseUrl: "http://localhost:3000/",
-    })
-  } catch (err: any) {
-    expect(err.message).not.toMatch(/projectBaseUrl/)
-  }
+  const [result, error] = await convertCircuitJsonTo3D(circuitJson, {
+    projectBaseUrl: "http://localhost:3000/",
+  })
+    .then((result) => [result, null] as const)
+    .catch((error) => [null, error] as const)
+
+  // It may still fail later (e.g. fetch), but not due to missing projectBaseUrl
+  expect(error?.message?.includes("projectBaseUrl")).toBeFalsy()
 })

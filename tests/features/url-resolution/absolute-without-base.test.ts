@@ -26,9 +26,9 @@ const circuitJson: CircuitJson = [
 ]
 
 test("absolute model URL does not require projectBaseUrl", async () => {
-  try {
-    await convertCircuitJsonTo3D(circuitJson)
-  } catch (err: any) {
-    expect(err.message).not.toMatch(/projectBaseUrl/)
-  }
+  const [result, error] = await convertCircuitJsonTo3D(circuitJson)
+    .then((result) => [result, null] as const)
+    .catch((error) => [null, error] as const)
+
+  expect(error?.message?.includes("projectBaseUrl")).toBeFalsy()
 })

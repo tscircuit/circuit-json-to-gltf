@@ -26,7 +26,11 @@ const circuitJson: CircuitJson = [
 ]
 
 test("relative model URL throws without projectBaseUrl", async () => {
-  await expect(convertCircuitJsonTo3D(circuitJson)).rejects.toThrow(
-    /projectBaseUrl/,
-  )
+  const [result, error] = await convertCircuitJsonTo3D(circuitJson)
+    .then((result) => [result, null] as const)
+    .catch((error) => [null, error] as const)
+
+  expect(result).toBeNull()
+  expect(error).toBeTruthy()
+  expect(error?.message).toMatch(/projectBaseUrl/)
 })
