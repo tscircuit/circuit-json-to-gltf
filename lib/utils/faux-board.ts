@@ -1,5 +1,5 @@
 import { findBoundsAndCenter } from "@tscircuit/circuit-json-util"
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, PcbComponent } from "circuit-json"
 import { renderBoardTextures } from "../converters/board-renderer"
 import type { Box3D, Color } from "../types"
 
@@ -15,7 +15,7 @@ export interface CreateFauxBoardOptions {
 
 export async function createFauxBoard(
   circuitJson: CircuitJson,
-  pcbComponents: any[],
+  pcbComponents: PcbComponent[],
   options: CreateFauxBoardOptions,
 ): Promise<Box3D> {
   const {
@@ -27,7 +27,7 @@ export async function createFauxBoard(
 
   const hasComponentBounds = pcbComponents.length > 0
   const componentBounds = hasComponentBounds
-    ? findBoundsAndCenter(pcbComponents as any)
+    ? findBoundsAndCenter(pcbComponents)
     : null
 
   const fauxCenterX = componentBounds?.center.x ?? 0

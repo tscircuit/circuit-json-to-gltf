@@ -1,37 +1,35 @@
-import { cju } from "@tscircuit/circuit-json-util"
 import type {
-  CadComponent,
   CircuitJson,
-  PcbCopperPour,
-  PcbCutout,
+  CadComponent,
   PcbHole,
-  PcbPanel,
   PcbPlatedHole,
+  PcbCutout,
+  PcbPanel,
 } from "circuit-json"
-import { loadFootprinterModel } from "../loaders/footprinter"
-import { loadGLB } from "../loaders/glb"
-import { loadGLTF } from "../loaders/gltf"
-import { loadOBJ } from "../loaders/obj"
-import { loadSTEP } from "../loaders/step"
-import { loadSTL } from "../loaders/stl"
+import { cju } from "@tscircuit/circuit-json-util"
+import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import type {
   Box3D,
-  Camera3D,
-  CircuitTo3DOptions,
-  Light3D,
   Scene3D,
+  CircuitTo3DOptions,
+  Camera3D,
+  Light3D,
 } from "../types"
+import { loadSTL } from "../loaders/stl"
+import { loadOBJ } from "../loaders/obj"
+import { loadGLB } from "../loaders/glb"
+import { loadGLTF } from "../loaders/gltf"
+import { loadFootprinterModel } from "../loaders/footprinter"
+import { renderBoardTextures } from "./board-renderer"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
-import { createFauxBoard } from "../utils/faux-board"
 import { scaleMesh } from "../utils/mesh-scale"
-import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
-import { renderBoardTextures } from "./board-renderer"
+import { loadSTEP } from "../loaders/step"
+import { createFauxBoard } from "../utils/faux-board"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
-const COPPER_THICKNESS = 0.035
 
 function convertRotationFromCadRotation(rot: {
   x: number
