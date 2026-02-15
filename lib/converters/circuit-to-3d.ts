@@ -1,38 +1,37 @@
-import {
-  type CircuitJson,
-  type CadComponent,
-  type PcbHole,
-  type PcbPlatedHole,
-  type PcbCutout,
-  type PcbCopperPour,
-  type PcbPanel,
-} from "circuit-json"
-import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
-import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
+import { cju } from "@tscircuit/circuit-json-util"
 import type {
-  Box3D,
-  Scene3D,
-  CircuitTo3DOptions,
-  Camera3D,
-  Light3D,
-} from "../types"
-import { loadSTL } from "../loaders/stl"
-import { loadOBJ } from "../loaders/obj"
+  CadComponent,
+  CircuitJson,
+  PcbCopperPour,
+  PcbCutout,
+  PcbHole,
+  PcbPanel,
+  PcbPlatedHole,
+} from "circuit-json"
+import { loadFootprinterModel } from "../loaders/footprinter"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
-import { loadFootprinterModel } from "../loaders/footprinter"
-import { renderBoardTextures } from "./board-renderer"
+import { loadOBJ } from "../loaders/obj"
+import { loadSTEP } from "../loaders/step"
+import { loadSTL } from "../loaders/stl"
+import type {
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Light3D,
+  Scene3D,
+} from "../types"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
+import { createFauxBoard } from "../utils/faux-board"
 import { scaleMesh } from "../utils/mesh-scale"
+import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
-import { loadSTEP } from "../loaders/step"
+import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
 const COPPER_THICKNESS = 0.035
-const FAUX_BOARD_MARGIN = 2
-const DEFAULT_FAUX_BOARD_SIZE = 10
 
 function convertRotationFromCadRotation(rot: {
   x: number
@@ -185,75 +184,12 @@ export async function convertCircuitJsonTo3D(
 
     boxes.push(boardBox)
   } else if (drawFauxBoard) {
-    const hasComponentBounds = pcbComponents.length > 0
-    const componentBounds = hasComponentBounds
-      ? findBoundsAndCenter(pcbComponents as any)
-      : null
-
-    const fauxCenterX = componentBounds?.center.x ?? 0
-    const fauxCenterY = componentBounds?.center.y ?? 0
-    const fauxWidth = componentBounds
-      ? Math.max(
-          componentBounds.width + FAUX_BOARD_MARGIN * 2,
-          DEFAULT_FAUX_BOARD_SIZE,
-        )
-      : DEFAULT_FAUX_BOARD_SIZE
-    const fauxHeight = componentBounds
-      ? Math.max(
-          componentBounds.height + FAUX_BOARD_MARGIN * 2,
-          DEFAULT_FAUX_BOARD_SIZE,
-        )
-      : DEFAULT_FAUX_BOARD_SIZE
-
-    const fauxBoardBox: Box3D = {
-      center: {
-        x: fauxCenterX,
-        y: fauxCenterY,
-        z: 0,
-      },
-      size: {
-        x: fauxWidth,
-        y: effectiveBoardThickness,
-        z: fauxHeight,
-      },
-      color: pcbColor,
-    }
-
-    if (shouldRenderTextures && textureResolution > 0) {
-      try {
-        const fauxBoardId =
-          pcbComponents.find(
-            (component: { pcb_board_id?: string }) =>
-              typeof component.pcb_board_id === "string",
-          )?.pcb_board_id ?? "__faux_board__"
-
-        const fauxBoardCircuitJson = [
-          ...circuitJson,
-          {
-            type: "pcb_board",
-            pcb_board_id: fauxBoardId,
-            center: { x: fauxCenterX, y: fauxCenterY },
-            width: fauxWidth,
-            height: fauxHeight,
-            thickness: effectiveBoardThickness,
-          },
-        ] as CircuitJson
-
-        const textures = await renderBoardTextures(
-          fauxBoardCircuitJson,
-          textureResolution,
-        )
-
-        fauxBoardBox.texture = {
-          top: textures.top,
-          bottom: textures.bottom,
-        }
-      } catch (error) {
-        console.warn("Failed to render faux board textures:", error)
-        fauxBoardBox.color = pcbColor
-      }
-    }
-
+    const fauxBoardBox = await createFauxBoard(circuitJson, pcbComponents, {
+      effectiveBoardThickness,
+      pcbColor,
+      shouldRenderTextures,
+      textureResolution,
+    })
     boxes.push(fauxBoardBox)
   }
 
