@@ -6,29 +6,21 @@ import type { Box3D, Color } from "../types"
 const FAUX_BOARD_MARGIN = 2
 const DEFAULT_FAUX_BOARD_SIZE = 10
 
-export interface CreateFauxBoardOptions {
+export async function createFauxBoard({
+  circuitJson,
+  pcbComponents,
+  effectiveBoardThickness,
+  pcbColor,
+  shouldRenderTextures,
+  textureResolution,
+}: {
+  circuitJson: CircuitJson
+  pcbComponents: PcbComponent[]
   effectiveBoardThickness: number
   pcbColor: Color
   shouldRenderTextures: boolean
   textureResolution: number
-}
-
-export interface CreateFauxBoardParams extends CreateFauxBoardOptions {
-  circuitJson: CircuitJson
-  pcbComponents: PcbComponent[]
-}
-
-export async function createFauxBoard(
-  params: CreateFauxBoardParams,
-): Promise<Box3D> {
-  const { circuitJson, pcbComponents } = params
-  const {
-    effectiveBoardThickness,
-    pcbColor,
-    shouldRenderTextures,
-    textureResolution,
-  } = params
-
+}): Promise<Box3D> {
   const hasComponentBounds = pcbComponents.length > 0
   const componentBounds = hasComponentBounds
     ? findBoundsAndCenter(pcbComponents)
