@@ -61,6 +61,7 @@ export async function convertCircuitJsonTo3D(
     textureResolution = 1024,
     coordinateTransform,
     showBoundingBoxes = true,
+    projectBaseUrl,
   } = options
 
   const db: any = cju(circuitJson)
@@ -354,12 +355,25 @@ export async function convertCircuitJsonTo3D(
       model_gltf_url ||
       model_step_url
     ) {
-      box.meshUrl =
+      const rawUrl =
         model_stl_url ||
         model_obj_url ||
         model_glb_url ||
         model_gltf_url ||
         model_step_url
+
+      const isAbsolute = /^https?:\/\//i.test(rawUrl!)
+
+      if (isAbsolute) {
+        box.meshUrl = rawUrl
+      } else {
+        if (!projectBaseUrl) {
+          throw new Error(
+            `Relative model URL "${rawUrl}" requires projectBaseUrl to be set in CircuitTo3DOptions.`,
+          )
+        }
+        box.meshUrl = new URL(rawUrl!, projectBaseUrl).toString()
+      }
       box.meshType = meshType as any
     }
 
@@ -410,22 +424,22 @@ export async function convertCircuitJsonTo3D(
             : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
-      box.mesh = await loadSTL(model_stl_url, defaultTransform)
+      box.mesh = await loadSTL(box.meshUrl!, defaultTransform)
     } else if (model_obj_url) {
-      box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+      box.mesh = await loadOBJ(box.meshUrl!, defaultTransform)
     } else if (model_glb_url) {
       try {
-        box.mesh = await loadGLB(model_glb_url, defaultTransform)
+        box.mesh = await loadGLB(box.meshUrl!, defaultTransform)
       } catch (err) {
-        console.error(`Failed to load GLB from ${model_glb_url}:`, err)
+        console.error(`Failed to load GLB from ${box.meshUrl}:`, err)
       }
     } else if (model_gltf_url) {
-      box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
+      box.mesh = await loadGLTF(box.meshUrl!, defaultTransform)
     } else if (model_step_url) {
       try {
-        box.mesh = await loadSTEP(model_step_url, defaultTransform)
+        box.mesh = await loadSTEP(box.meshUrl!, defaultTransform)
       } catch (err) {
-        console.error(`Failed to load STEP from ${model_step_url}:`, err)
+        console.error(`Failed to load STEP from ${box.meshUrl}:`, err)
       }
     } else if (hasFootprinterModel && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(

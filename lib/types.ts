@@ -142,6 +142,11 @@ export interface CircuitTo3DOptions {
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
+  /**
+   * Base URL used to resolve relative model URLs (stl/obj/glb/gltf/step).
+   * Required when model URLs are relative paths in browser/server environments.
+   */
+  projectBaseUrl?: string
 }
 
 export interface BoardRenderOptions {
