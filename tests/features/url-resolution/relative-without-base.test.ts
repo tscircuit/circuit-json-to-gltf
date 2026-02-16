@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
-import { convertCircuitJsonTo3D } from "../../../lib/index"
 import type { CircuitJson } from "circuit-json"
+import { convertCircuitJsonTo3D } from "../../../lib/index"
 
 const circuitJson: CircuitJson = [
   {
@@ -31,6 +31,8 @@ test("relative model URL throws without projectBaseUrl", async () => {
     .catch((error) => [null, error] as const)
 
   expect(result).toBeNull()
-  expect(error).toBeTruthy()
-  expect(error?.message).toMatch(/projectBaseUrl/)
+  expect(error).toBeInstanceOf(Error)
+  expect(error?.message).toMatchInlineSnapshot(
+    `"Relative model URL "./relative-model.step" requires projectBaseUrl to be set in CircuitTo3DOptions."`,
+  )
 })
