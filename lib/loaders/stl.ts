@@ -1,26 +1,34 @@
 import type {
+  CoordinateTransformConfig,
+  PlatformConfig,
   Point3,
   STLMesh,
   Triangle,
-  CoordinateTransformConfig,
 } from "../types"
 import {
-  transformTriangles,
   COORDINATE_TRANSFORMS,
+  transformTriangles,
 } from "../utils/coordinate-transform"
+import { resolveModelUrl } from "./resolve-model-url"
 
 const stlCache = new Map<string, STLMesh>()
 
-export async function loadSTL(
-  url: string,
-  transform?: CoordinateTransformConfig,
-): Promise<STLMesh> {
-  const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
+export async function loadSTL({
+  url,
+  transform,
+  platformConfig,
+}: {
+  url: string
+  transform?: CoordinateTransformConfig
+  platformConfig?: PlatformConfig
+}): Promise<STLMesh> {
+  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetch(url)
+  const response = await fetch(resolvedUrl)
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
   stlCache.set(cacheKey, mesh)
@@ -181,12 +189,12 @@ function calculateBoundingBox(triangles: Triangle[]): {
     }
   }
 
-  let minX = Infinity,
-    minY = Infinity,
-    minZ = Infinity
-  let maxX = -Infinity,
-    maxY = -Infinity,
-    maxZ = -Infinity
+  let minX = Infinity
+  let minY = Infinity
+  let minZ = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  let maxZ = -Infinity
 
   for (const triangle of triangles) {
     for (const vertex of triangle.vertices) {

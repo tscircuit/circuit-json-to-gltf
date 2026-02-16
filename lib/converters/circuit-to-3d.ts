@@ -1,32 +1,32 @@
-import {
-  type CircuitJson,
-  type CadComponent,
-  type PcbHole,
-  type PcbPlatedHole,
-  type PcbCutout,
-  type PcbCopperPour,
-  type PcbPanel,
-} from "circuit-json"
 import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
-import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import type {
-  Box3D,
-  Scene3D,
-  CircuitTo3DOptions,
-  Camera3D,
-  Light3D,
-} from "../types"
-import { loadSTL } from "../loaders/stl"
-import { loadOBJ } from "../loaders/obj"
+  CadComponent,
+  CircuitJson,
+  PcbCopperPour,
+  PcbCutout,
+  PcbHole,
+  PcbPanel,
+  PcbPlatedHole,
+} from "circuit-json"
+import { loadFootprinterModel } from "../loaders/footprinter"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
-import { loadFootprinterModel } from "../loaders/footprinter"
-import { renderBoardTextures } from "./board-renderer"
+import { loadOBJ } from "../loaders/obj"
+import { loadSTEP } from "../loaders/step"
+import { loadSTL } from "../loaders/stl"
+import type {
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Light3D,
+  Scene3D,
+} from "../types"
 import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { scaleMesh } from "../utils/mesh-scale"
+import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
-import { loadSTEP } from "../loaders/step"
+import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -61,6 +61,7 @@ export async function convertCircuitJsonTo3D(
     textureResolution = 1024,
     coordinateTransform,
     showBoundingBoxes = true,
+    platformConfig,
   } = options
 
   const db: any = cju(circuitJson)
@@ -410,20 +411,40 @@ export async function convertCircuitJsonTo3D(
             : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
-      box.mesh = await loadSTL(model_stl_url, defaultTransform)
+      box.mesh = await loadSTL({
+        url: model_stl_url,
+        transform: defaultTransform,
+        platformConfig,
+      })
     } else if (model_obj_url) {
-      box.mesh = await loadOBJ(model_obj_url, defaultTransform)
+      box.mesh = await loadOBJ({
+        url: model_obj_url,
+        transform: defaultTransform,
+        platformConfig,
+      })
     } else if (model_glb_url) {
       try {
-        box.mesh = await loadGLB(model_glb_url, defaultTransform)
+        box.mesh = await loadGLB({
+          url: model_glb_url,
+          transform: defaultTransform,
+          platformConfig,
+        })
       } catch (err) {
         console.error(`Failed to load GLB from ${model_glb_url}:`, err)
       }
     } else if (model_gltf_url) {
-      box.mesh = await loadGLTF(model_gltf_url, defaultTransform)
+      box.mesh = await loadGLTF({
+        url: model_gltf_url,
+        transform: defaultTransform,
+        platformConfig,
+      })
     } else if (model_step_url) {
       try {
-        box.mesh = await loadSTEP(model_step_url, defaultTransform)
+        box.mesh = await loadSTEP({
+          url: model_step_url,
+          transform: defaultTransform,
+          platformConfig,
+        })
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
       }

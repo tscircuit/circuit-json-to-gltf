@@ -1,4 +1,4 @@
-import type { CircuitJson } from "circuit-json"
+import type { PlatformConfig } from "@tscircuit/props"
 
 export interface ConversionOptions {
   format?: "gltf" | "glb"
@@ -9,6 +9,7 @@ export interface ConversionOptions {
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
+  platformConfig?: PlatformConfig
 }
 
 export interface CoordinateTransformConfig {
@@ -142,6 +143,7 @@ export interface CircuitTo3DOptions {
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
+  platformConfig?: PlatformConfig
 }
 
 export interface BoardRenderOptions {

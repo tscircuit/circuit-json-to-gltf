@@ -70,6 +70,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `modelCache`: Map for caching loaded models
 - `backgroundColor`: Background color for board rendering
 - `showBoundingBoxes`: Show bounding boxes for debugging
+- `platformConfig`: Optional URL resolver config for relative model assets (e.g. `./node_modules/...`)
 
 ## Architecture
 

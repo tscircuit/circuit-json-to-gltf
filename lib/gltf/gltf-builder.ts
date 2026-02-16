@@ -384,12 +384,12 @@ export class GLTFBuilder {
     const bounds = getBounds([]) // We'll calculate bounds from triangles
 
     // Calculate bounds from all triangles
-    let minX = Infinity,
-      minY = Infinity,
-      minZ = Infinity
-    let maxX = -Infinity,
-      maxY = -Infinity,
-      maxZ = -Infinity
+    let minX = Infinity
+    let minY = Infinity
+    let minZ = Infinity
+    let maxX = -Infinity
+    let maxY = -Infinity
+    let maxZ = -Infinity
 
     for (const triangle of box.mesh!.triangles) {
       for (const v of triangle.vertices) {

@@ -1,32 +1,32 @@
 // Browser-safe exports that don't include Node.js dependencies
 import type { CircuitJson } from "circuit-json"
-import type { ConversionOptions } from "./types"
 import { convertCircuitJsonTo3D as originalConvertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
+import type { ConversionOptions } from "./types"
 
-// Re-export types
-export type {
-  ConversionOptions,
-  Point3,
-  Size3,
-  Triangle,
-  BoundingBox,
-  STLMesh,
-  OBJMesh,
-  OBJMaterial,
-  Color,
-  Box3D,
-  Scene3D,
-  Camera3D,
-  Light3D,
-  GLTFExportOptions,
-  CircuitTo3DOptions,
-  BoardRenderOptions,
-} from "./types"
+export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
 // Re-export loaders (these should work in browser)
-export { loadSTL, clearSTLCache } from "./loaders/stl"
-export { loadOBJ, clearOBJCache } from "./loaders/obj"
+export { clearSTLCache, loadSTL } from "./loaders/stl"
+// Re-export types
+export type {
+  BoardRenderOptions,
+  BoundingBox,
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Color,
+  ConversionOptions,
+  GLTFExportOptions,
+  Light3D,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  Scene3D,
+  Size3,
+  STLMesh,
+  Triangle,
+} from "./types"
 
 // Override the board renderer import
 const mockBoardRenderer = {

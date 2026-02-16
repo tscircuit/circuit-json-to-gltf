@@ -1,7 +1,7 @@
 import type { CircuitJson } from "circuit-json"
-import type { ConversionOptions } from "./types"
 import { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
+import type { ConversionOptions } from "./types"
 
 export async function convertCircuitJsonToGltf(
   circuitJson: CircuitJson,
@@ -24,6 +24,7 @@ export async function convertCircuitJsonToGltf(
     drawFauxBoard,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
+    platformConfig: options.platformConfig,
   })
 
   // Convert 3D scene to GLTF
@@ -38,44 +39,42 @@ export async function convertCircuitJsonToGltf(
   return result
 }
 
-// Re-export types
-export type {
-  ConversionOptions,
-  Point3,
-  Size3,
-  Triangle,
-  BoundingBox,
-  STLMesh,
-  OBJMesh,
-  OBJMaterial,
-  Color,
-  Box3D,
-  Scene3D,
-  Camera3D,
-  Light3D,
-  GLTFExportOptions,
-  CircuitTo3DOptions,
-  BoardRenderOptions,
-  CoordinateTransformConfig,
-} from "./types"
-
-// Re-export loaders
-export { loadSTL, clearSTLCache } from "./loaders/stl"
-export { loadOBJ, clearOBJCache } from "./loaders/obj"
-export { loadGLB, clearGLBCache } from "./loaders/glb"
-
-// Re-export converters
-export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
-export { convertSceneToGLTF } from "./converters/scene-to-gltf"
 export {
   renderBoardLayer,
   renderBoardTextures,
 } from "./converters/board-renderer"
+// Re-export converters
+export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
+export { convertSceneToGLTF } from "./converters/scene-to-gltf"
+export { clearGLBCache, loadGLB } from "./loaders/glb"
+export { clearOBJCache, loadOBJ } from "./loaders/obj"
+// Re-export loaders
+export { clearSTLCache, loadSTL } from "./loaders/stl"
+// Re-export types
+export type {
+  BoardRenderOptions,
+  BoundingBox,
+  Box3D,
+  Camera3D,
+  CircuitTo3DOptions,
+  Color,
+  ConversionOptions,
+  CoordinateTransformConfig,
+  GLTFExportOptions,
+  Light3D,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  Scene3D,
+  Size3,
+  STLMesh,
+  Triangle,
+} from "./types"
 
 // Re-export coordinate transform utilities
 export {
-  COORDINATE_TRANSFORMS,
   applyCoordinateTransform,
+  COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "./utils/coordinate-transform"
 

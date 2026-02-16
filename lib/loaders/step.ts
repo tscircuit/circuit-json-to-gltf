@@ -1,3 +1,4 @@
+import type { PlatformConfig } from "@tscircuit/props"
 import type {
   CoordinateTransformConfig,
   OBJMaterial,
@@ -10,6 +11,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
+import { resolveModelUrl } from "./resolve-model-url"
 
 const stepCache = new Map<string, STLMesh | OBJMesh>()
 
@@ -24,20 +26,22 @@ async function getOcctModule(): Promise<any> {
   return occtModulePromise
 }
 
-export async function loadSTEP(
-  url: string,
-  transform?: CoordinateTransformConfig,
-): Promise<STLMesh | OBJMesh> {
-  const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
+export async function loadSTEP({
+  url,
+  transform,
+  platformConfig,
+}: {
+  url: string
+  transform?: CoordinateTransformConfig
+  platformConfig?: PlatformConfig
+}): Promise<STLMesh | OBJMesh> {
+  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  // Handle local file paths by converting to file:// URLs
-  const fetchUrl =
-    url.startsWith("/") || url.match(/^[A-Za-z]:[\\/]/) ? `file://${url}` : url
-
-  const response = await fetch(fetchUrl)
+  const response = await fetch(resolvedUrl)
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,

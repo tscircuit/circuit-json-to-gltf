@@ -1,33 +1,41 @@
 import type {
-  Point3,
-  Triangle,
-  STLMesh,
-  OBJMesh,
-  OBJMaterial,
   CoordinateTransformConfig,
+  OBJMaterial,
+  OBJMesh,
+  Point3,
+  STLMesh,
+  Triangle,
 } from "../types"
 import {
-  transformTriangles,
   COORDINATE_TRANSFORMS,
+  transformTriangles,
 } from "../utils/coordinate-transform"
 import {
-  applyQuaternion,
   applyNodeTransform,
+  applyQuaternion,
   buildMeshTransforms,
 } from "../utils/gltf-node-transforms"
+import { resolveModelUrl } from "./resolve-model-url"
+import type { PlatformConfig } from "@tscircuit/props"
 
 const glbCache = new Map<string, STLMesh | OBJMesh>()
 
-export async function loadGLB(
-  url: string,
-  transform?: CoordinateTransformConfig,
-): Promise<STLMesh | OBJMesh> {
-  const cacheKey = `${url}:${JSON.stringify(transform ?? {})}`
+export async function loadGLB({
+  url,
+  transform,
+  platformConfig,
+}: {
+  url: string
+  transform?: CoordinateTransformConfig
+  platformConfig?: PlatformConfig
+}): Promise<STLMesh | OBJMesh> {
+  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetch(url)
+  const response = await fetch(resolvedUrl)
   if (!response.ok) {
     throw new Error(
       `Failed to fetch GLB: ${response.status} ${response.statusText}`,
@@ -98,7 +106,7 @@ export function parseGLB(
   const finalConfig = transform ?? {
     axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
   }
-  let transformedTriangles = transformTriangles(triangles, finalConfig)
+  const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   // Check if any triangles have colors (materials)
   const hasColors = transformedTriangles.some((t) => t.color !== undefined)
@@ -627,12 +635,12 @@ function calculateBoundingBox(triangles: Triangle[]): {
     }
   }
 
-  let minX = Infinity,
-    minY = Infinity,
-    minZ = Infinity
-  let maxX = -Infinity,
-    maxY = -Infinity,
-    maxZ = -Infinity
+  let minX = Infinity
+  let minY = Infinity
+  let minZ = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  let maxZ = -Infinity
 
   for (const triangle of triangles) {
     for (const vertex of triangle.vertices) {
