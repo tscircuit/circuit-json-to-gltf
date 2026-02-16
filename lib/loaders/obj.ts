@@ -3,7 +3,6 @@ import type {
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
-  PlatformConfig,
   Point3,
   Triangle,
 } from "../types"
@@ -12,6 +11,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { resolveModelUrl } from "./resolve-model-url"
+import type { PlatformConfig } from "@tscircuit/props"
 
 const objCache = new Map<string, OBJMesh>()
 

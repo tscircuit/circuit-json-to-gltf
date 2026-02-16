@@ -1,6 +1,5 @@
 import type {
   CoordinateTransformConfig,
-  PlatformConfig,
   Point3,
   STLMesh,
   Triangle,
@@ -10,6 +9,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { resolveModelUrl } from "./resolve-model-url"
+import type { PlatformConfig } from "@tscircuit/props"
 
 const stlCache = new Map<string, STLMesh>()
 

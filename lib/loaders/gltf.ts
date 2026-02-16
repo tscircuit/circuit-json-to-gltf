@@ -1,11 +1,7 @@
-import type {
-  CoordinateTransformConfig,
-  OBJMesh,
-  PlatformConfig,
-  STLMesh,
-} from "../types"
+import type { CoordinateTransformConfig, OBJMesh, STLMesh } from "../types"
 import { parseGLB } from "./glb"
 import { resolveModelUrl } from "./resolve-model-url"
+import type { PlatformConfig } from "@tscircuit/props"
 
 async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   const response = await fetch(url)
