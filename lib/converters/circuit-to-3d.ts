@@ -400,6 +400,7 @@ export async function convertCircuitJsonTo3D(
     // - GLB/GLTF have their own conventions
     const usingGlbCoordinates = Boolean(model_glb_url || model_gltf_url)
     const usingObjFormat = Boolean(model_obj_url)
+    const usingStepFormat = Boolean(model_step_url)
 
     const defaultTransform =
       coordinateTransform ??
@@ -409,7 +410,9 @@ export async function convertCircuitJsonTo3D(
           ? COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
           : usingObjFormat
             ? COORDINATE_TRANSFORMS.OBJ_Z_UP_TO_Y_UP
-            : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
+            : usingStepFormat
+              ? COORDINATE_TRANSFORMS.STEP_INVERTED
+              : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
       box.mesh = await loadSTL({
