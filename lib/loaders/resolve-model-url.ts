@@ -1,5 +1,3 @@
-import type { PlatformConfig } from "@tscircuit/props"
-
 const URL_SCHEME_REGEX = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//
 const WINDOWS_ABSOLUTE_PATH_REGEX = /^[A-Za-z]:[\\/]/
 
@@ -83,38 +81,33 @@ export function extractPackageInfoFromNodeModulesPath(
   return { packageName, filePath }
 }
 
-function normalizeNodeModulesRequestPath(path: string): string {
-  return path.replace(/^(\.\/)?/, "").replace(/^\//, "")
+function toPackageFilePath(filePath: string): string {
+  return filePath.startsWith("dist/") ? filePath : `dist/${filePath}`
 }
 
-function absolutizeFromPlatformBase(
-  maybeUrl: string,
-  projectBaseUrl?: string,
+function createPackageFileDownloadUrl(
+  projectBaseUrl: string,
+  packageName: string,
+  filePath: string,
 ): string {
-  if (URL_SCHEME_REGEX.test(maybeUrl)) {
-    return maybeUrl
-  }
-
-  if (maybeUrl.startsWith("/") && projectBaseUrl) {
-    return new URL(maybeUrl, ensureTrailingSlash(projectBaseUrl)).toString()
-  }
-
-  if (maybeUrl.startsWith("/") || WINDOWS_ABSOLUTE_PATH_REGEX.test(maybeUrl)) {
-    return toFileUrlFromAbsolutePath(maybeUrl)
-  }
-
-  return maybeUrl
+  const baseUrl = new URL(
+    "package_files/download",
+    ensureTrailingSlash(projectBaseUrl),
+  )
+  baseUrl.searchParams.set("package_name_with_version", `${packageName}@latest`)
+  baseUrl.searchParams.set("file_path", toPackageFilePath(filePath))
+  return baseUrl.toString()
 }
 
 /**
  * Resolves model URLs for both browser and Node runtimes.
  *
  * In Node, relative URLs like "./node_modules/..." are not valid for fetch(),
- * so we resolve them via platform config first, then to file:// as fallback.
+ * so we resolve them against `projectBaseUrl` when available, then to file:// as fallback.
  */
 export async function resolveModelUrl(
   url: string,
-  platformConfig?: PlatformConfig,
+  projectBaseUrl?: string,
 ): Promise<string> {
   if (URL_SCHEME_REGEX.test(url)) {
     return url
@@ -122,21 +115,11 @@ export async function resolveModelUrl(
 
   const nodeModulesInfo = extractPackageInfoFromNodeModulesPath(url)
 
-  if (platformConfig?.resolveProjectStaticFileImportUrl) {
-    const resolvedByPlatform =
-      await platformConfig.resolveProjectStaticFileImportUrl(
-        nodeModulesInfo ? normalizeNodeModulesRequestPath(url) : url,
-      )
-    return absolutizeFromPlatformBase(
-      resolvedByPlatform,
-      platformConfig.projectBaseUrl,
-    )
-  }
-
-  if (nodeModulesInfo && platformConfig?.projectBaseUrl) {
-    return new URL(
-      normalizeNodeModulesRequestPath(url),
-      ensureTrailingSlash(platformConfig.projectBaseUrl),
+  if (nodeModulesInfo && projectBaseUrl) {
+    return createPackageFileDownloadUrl(
+      projectBaseUrl,
+      nodeModulesInfo.packageName,
+      nodeModulesInfo.filePath,
     ).toString()
   }
 
@@ -144,8 +127,8 @@ export async function resolveModelUrl(
     return toFileUrlFromAbsolutePath(url)
   }
 
-  if (platformConfig?.projectBaseUrl) {
-    const baseUrl = ensureTrailingSlash(platformConfig.projectBaseUrl)
+  if (projectBaseUrl) {
+    const baseUrl = ensureTrailingSlash(projectBaseUrl)
     const relative = url.replace(/^\.\//, "")
     return new URL(relative, baseUrl).toString()
   }

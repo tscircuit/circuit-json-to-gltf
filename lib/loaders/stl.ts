@@ -1,4 +1,5 @@
 import type {
+  AuthHeaders,
   CoordinateTransformConfig,
   Point3,
   STLMesh,
@@ -9,26 +10,27 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { resolveModelUrl } from "./resolve-model-url"
-import type { PlatformConfig } from "@tscircuit/props"
 
 const stlCache = new Map<string, STLMesh>()
 
 export async function loadSTL({
   url,
   transform,
-  platformConfig,
+  projectBaseUrl,
+  authHeaders,
 }: {
   url: string
   transform?: CoordinateTransformConfig
-  platformConfig?: PlatformConfig
+  projectBaseUrl?: string
+  authHeaders?: AuthHeaders
 }): Promise<STLMesh> {
-  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl)
+  const response = await fetch(resolvedUrl, { headers: authHeaders })
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
   stlCache.set(cacheKey, mesh)

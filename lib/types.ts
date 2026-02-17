@@ -1,4 +1,6 @@
-import type { PlatformConfig } from "@tscircuit/props"
+export interface AuthHeaders extends Record<string, string> {
+  Authorization: string
+}
 
 export interface ConversionOptions {
   format?: "gltf" | "glb"
@@ -9,7 +11,8 @@ export interface ConversionOptions {
   backgroundColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
-  platformConfig?: PlatformConfig
+  projectBaseUrl?: string
+  authHeaders?: AuthHeaders
 }
 
 export interface CoordinateTransformConfig {
@@ -143,7 +146,8 @@ export interface CircuitTo3DOptions {
   textureResolution?: number
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
-  platformConfig?: PlatformConfig
+  projectBaseUrl?: string
+  authHeaders?: AuthHeaders
 }
 
 export interface BoardRenderOptions {

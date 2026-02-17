@@ -1,4 +1,5 @@
 import type {
+  AuthHeaders,
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
@@ -16,26 +17,27 @@ import {
   buildMeshTransforms,
 } from "../utils/gltf-node-transforms"
 import { resolveModelUrl } from "./resolve-model-url"
-import type { PlatformConfig } from "@tscircuit/props"
 
 const glbCache = new Map<string, STLMesh | OBJMesh>()
 
 export async function loadGLB({
   url,
   transform,
-  platformConfig,
+  projectBaseUrl,
+  authHeaders,
 }: {
   url: string
   transform?: CoordinateTransformConfig
-  platformConfig?: PlatformConfig
+  projectBaseUrl?: string
+  authHeaders?: AuthHeaders
 }): Promise<STLMesh | OBJMesh> {
-  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl)
+  const response = await fetch(resolvedUrl, { headers: authHeaders })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch GLB: ${response.status} ${response.statusText}`,

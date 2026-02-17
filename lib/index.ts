@@ -24,7 +24,8 @@ export async function convertCircuitJsonToGltf(
     drawFauxBoard,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
-    platformConfig: options.platformConfig,
+    projectBaseUrl: options.projectBaseUrl,
+    authHeaders: options.authHeaders,
   })
 
   // Convert 3D scene to GLTF

@@ -1,5 +1,5 @@
-import type { PlatformConfig } from "@tscircuit/props"
 import type {
+  AuthHeaders,
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
@@ -29,19 +29,23 @@ async function getOcctModule(): Promise<any> {
 export async function loadSTEP({
   url,
   transform,
-  platformConfig,
+  projectBaseUrl,
+  authHeaders,
 }: {
   url: string
   transform?: CoordinateTransformConfig
-  platformConfig?: PlatformConfig
+  projectBaseUrl?: string
+  authHeaders?: AuthHeaders
 }): Promise<STLMesh | OBJMesh> {
-  const resolvedUrl = await resolveModelUrl(url, platformConfig)
+  console.log("loadSTEP", url, projectBaseUrl, authHeaders)
+  const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl)
+  console.log("fetching STEP file", resolvedUrl, authHeaders)
+  const response = await fetch(resolvedUrl, { headers: authHeaders })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,

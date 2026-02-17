@@ -61,7 +61,8 @@ export async function convertCircuitJsonTo3D(
     textureResolution = 1024,
     coordinateTransform,
     showBoundingBoxes = true,
-    platformConfig,
+    projectBaseUrl,
+    authHeaders,
   } = options
 
   const db: any = cju(circuitJson)
@@ -414,20 +415,23 @@ export async function convertCircuitJsonTo3D(
       box.mesh = await loadSTL({
         url: model_stl_url,
         transform: defaultTransform,
-        platformConfig,
+        projectBaseUrl,
+        authHeaders,
       })
     } else if (model_obj_url) {
       box.mesh = await loadOBJ({
         url: model_obj_url,
         transform: defaultTransform,
-        platformConfig,
+        projectBaseUrl,
+        authHeaders,
       })
     } else if (model_glb_url) {
       try {
         box.mesh = await loadGLB({
           url: model_glb_url,
           transform: defaultTransform,
-          platformConfig,
+          projectBaseUrl,
+          authHeaders,
         })
       } catch (err) {
         console.error(`Failed to load GLB from ${model_glb_url}:`, err)
@@ -436,14 +440,16 @@ export async function convertCircuitJsonTo3D(
       box.mesh = await loadGLTF({
         url: model_gltf_url,
         transform: defaultTransform,
-        platformConfig,
+        projectBaseUrl,
+        authHeaders,
       })
     } else if (model_step_url) {
       try {
         box.mesh = await loadSTEP({
           url: model_step_url,
           transform: defaultTransform,
-          platformConfig,
+          projectBaseUrl,
+          authHeaders,
         })
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
