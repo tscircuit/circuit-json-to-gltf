@@ -11,7 +11,6 @@ async function fetchAsArrayBuffer(
   url: string,
   authHeaders?: AuthHeaders,
 ): Promise<ArrayBuffer> {
-  console.log("fetchAsArrayBuffer", url, authHeaders)
   const response = await fetch(url, { headers: authHeaders })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.statusText}`)

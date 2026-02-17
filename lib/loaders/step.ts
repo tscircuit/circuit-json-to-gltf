@@ -37,14 +37,12 @@ export async function loadSTEP({
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
 }): Promise<STLMesh | OBJMesh> {
-  console.log("loadSTEP", url, projectBaseUrl, authHeaders)
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
   if (stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  console.log("fetching STEP file", resolvedUrl, authHeaders)
   const response = await fetch(resolvedUrl, { headers: authHeaders })
   if (!response.ok) {
     throw new Error(
