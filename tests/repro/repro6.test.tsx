@@ -13,10 +13,7 @@ test("STEP CAD Model should be included in GLTF output", async () => {
         footprint="soic8"
         cadModel={
           <cadassembly>
-            <cadmodel
-              modelUrl="https://modelcdn.tscircuit.com/jscad_models/soic8.step"
-              rotationOffset={{ x: 0, y: 180, z: 180 }}
-            />
+            <cadmodel modelUrl="https://modelcdn.tscircuit.com/jscad_models/soic8.step" />
           </cadassembly>
         }
       />
