@@ -1,9 +1,87 @@
-import type { CircuitJson, PcbPanel, PcbBoard } from "circuit-json"
+import type { CircuitJson, PcbBoard, PcbPanel } from "circuit-json"
+
+const DEFAULT_CAMERA_DIRECTION = [0.7, 1.2, 0.8] as const
+
+export interface CameraFitOptions {
+  /**
+   * Vertical field of view in degrees.
+   */
+  fov?: number
+  /**
+   * Aspect ratio (width / height) used for horizontal fit calculations.
+   */
+  aspectRatio?: number
+  /**
+   * Focal length in millimeters. If provided with sensorHeight,
+   * it is used instead of fov.
+   */
+  focalLength?: number
+  /**
+   * Sensor height in millimeters for focalLength->fov conversion.
+   */
+  sensorHeight?: number
+}
+
+function normalizeVector([x, y, z]: readonly [number, number, number]): [
+  number,
+  number,
+  number,
+] {
+  const length = Math.hypot(x, y, z)
+
+  if (length === 0) {
+    return [0, 1, 0]
+  }
+
+  return [x / length, y / length, z / length]
+}
+
+function dot(
+  [ax, ay, az]: readonly [number, number, number],
+  [bx, by, bz]: readonly [number, number, number],
+): number {
+  return ax * bx + ay * by + az * bz
+}
+
+function cross(
+  [ax, ay, az]: readonly [number, number, number],
+  [bx, by, bz]: readonly [number, number, number],
+): [number, number, number] {
+  return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx]
+}
+
+function getVerticalFovRadians(opts?: CameraFitOptions): number {
+  if (
+    opts?.focalLength !== undefined &&
+    opts.sensorHeight !== undefined &&
+    opts.focalLength > 0 &&
+    opts.sensorHeight > 0
+  ) {
+    return 2 * Math.atan(opts.sensorHeight / (2 * opts.focalLength))
+  }
+
+  const fovDegrees = opts?.fov ?? 50
+  const fovRadians = (fovDegrees * Math.PI) / 180
+
+  if (!Number.isFinite(fovRadians) || fovRadians <= 0) {
+    return (50 * Math.PI) / 180
+  }
+
+  // Keep away from 0 and PI to avoid unstable tan() values.
+  return Math.min(Math.max(fovRadians, 0.01), Math.PI - 0.01)
+}
 
 /**
  * Calculate optimal camera position for PCB viewing based on circuit dimensions
  */
 export function getBestCameraPosition(circuitJson: CircuitJson): {
+  camPos: readonly [number, number, number]
+  lookAt: readonly [number, number, number]
+}
+export function getBestCameraPosition(
+  circuitJson: CircuitJson,
+  opts?: CameraFitOptions,
+): {
   camPos: readonly [number, number, number]
   lookAt: readonly [number, number, number]
 } {
@@ -35,23 +113,74 @@ export function getBestCameraPosition(circuitJson: CircuitJson): {
     }
   }
 
-  // Calculate camera distance based on board size
-  const maxDimension = Math.max(width, height)
-
-  // Use completely deterministic integer values to ensure identical rendering
-  // across all environments (local, CI, different Node versions, etc.)
-  const baseDistance = Math.round(maxDimension * 0.8)
-
-  // Force integer camera positions for absolute consistency
-  // Position camera relative to board center (board center in 2D maps to (center.x, 0, center.y) in 3D)
-  const camX = Math.round(center.x + baseDistance * 0.7)
-  const camY = Math.round(baseDistance * 1.2)
-  const camZ = Math.round(center.y + baseDistance * 0.8)
-
-  // lookAt the board center in 3D space
   // Board 2D (center.x, center.y) maps to 3D (center.x, 0, center.y)
-  const lookAtX = Math.round(center.x)
-  const lookAtZ = Math.round(center.y)
+  const lookAtX = center.x
+  const lookAtZ = center.y
+
+  // Camera ray direction from target to camera
+  const cameraDirection = normalizeVector(DEFAULT_CAMERA_DIRECTION)
+
+  // Camera forward points from camera to target
+  const forward: [number, number, number] = [
+    -cameraDirection[0],
+    -cameraDirection[1],
+    -cameraDirection[2],
+  ]
+
+  const worldUp: [number, number, number] = [0, 1, 0]
+  const right = normalizeVector(cross(forward, worldUp))
+  const up = normalizeVector(cross(right, forward))
+
+  const verticalFov = getVerticalFovRadians(opts)
+  const aspectRatio =
+    opts?.aspectRatio !== undefined &&
+    Number.isFinite(opts.aspectRatio) &&
+    opts.aspectRatio > 0
+      ? opts.aspectRatio
+      : 1
+
+  const tanHalfVertical = Math.tan(verticalFov / 2)
+  const tanHalfHorizontal = tanHalfVertical * aspectRatio
+
+  const halfWidth = width / 2
+  const halfHeight = height / 2
+
+  const boardCorners: [number, number, number][] = [
+    [halfWidth, 0, halfHeight],
+    [halfWidth, 0, -halfHeight],
+    [-halfWidth, 0, halfHeight],
+    [-halfWidth, 0, -halfHeight],
+  ]
+
+  let requiredDistance = 0
+
+  for (const corner of boardCorners) {
+    // Corner expressed relative to lookAt point in world coordinates.
+    const ux = corner[0]
+    const uy = corner[1]
+    const uz = corner[2]
+
+    const u: [number, number, number] = [ux, uy, uz]
+    const un = dot(u, cameraDirection)
+    const ur = Math.abs(dot(u, right))
+    const uu = Math.abs(dot(u, up))
+
+    const distanceForHorizontal = un + ur / tanHalfHorizontal
+    const distanceForVertical = un + uu / tanHalfVertical
+
+    requiredDistance = Math.max(
+      requiredDistance,
+      distanceForHorizontal,
+      distanceForVertical,
+    )
+  }
+
+  // Safety floor: keep camera in front of target even for tiny boards.
+  const distance = Math.max(requiredDistance, 1)
+
+  const camX = lookAtX + cameraDirection[0] * distance
+  const camY = cameraDirection[1] * distance
+  const camZ = lookAtZ + cameraDirection[2] * distance
 
   return {
     camPos: [camX, camY, camZ] as const,
