@@ -75,12 +75,46 @@ function getVerticalFovRadians(opts?: CameraFitOptions): number {
   return Math.min(Math.max(fovRadians, 0.01), Math.PI - 0.01)
 }
 
+function getVerticalFovDegrees(opts?: CameraFitOptions): number {
+  return (getVerticalFovRadians(opts) * 180) / Math.PI
+}
+
+function getRequiredDistanceForFrustum(
+  corners: ReadonlyArray<readonly [number, number, number]>,
+  cameraDirection: readonly [number, number, number],
+  right: readonly [number, number, number],
+  up: readonly [number, number, number],
+  tanHalfHorizontal: number,
+  tanHalfVertical: number,
+): number {
+  let requiredDistance = 0
+
+  for (const corner of corners) {
+    const u: [number, number, number] = [corner[0], corner[1], corner[2]]
+    const un = dot(u, cameraDirection)
+    const ur = Math.abs(dot(u, right))
+    const uu = Math.abs(dot(u, up))
+
+    const distanceForHorizontal = un + ur / tanHalfHorizontal
+    const distanceForVertical = un + uu / tanHalfVertical
+
+    requiredDistance = Math.max(
+      requiredDistance,
+      distanceForHorizontal,
+      distanceForVertical,
+    )
+  }
+
+  return requiredDistance
+}
+
 /**
  * Calculate optimal camera position for PCB viewing based on circuit dimensions
  */
 export function getBestCameraPosition(circuitJson: CircuitJson): {
   camPos: readonly [number, number, number]
   lookAt: readonly [number, number, number]
+  fov: number
 }
 export function getBestCameraPosition(
   circuitJson: CircuitJson,
@@ -88,7 +122,10 @@ export function getBestCameraPosition(
 ): {
   camPos: readonly [number, number, number]
   lookAt: readonly [number, number, number]
+  fov: number
 } {
+  const verticalFovDegrees = getVerticalFovDegrees(opts)
+
   // Find panel or board to get dimensions (panel takes priority)
   const panel = circuitJson.find((item) => item.type === "pcb_panel") as
     | PcbPanel
@@ -104,6 +141,7 @@ export function getBestCameraPosition(
     return {
       camPos: [30, 30, 25] as const,
       lookAt: [0, 0, 0] as const,
+      fov: verticalFovDegrees,
     }
   }
 
@@ -114,6 +152,7 @@ export function getBestCameraPosition(
     return {
       camPos: [30, 30, 25] as const,
       lookAt: [0, 0, 0] as const,
+      fov: verticalFovDegrees,
     }
   }
 
@@ -137,13 +176,13 @@ export function getBestCameraPosition(
   const right = normalizeVector(cross(forward, worldUp))
   const up = normalizeVector(cross(right, forward))
 
-  const verticalFov = getVerticalFovRadians(opts)
+  const verticalFov = (verticalFovDegrees * Math.PI) / 180
   const aspectRatio =
     opts?.aspectRatio !== undefined &&
     Number.isFinite(opts.aspectRatio) &&
     opts.aspectRatio > 0
       ? opts.aspectRatio
-      : 1
+      : 4 / 3
 
   const tanHalfVertical = Math.tan(verticalFov / 2)
   const tanHalfHorizontal = tanHalfVertical * aspectRatio
@@ -158,28 +197,34 @@ export function getBestCameraPosition(
     [-halfWidth, 0, -halfHeight],
   ]
 
-  let requiredDistance = 0
+  const requiredDistanceAssumingVerticalFov = getRequiredDistanceForFrustum(
+    boardCorners,
+    cameraDirection,
+    right,
+    up,
+    tanHalfHorizontal,
+    tanHalfVertical,
+  )
 
-  for (const corner of boardCorners) {
-    // Corner expressed relative to lookAt point in world coordinates.
-    const ux = corner[0]
-    const uy = corner[1]
-    const uz = corner[2]
+  // Some renderers interpret fov as horizontal instead of vertical.
+  // Solve that case too and pick the safer distance.
+  const tanHalfHorizontalIfFovIsHorizontal = tanHalfVertical
+  const tanHalfVerticalIfFovIsHorizontal =
+    tanHalfHorizontalIfFovIsHorizontal / aspectRatio
 
-    const u: [number, number, number] = [ux, uy, uz]
-    const un = dot(u, cameraDirection)
-    const ur = Math.abs(dot(u, right))
-    const uu = Math.abs(dot(u, up))
+  const requiredDistanceAssumingHorizontalFov = getRequiredDistanceForFrustum(
+    boardCorners,
+    cameraDirection,
+    right,
+    up,
+    tanHalfHorizontalIfFovIsHorizontal,
+    tanHalfVerticalIfFovIsHorizontal,
+  )
 
-    const distanceForHorizontal = un + ur / tanHalfHorizontal
-    const distanceForVertical = un + uu / tanHalfVertical
-
-    requiredDistance = Math.max(
-      requiredDistance,
-      distanceForHorizontal,
-      distanceForVertical,
-    )
-  }
+  const requiredDistance = Math.max(
+    requiredDistanceAssumingVerticalFov,
+    requiredDistanceAssumingHorizontalFov,
+  )
 
   // Safety floor: keep camera in front of target even for tiny boards.
   const distance = Math.max(requiredDistance, 1)
@@ -188,8 +233,11 @@ export function getBestCameraPosition(
   const camY = cameraDirection[1] * distance
   const camZ = lookAtZ + cameraDirection[2] * distance
 
+  // GLTF conversion mirrors X in convertMeshToGLTFOrientation,
+  // so camera options must be returned in that rendered coordinate space.
   return {
-    camPos: [camX, camY, camZ] as const,
-    lookAt: [lookAtX, 0, lookAtZ] as const,
+    camPos: [-camX, camY, camZ] as const,
+    lookAt: [-lookAtX, 0, lookAtZ] as const,
+    fov: verticalFovDegrees,
   }
 }
