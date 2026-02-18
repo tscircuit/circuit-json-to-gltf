@@ -1,8 +1,12 @@
 import type { CircuitJson, PcbBoard, PcbPanel } from "circuit-json"
 
-const DEFAULT_CAMERA_DIRECTION = [0.7, 1.2, 0.8] as const
+const DEFAULT_CAMERA_DIRECTION = [-0.7, 1.2, -0.8] as const
 
 export interface CameraFitOptions {
+  /**
+   * Target-to-camera direction vector used for solved camera position.
+   */
+  direction?: readonly [number, number, number]
   /**
    * Vertical field of view in degrees.
    */
@@ -118,7 +122,9 @@ export function getBestCameraPosition(
   const lookAtZ = center.y
 
   // Camera ray direction from target to camera
-  const cameraDirection = normalizeVector(DEFAULT_CAMERA_DIRECTION)
+  const cameraDirection = normalizeVector(
+    opts?.direction ?? DEFAULT_CAMERA_DIRECTION,
+  )
 
   // Camera forward points from camera to target
   const forward: [number, number, number] = [
