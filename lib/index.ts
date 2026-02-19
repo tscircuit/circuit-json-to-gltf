@@ -79,6 +79,11 @@ export {
   transformTriangles,
 } from "./utils/coordinate-transform"
 
+export {
+  getBestCameraPosition,
+  type CameraFitOptions,
+} from "./utils/camera-position"
+
 // Re-export utilities (conditionally based on environment)
 // Note: svg-to-png utilities are environment-specific and not exported here
 

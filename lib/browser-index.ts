@@ -28,6 +28,11 @@ export type {
   Triangle,
 } from "./types"
 
+export {
+  getBestCameraPosition,
+  type CameraFitOptions,
+} from "./utils/camera-position"
+
 // Override the board renderer import
 const mockBoardRenderer = {
   renderBoardLayer: async () => "",
