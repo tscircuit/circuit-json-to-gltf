@@ -43,4 +43,4 @@ test("translucent-cadmodel-standalone", async () => {
     import.meta.path,
     "translucent-cadmodel-standalone",
   )
-}, 100000)
+})
