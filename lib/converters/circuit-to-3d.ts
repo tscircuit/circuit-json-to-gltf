@@ -345,20 +345,35 @@ export async function convertCircuitJsonTo3D(
             : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
 
     if (model_stl_url) {
-      box.mesh = await loadSTL({ url: model_stl_url, transform: defaultTransform })
+      box.mesh = await loadSTL({
+        url: model_stl_url,
+        transform: defaultTransform,
+      })
     } else if (model_obj_url) {
-      box.mesh = await loadOBJ({ url: model_obj_url, transform: defaultTransform })
+      box.mesh = await loadOBJ({
+        url: model_obj_url,
+        transform: defaultTransform,
+      })
     } else if (model_glb_url) {
       try {
-        box.mesh = await loadGLB({ url: model_glb_url, transform: defaultTransform })
+        box.mesh = await loadGLB({
+          url: model_glb_url,
+          transform: defaultTransform,
+        })
       } catch (err) {
         console.error(`Failed to load GLB from ${model_glb_url}:`, err)
       }
     } else if (model_gltf_url) {
-      box.mesh = await loadGLTF({ url: model_gltf_url, transform: defaultTransform })
+      box.mesh = await loadGLTF({
+        url: model_gltf_url,
+        transform: defaultTransform,
+      })
     } else if (model_step_url) {
       try {
-        box.mesh = await loadSTEP({ url: model_step_url, transform: defaultTransform })
+        box.mesh = await loadSTEP({
+          url: model_step_url,
+          transform: defaultTransform,
+        })
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
       }
