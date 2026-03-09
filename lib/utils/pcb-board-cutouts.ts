@@ -1,9 +1,9 @@
-import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
-import { polygon, rectangle, cylinder } from "@jscad/modeling/src/primitives"
-import { translate, rotateZ } from "@jscad/modeling/src/operations/transforms"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
-import type { PcbCutout, Point, PcbBoard } from "circuit-json"
+import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
+import { rotateZ, translate } from "@jscad/modeling/src/operations/transforms"
+import { cylinder, polygon, rectangle } from "@jscad/modeling/src/primitives"
+import type { PcbBoard, PcbCutout, Point } from "circuit-json"
 
 export const DEFAULT_SEGMENTS = 64
 
@@ -52,6 +52,7 @@ export const createCutoutGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
   cutouts: BoardCutout[] = [],
+  segments: number = DEFAULT_SEGMENTS,
 ): Geom3[] => {
   const geoms: Geom3[] = []
 
@@ -155,7 +156,7 @@ export const createCutoutGeoms = (
         const relX = center.x - boardCenter.x
         const relY = -(center.y - boardCenter.y)
 
-        geoms.push(createCircularHole(relX, relY, radius, thickness))
+        geoms.push(createCircularHole(relX, relY, radius, thickness, segments))
         break
       }
       case "polygon": {

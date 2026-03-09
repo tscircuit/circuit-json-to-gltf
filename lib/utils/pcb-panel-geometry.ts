@@ -1,13 +1,23 @@
-import { rotateX } from "@jscad/modeling/src/operations/transforms"
-import { subtract } from "@jscad/modeling/src/operations/booleans"
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
-import type { PcbHole, PCBPlatedHole, PcbPanel } from "circuit-json"
+import { subtract } from "@jscad/modeling/src/operations/booleans"
+import { rotateX } from "@jscad/modeling/src/operations/transforms"
+import type { PCBPlatedHole, PcbHole, PcbPanel } from "circuit-json"
 import type { BoundingBox, STLMesh } from "../types"
-import { createBoundingBox, geom3ToTriangles } from "./pcb-board-geometry"
-import { createBoardOutlineGeom, createHoleGeoms } from "./pcb-board-geometry"
-import { createCutoutGeoms } from "./pcb-board-cutouts"
+import { batchedUnion } from "./batched-union"
+import {
+  createCutoutGeoms,
+  DEFAULT_SEGMENTS,
+  HOLE_COUNT_THRESHOLD,
+  REDUCED_SEGMENTS,
+} from "./pcb-board-cutouts"
 import type { BoardGeometryOptions } from "./pcb-board-geometry"
+import {
+  createBoardOutlineGeom,
+  createBoundingBox,
+  createHoleGeoms,
+  geom3ToTriangles,
+} from "./pcb-board-geometry"
 
 export const createPanelMesh = (
   panel: PcbPanel,
@@ -18,12 +28,23 @@ export const createPanelMesh = (
 
   let panelGeom = createBoardOutlineGeom(panel, center, thickness)
 
+  const totalHoleCount = holes.length + platedHoles.length
+  const useReducedSegments = totalHoleCount > HOLE_COUNT_THRESHOLD
+  const segments = useReducedSegments ? REDUCED_SEGMENTS : DEFAULT_SEGMENTS
+
   // Create geometries for holes and cutouts
-  const holeGeoms = createHoleGeoms(center, thickness, holes, platedHoles)
-  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts)
+  const holeGeoms = createHoleGeoms(
+    center,
+    thickness,
+    holes,
+    platedHoles,
+    segments,
+  )
+  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts, segments)
   const subtractGeoms = [...holeGeoms, ...cutoutGeoms]
   if (subtractGeoms.length > 0) {
-    panelGeom = subtract(panelGeom, ...subtractGeoms)
+    const unifiedHoles = batchedUnion(subtractGeoms)
+    panelGeom = subtract(panelGeom, unifiedHoles)
   }
 
   panelGeom = rotateX(-Math.PI / 2, panelGeom)

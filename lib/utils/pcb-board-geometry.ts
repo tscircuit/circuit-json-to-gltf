@@ -1,27 +1,29 @@
+import * as geom3 from "@jscad/modeling/src/geometries/geom3"
+import type { Geom3 } from "@jscad/modeling/src/geometries/types"
+import type { Vec2 } from "@jscad/modeling/src/maths/types"
+import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
+import { subtract, union } from "@jscad/modeling/src/operations/booleans"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
+import {
+  rotateX,
+  rotateZ,
+  translate,
+} from "@jscad/modeling/src/operations/transforms"
 import {
   polygon,
   rectangle,
   roundedRectangle,
 } from "@jscad/modeling/src/primitives"
-import {
-  translate,
-  rotateZ,
-  rotateX,
-} from "@jscad/modeling/src/operations/transforms"
-import { subtract, union } from "@jscad/modeling/src/operations/booleans"
-import * as geom3 from "@jscad/modeling/src/geometries/geom3"
-import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
-import type { Geom3 } from "@jscad/modeling/src/geometries/types"
-import type { Vec2 } from "@jscad/modeling/src/maths/types"
 import type {
+  PCBPlatedHole,
   PcbBoard,
   PcbHole,
-  PCBPlatedHole,
-  Point,
   PcbPanel,
+  Point,
 } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
+import { batchedUnion } from "./batched-union"
+import type { BoardCutout } from "./pcb-board-cutouts"
 import {
   arePointsClockwise,
   createCircularHole,
@@ -30,13 +32,11 @@ import {
   HOLE_COUNT_THRESHOLD,
   REDUCED_SEGMENTS,
 } from "./pcb-board-cutouts"
-import type { BoardCutout } from "./pcb-board-cutouts"
-import { batchedUnion } from "./batched-union"
 
 const RADIUS_EPSILON = 1e-4
 
-export { arePointsClockwise } from "./pcb-board-cutouts"
 export type { BoardCutout } from "./pcb-board-cutouts"
+export { arePointsClockwise } from "./pcb-board-cutouts"
 
 export interface BoardGeometryOptions {
   thickness: number
@@ -333,7 +333,7 @@ export const createBoardMesh = (
     platedHoles,
     segments,
   )
-  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts)
+  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts, segments)
   const subtractGeoms = [...holeGeoms, ...cutoutGeoms]
 
   if (subtractGeoms.length > 0) {
