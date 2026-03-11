@@ -5,6 +5,7 @@ export interface AuthHeaders extends Record<string, string> {
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
+  showPcbNotes?: boolean
   drawFauxBoard?: boolean
   includeModels?: boolean
   modelCache?: Map<string, STLMesh | OBJMesh>
@@ -144,6 +145,7 @@ export interface CircuitTo3DOptions {
   defaultComponentHeight?: number
   renderBoardTextures?: boolean
   textureResolution?: number
+  showPcbNotes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
   projectBaseUrl?: string

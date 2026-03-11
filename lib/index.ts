@@ -15,12 +15,14 @@ export async function convertCircuitJsonToGltf(
     modelCache,
     backgroundColor,
     showBoundingBoxes = false,
+    showPcbNotes = false,
   } = options
 
   // Convert circuit JSON to 3D scene
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
+    showPcbNotes,
     drawFauxBoard,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,

@@ -59,12 +59,21 @@ export async function convertCircuitJsonTo3D(
     defaultComponentHeight = DEFAULT_COMPONENT_HEIGHT,
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
+    showPcbNotes = false,
     coordinateTransform,
     showBoundingBoxes = true,
     projectBaseUrl,
     authHeaders,
   } = options
 
+  if (!showPcbNotes)
+    circuitJson = circuitJson.filter(
+      (element) =>
+        !(
+          typeof element?.type === "string" &&
+          element.type.startsWith("pcb_note")
+        ),
+    )
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
