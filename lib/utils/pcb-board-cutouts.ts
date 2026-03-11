@@ -5,10 +5,13 @@ import { rotateZ, translate } from "@jscad/modeling/src/operations/transforms"
 import { cylinder, polygon, rectangle } from "@jscad/modeling/src/primitives"
 import type { PcbBoard, PcbCutout, Point } from "circuit-json"
 
-export const DEFAULT_SEGMENTS = 64
+// Default drill quality segment counts ("fast")
+export const DEFAULT_QUALITY_MODE_SEGMENTS = 24
+export const REDUCED_QUALITY_MODE_SEGMENTS = 8
 
-// Reduced segments for large hole counts to improve performance
-export const REDUCED_SEGMENTS = 16
+// High drill quality segment counts
+export const HIGH_QUALITY_MODE_SEGMENTS = 64
+export const HIGH_QUALITY_MODE_REDUCED_SEGMENTS = 16
 
 // Threshold for when to use reduced segments
 export const HOLE_COUNT_THRESHOLD = 50
@@ -39,7 +42,7 @@ export const createCircularHole = (
   y: number,
   radius: number,
   thickness: number,
-  segments: number = DEFAULT_SEGMENTS,
+  segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3 =>
   cylinder({
     center: [x, y, 0],
@@ -52,7 +55,7 @@ export const createCutoutGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
   cutouts: BoardCutout[] = [],
-  segments: number = DEFAULT_SEGMENTS,
+  segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3[] => {
   const geoms: Geom3[] = []
 

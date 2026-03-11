@@ -28,9 +28,11 @@ import {
   arePointsClockwise,
   createCircularHole,
   createCutoutGeoms,
-  DEFAULT_SEGMENTS,
+  DEFAULT_QUALITY_MODE_SEGMENTS,
+  HIGH_QUALITY_MODE_SEGMENTS,
+  HIGH_QUALITY_MODE_REDUCED_SEGMENTS,
   HOLE_COUNT_THRESHOLD,
-  REDUCED_SEGMENTS,
+  REDUCED_QUALITY_MODE_SEGMENTS,
 } from "./pcb-board-cutouts"
 
 const RADIUS_EPSILON = 1e-4
@@ -43,12 +45,22 @@ export interface BoardGeometryOptions {
   holes?: PcbHole[]
   platedHoles?: PCBPlatedHole[]
   cutouts?: BoardCutout[]
+  drillQuality?: "high" | "fast"
 }
 
-const toVec2 = (point: Point, center: { x: number; y: number }): Vec2 => [
-  point.x - center.x,
-  point.y - center.y,
-]
+const getHoleSegments = (
+  totalHoleCount: number,
+  drillQuality: "high" | "fast",
+): number => {
+  if (drillQuality === "high") {
+    return totalHoleCount > HOLE_COUNT_THRESHOLD
+      ? HIGH_QUALITY_MODE_REDUCED_SEGMENTS
+      : HIGH_QUALITY_MODE_SEGMENTS
+  }
+  return totalHoleCount > HOLE_COUNT_THRESHOLD
+    ? REDUCED_QUALITY_MODE_SEGMENTS
+    : DEFAULT_QUALITY_MODE_SEGMENTS
+}
 
 const getNumberProperty = (
   obj: Record<string, unknown>,
@@ -95,7 +107,7 @@ const createPillHoleWithSegments = (
   height: number,
   thickness: number,
   rotate: boolean,
-  segments: number = DEFAULT_SEGMENTS,
+  segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3 => {
   const minDimension = Math.min(width, height)
   const maxAllowedRadius = Math.max(0, minDimension / 2 - RADIUS_EPSILON)
@@ -121,7 +133,7 @@ export const createHoleGeoms = (
   thickness: number,
   holes: PcbHole[] = [],
   platedHoles: PCBPlatedHole[] = [],
-  segments: number = DEFAULT_SEGMENTS,
+  segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3[] => {
   const holeGeoms: Geom3[] = []
 
@@ -316,15 +328,20 @@ export const createBoardMesh = (
   board: PcbPanel | PcbBoard,
   options: BoardGeometryOptions,
 ): STLMesh => {
-  const { thickness, holes = [], platedHoles = [], cutouts = [] } = options
+  const {
+    thickness,
+    holes = [],
+    platedHoles = [],
+    cutouts = [],
+    drillQuality = "fast",
+  } = options
   const center = board.center ?? { x: 0, y: 0 }
 
   let boardGeom = createBoardOutlineGeom(board, center, thickness)
 
   // Calculate total hole count to determine if we should use reduced segments
   const totalHoleCount = holes.length + platedHoles.length
-  const useReducedSegments = totalHoleCount > HOLE_COUNT_THRESHOLD
-  const segments = useReducedSegments ? REDUCED_SEGMENTS : DEFAULT_SEGMENTS
+  const segments = getHoleSegments(totalHoleCount, drillQuality)
 
   const holeGeoms = createHoleGeoms(
     center,

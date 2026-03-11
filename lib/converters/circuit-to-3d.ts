@@ -55,6 +55,7 @@ export async function convertCircuitJsonTo3D(
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
     boardThickness = DEFAULT_BOARD_THICKNESS,
+    boardDrillQuality = "fast",
     drawFauxBoard = false,
     defaultComponentHeight = DEFAULT_COMPONENT_HEIGHT,
     renderBoardTextures: shouldRenderTextures = true,
@@ -89,6 +90,7 @@ export async function convertCircuitJsonTo3D(
       holes: pcbHoles,
       platedHoles: pcbPlatedHoles,
       cutouts: panelCutouts,
+      drillQuality: boardDrillQuality,
     })
 
     const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
@@ -144,6 +146,7 @@ export async function convertCircuitJsonTo3D(
       holes: pcbHoles,
       platedHoles: pcbPlatedHoles,
       cutouts: boardCutouts,
+      drillQuality: boardDrillQuality,
     })
 
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x

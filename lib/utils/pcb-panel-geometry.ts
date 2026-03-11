@@ -7,9 +7,11 @@ import type { BoundingBox, STLMesh } from "../types"
 import { batchedUnion } from "./batched-union"
 import {
   createCutoutGeoms,
-  DEFAULT_SEGMENTS,
+  DEFAULT_QUALITY_MODE_SEGMENTS,
+  HIGH_QUALITY_MODE_SEGMENTS,
+  HIGH_QUALITY_MODE_REDUCED_SEGMENTS,
   HOLE_COUNT_THRESHOLD,
-  REDUCED_SEGMENTS,
+  REDUCED_QUALITY_MODE_SEGMENTS,
 } from "./pcb-board-cutouts"
 import type { BoardGeometryOptions } from "./pcb-board-geometry"
 import {
@@ -24,13 +26,20 @@ export const createPanelMesh = (
   options: BoardGeometryOptions,
 ): STLMesh => {
   const { thickness, holes = [], platedHoles = [], cutouts = [] } = options
+  const drillQuality = options.drillQuality ?? "fast"
   const center = panel.center ?? { x: 0, y: 0 }
 
   let panelGeom = createBoardOutlineGeom(panel, center, thickness)
 
   const totalHoleCount = holes.length + platedHoles.length
-  const useReducedSegments = totalHoleCount > HOLE_COUNT_THRESHOLD
-  const segments = useReducedSegments ? REDUCED_SEGMENTS : DEFAULT_SEGMENTS
+  const segments =
+    drillQuality === "high"
+      ? totalHoleCount > HOLE_COUNT_THRESHOLD
+        ? HIGH_QUALITY_MODE_REDUCED_SEGMENTS
+        : HIGH_QUALITY_MODE_SEGMENTS
+      : totalHoleCount > HOLE_COUNT_THRESHOLD
+        ? REDUCED_QUALITY_MODE_SEGMENTS
+        : DEFAULT_QUALITY_MODE_SEGMENTS
 
   // Create geometries for holes and cutouts
   const holeGeoms = createHoleGeoms(

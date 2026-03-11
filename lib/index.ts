@@ -10,6 +10,7 @@ export async function convertCircuitJsonToGltf(
   const {
     format = "gltf",
     boardTextureResolution = 1024,
+    boardDrillQuality = "fast",
     drawFauxBoard = false,
     includeModels = true,
     modelCache,
@@ -21,6 +22,7 @@ export async function convertCircuitJsonToGltf(
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
     textureResolution: boardTextureResolution,
+    boardDrillQuality,
     drawFauxBoard,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
@@ -71,18 +73,16 @@ export type {
   STLMesh,
   Triangle,
 } from "./types"
-
+export {
+  type CameraFitOptions,
+  getBestCameraPosition,
+} from "./utils/camera-position"
 // Re-export coordinate transform utilities
 export {
   applyCoordinateTransform,
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "./utils/coordinate-transform"
-
-export {
-  getBestCameraPosition,
-  type CameraFitOptions,
-} from "./utils/camera-position"
 
 // Re-export utilities (conditionally based on environment)
 // Note: svg-to-png utilities are environment-specific and not exported here

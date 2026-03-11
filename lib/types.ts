@@ -5,6 +5,7 @@ export interface AuthHeaders extends Record<string, string> {
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
+  boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
   includeModels?: boolean
   modelCache?: Map<string, STLMesh | OBJMesh>
@@ -140,6 +141,7 @@ export interface CircuitTo3DOptions {
   componentColor?: Color
   copperColor?: Color
   boardThickness?: number
+  boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
   defaultComponentHeight?: number
   renderBoardTextures?: boolean

@@ -101,6 +101,10 @@ function convertOcctResultToMesh(
       last: number
       color: [number, number, number] | null
     }> = mesh.brep_faces ?? []
+    const sortedBrepFaces =
+      brepFaces.length > 1
+        ? [...brepFaces].sort((a, b) => a.first - b.first)
+        : brepFaces
 
     // Mesh-level color (0-1 range from occt-import-js)
     const meshColor: [number, number, number] | undefined = mesh.color
@@ -109,6 +113,7 @@ function convertOcctResultToMesh(
 
     // Process triangles from indices (groups of 3)
     const numTriangles = indices.length / 3
+    let brepFaceIndex = 0
     for (let t = 0; t < numTriangles; t++) {
       const i0 = indices[t * 3]!
       const i1 = indices[t * 3 + 1]!
@@ -153,17 +158,27 @@ function convertOcctResultToMesh(
       let triangleColor: [number, number, number, number] | undefined
       let foundFaceColor = false
 
-      for (const face of brepFaces) {
-        if (t >= face.first && t <= face.last && face.color) {
-          triangleColor = [
-            Math.round(face.color[0] * 255),
-            Math.round(face.color[1] * 255),
-            Math.round(face.color[2] * 255),
-            1.0,
-          ]
-          foundFaceColor = true
-          break
-        }
+      while (
+        brepFaceIndex < sortedBrepFaces.length &&
+        t > sortedBrepFaces[brepFaceIndex]!.last
+      ) {
+        brepFaceIndex++
+      }
+
+      const currentBrepFace = sortedBrepFaces[brepFaceIndex]
+      if (
+        currentBrepFace &&
+        t >= currentBrepFace.first &&
+        t <= currentBrepFace.last &&
+        currentBrepFace.color
+      ) {
+        triangleColor = [
+          Math.round(currentBrepFace.color[0] * 255),
+          Math.round(currentBrepFace.color[1] * 255),
+          Math.round(currentBrepFace.color[2] * 255),
+          1.0,
+        ]
+        foundFaceColor = true
       }
 
       // Fall back to mesh-level color if no face color found
