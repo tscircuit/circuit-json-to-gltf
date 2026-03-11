@@ -2,7 +2,6 @@ import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
 import type {
   CadComponent,
   CircuitJson,
-  PcbCopperPour,
   PcbCutout,
   PcbHole,
   PcbPanel,
@@ -19,10 +18,21 @@ import type {
   Camera3D,
   CircuitTo3DOptions,
   Light3D,
+  Point3,
   Scene3D,
 } from "../types"
-import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
-import { scaleMesh } from "../utils/mesh-scale"
+import {
+  fitMeshToCadBounds,
+  getMeshOrigin,
+  getModelOrientationRotation,
+} from "../utils/cad-mesh-placement"
+import { getDefaultModelTransform } from "../utils/get-default-model-transform"
+import {
+  getBoundingBoxSize,
+  rotateMesh,
+  scaleMesh,
+  translateMesh,
+} from "../utils/mesh-scale"
 import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
@@ -405,17 +415,13 @@ export async function convertCircuitJsonTo3D(
     const usingObjFormat = Boolean(model_obj_url)
     const usingStepFormat = Boolean(model_step_url)
 
-    const defaultTransform =
-      coordinateTransform ??
-      (usingGlbCoordinates
-        ? undefined // GLB loader has its own default transform
-        : hasFootprinterModel
-          ? COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
-          : usingObjFormat
-            ? COORDINATE_TRANSFORMS.OBJ_Z_UP_TO_Y_UP
-            : usingStepFormat
-              ? COORDINATE_TRANSFORMS.STEP_INVERTED
-              : COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX)
+    const defaultTransform = getDefaultModelTransform(cad, {
+      coordinateTransform,
+      usingGlbCoordinates,
+      usingObjFormat,
+      usingStepFormat,
+      hasFootprinterModel,
+    })
 
     if (model_stl_url) {
       box.mesh = await loadSTL({
@@ -469,6 +475,29 @@ export async function convertCircuitJsonTo3D(
 
     if (box.mesh && modelScaleFactor !== 1) {
       box.mesh = scaleMesh(box.mesh, modelScaleFactor)
+    }
+
+    if (box.mesh) {
+      box.mesh = rotateMesh(box.mesh, getModelOrientationRotation(cad))
+
+      const meshOrigin = getMeshOrigin(cad, box.mesh.boundingBox)
+      if (meshOrigin) {
+        box.mesh = translateMesh(box.mesh, {
+          x: -meshOrigin.x,
+          y: -meshOrigin.y,
+          z: -meshOrigin.z,
+        })
+      }
+
+      if (cad.size) {
+        box.mesh = fitMeshToCadBounds(
+          box.mesh,
+          size,
+          cad.model_object_fit ?? "contain_within_bounds",
+        )
+      }
+
+      box.size = getBoundingBoxSize(box.mesh.boundingBox)
     }
 
     // Only set color if mesh loading failed (fallback to simple box)
