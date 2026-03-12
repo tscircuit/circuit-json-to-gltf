@@ -70,6 +70,7 @@ export async function convertCircuitJsonTo3D(
     defaultComponentHeight = DEFAULT_COMPONENT_HEIGHT,
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
+    showPcbNotes = false,
     coordinateTransform,
     showBoundingBoxes = true,
     projectBaseUrl,
@@ -124,10 +125,10 @@ export async function convertCircuitJsonTo3D(
     // Render panel textures if requested and resolution > 0
     if (shouldRenderTextures && textureResolution > 0) {
       try {
-        const textures = await renderBoardTextures(
-          circuitJson,
-          textureResolution,
-        )
+        const textures = await renderBoardTextures(circuitJson, {
+          resolution: textureResolution,
+          showPcbNotes,
+        })
         panelBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
@@ -180,10 +181,10 @@ export async function convertCircuitJsonTo3D(
     // Render board textures if requested and resolution > 0
     if (shouldRenderTextures && textureResolution > 0) {
       try {
-        const textures = await renderBoardTextures(
-          circuitJson,
-          textureResolution,
-        )
+        const textures = await renderBoardTextures(circuitJson, {
+          resolution: textureResolution,
+          showPcbNotes,
+        })
         boardBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
@@ -254,10 +255,10 @@ export async function convertCircuitJsonTo3D(
           },
         ] as CircuitJson
 
-        const textures = await renderBoardTextures(
-          fauxBoardCircuitJson,
-          textureResolution,
-        )
+        const textures = await renderBoardTextures(fauxBoardCircuitJson, {
+          resolution: textureResolution,
+          showPcbNotes,
+        })
 
         fauxBoardBox.texture = {
           top: textures.top,

@@ -36,7 +36,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
     "circuit-json": "^0.0.399",
-    "circuit-to-svg": "0.0.312",
+    "circuit-to-svg": "0.0.336",
     "graphics-debug": "^0.0.65",
     "looks-same": "^9.0.1",
     "poppygl": "^0.0.16",

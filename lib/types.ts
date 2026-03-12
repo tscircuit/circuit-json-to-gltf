@@ -5,6 +5,7 @@ export interface AuthHeaders extends Record<string, string> {
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
+  showPcbNotes?: boolean
   boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
   includeModels?: boolean
@@ -146,6 +147,7 @@ export interface CircuitTo3DOptions {
   defaultComponentHeight?: number
   renderBoardTextures?: boolean
   textureResolution?: number
+  showPcbNotes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
@@ -160,4 +162,5 @@ export interface BoardRenderOptions {
   silkscreenColor?: string
   padColor?: string
   drillColor?: string
+  showPcbNotes?: boolean
 }

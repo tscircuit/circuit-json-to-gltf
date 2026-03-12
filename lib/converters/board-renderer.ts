@@ -13,6 +13,7 @@ export async function renderBoardLayer(
     copperColor = "#ffe066",
     silkscreenColor = "#ffffff",
     drillColor = "rgba(0,0,0,0.5)",
+    showPcbNotes = false,
   } = options
 
   const svg = convertCircuitJsonToPcbSvg(circuitJson, {
@@ -21,6 +22,7 @@ export async function renderBoardLayer(
     backgroundColor,
     drawPaddingOutsideBoard: false,
     showSolderMask: true,
+    showPcbNotes,
     colorOverrides: {
       copper: {
         top: copperColor,
@@ -117,7 +119,7 @@ async function convertSvgToCanvasBrowser(
 
 export async function renderBoardTextures(
   circuitJson: CircuitJson,
-  resolution = 1024,
+  { resolution = 1024, showPcbNotes = false },
 ): Promise<{
   top: string
   bottom: string
@@ -128,11 +130,13 @@ export async function renderBoardTextures(
     layer: "top",
     resolution,
     backgroundColor: "#0F3812", // Green PCB background
+    showPcbNotes,
   })
   const bottom = await renderBoardLayer(circuitJson, {
     layer: "bottom",
     resolution,
     backgroundColor: "#0F3812", // Darker green for bottom layer
+    showPcbNotes,
   })
 
   return { top, bottom }
