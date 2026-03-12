@@ -23,7 +23,7 @@ test("board texture generation pipeline", async () => {
   // Test 1: Check if we can render board textures
   console.log("Step 1: Testing renderBoardTextures...")
   try {
-    const textures = await renderBoardTextures(circuitData, 256)
+    const textures = await renderBoardTextures(circuitData, { resolution: 256 })
     console.log("✅ renderBoardTextures completed")
     console.log("Top texture length:", textures.top.length)
     console.log("Bottom texture length:", textures.bottom.length)
