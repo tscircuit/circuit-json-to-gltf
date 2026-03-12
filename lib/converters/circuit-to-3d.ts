@@ -66,14 +66,6 @@ export async function convertCircuitJsonTo3D(
     authHeaders,
   } = options
 
-  if (!showPcbNotes)
-    circuitJson = circuitJson.filter(
-      (element) =>
-        !(
-          typeof element?.type === "string" &&
-          element.type.startsWith("pcb_note")
-        ),
-    )
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
@@ -124,6 +116,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(
           circuitJson,
           textureResolution,
+          showPcbNotes,
         )
         panelBox.texture = {
           top: textures.top,
@@ -179,6 +172,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(
           circuitJson,
           textureResolution,
+          showPcbNotes,
         )
         boardBox.texture = {
           top: textures.top,
@@ -253,6 +247,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(
           fauxBoardCircuitJson,
           textureResolution,
+          showPcbNotes,
         )
 
         fauxBoardBox.texture = {

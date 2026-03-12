@@ -160,4 +160,5 @@ export interface BoardRenderOptions {
   silkscreenColor?: string
   padColor?: string
   drillColor?: string
+  showPcbNotes?: boolean
 }
