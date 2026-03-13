@@ -56,6 +56,18 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
+function convertCadSizeToSceneSize(size: {
+  x: number
+  y: number
+  z: number
+}): { x: number; y: number; z: number } {
+  return {
+    x: size.x,
+    y: size.z,
+    z: size.y,
+  }
+}
+
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
   options: CircuitTo3DOptions = {},
@@ -318,11 +330,11 @@ export async function convertCircuitJsonTo3D(
 
     // Determine size
     const size = cad.size
-      ? {
+      ? convertCadSizeToSceneSize({
           x: cad.size.x * modelScaleFactor,
           y: cad.size.y * modelScaleFactor,
           z: cad.size.z * modelScaleFactor,
-        }
+        })
       : {
           x: pcbComponent?.width ?? 2,
           y: defaultComponentHeight,
