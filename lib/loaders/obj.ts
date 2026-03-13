@@ -11,6 +11,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
+import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const objCache = new Map<string, OBJMesh>()
@@ -31,7 +32,7 @@ export async function loadOBJ({
   if (objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
-  const response = await fetch(resolvedUrl, { headers: authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
   const text = await response.text()
   const mesh = parseOBJ(text, transform)
   objCache.set(cacheKey, mesh)

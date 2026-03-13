@@ -11,6 +11,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
+import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const stepCache = new Map<string, STLMesh | OBJMesh>()
@@ -61,7 +62,7 @@ export async function loadSTEP({
     return stepCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl, { headers: authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,
