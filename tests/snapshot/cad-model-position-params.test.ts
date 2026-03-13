@@ -42,7 +42,6 @@ test("cad-model-position-params-with-silkscreen", async () => {
       size: { x: 24, y: 40, z: 18 },
       anchor_alignment: "center",
       model_object_fit: "contain_within_bounds",
-      show_as_translucent_model: true,
       position: { x: -72, y: 8.9, z: 6.1 },
     },
     {
@@ -94,7 +93,6 @@ test("cad-model-position-params-with-silkscreen", async () => {
       model_object_fit: "contain_within_bounds",
       model_board_normal_direction: "z+",
       model_origin_alignment: "center_of_component_on_board_surface",
-      show_as_translucent_model: true,
       position: { x: -24, y: 8, z: -2.2 },
     },
     {
@@ -146,7 +144,6 @@ test("cad-model-position-params-with-silkscreen", async () => {
       model_object_fit: "contain_within_bounds",
       model_board_normal_direction: "y+",
       model_origin_alignment: "center_of_component_on_board_surface",
-      show_as_translucent_model: true,
       position: { x: 24, y: 8, z: 0.8 },
     },
     {
@@ -197,7 +194,6 @@ test("cad-model-position-params-with-silkscreen", async () => {
       anchor_alignment: "center",
       model_object_fit: "fill_bounds",
       model_origin_alignment: "center_of_component_on_board_surface",
-      show_as_translucent_model: true,
       position: { x: 72, y: 8, z: 0.8 },
     },
     {

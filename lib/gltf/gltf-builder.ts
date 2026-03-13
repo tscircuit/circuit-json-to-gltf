@@ -175,11 +175,16 @@ export class GLTFBuilder {
         baseColor = [color[0]!, color[1]!, color[2]!, color[3]!]
       }
 
-      // Override with dissolve if explicitly set
-      let alpha =
-        objMaterial.dissolve !== undefined
-          ? 1.0 - objMaterial.dissolve
-          : baseColor[3]
+      // EasyEDA OBJ exports are inconsistent: some opaque materials use `d 1.0`,
+      // others use `d 0.0`. Treat exact endpoint values as opaque compatibility hints,
+      // and only honor fractional dissolve values as translucency.
+      let alpha = baseColor[3]
+      if (objMaterial.dissolve !== undefined) {
+        alpha =
+          objMaterial.dissolve > 0 && objMaterial.dissolve < 1
+            ? objMaterial.dissolve
+            : 1
+      }
 
       if (box.isTranslucent) {
         alpha = 0.5
