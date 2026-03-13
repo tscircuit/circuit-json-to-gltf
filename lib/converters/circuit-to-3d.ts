@@ -56,11 +56,11 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
-function convertCadSizeToSceneSize(size: {
+function convertCadSizeToSceneSize(size: { x: number; y: number; z: number }): {
   x: number
   y: number
   z: number
-}): { x: number; y: number; z: number } {
+} {
   return {
     x: size.x,
     y: size.z,
