@@ -7,15 +7,13 @@ import type {
   STLMesh,
   Triangle,
 } from "../types"
-import {
-  COORDINATE_TRANSFORMS,
-  transformTriangles,
-} from "../utils/coordinate-transform"
+import { transformTriangles } from "../utils/coordinate-transform"
 import {
   applyNodeTransform,
   applyQuaternion,
   buildMeshTransforms,
 } from "../utils/gltf-node-transforms"
+import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const glbCache = new Map<string, STLMesh | OBJMesh>()
@@ -37,7 +35,7 @@ export async function loadGLB({
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl, { headers: authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch GLB: ${response.status} ${response.statusText}`,

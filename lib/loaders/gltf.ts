@@ -4,6 +4,7 @@ import type {
   OBJMesh,
   STLMesh,
 } from "../types"
+import { fetchWithTimeout } from "./fetch-with-timeout"
 import { parseGLB } from "./glb"
 import { resolveModelUrl } from "./resolve-model-url"
 
@@ -11,7 +12,7 @@ async function fetchAsArrayBuffer(
   url: string,
   authHeaders?: AuthHeaders,
 ): Promise<ArrayBuffer> {
-  const response = await fetch(url, { headers: authHeaders })
+  const response = await fetchWithTimeout(url, { authHeaders })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
   }
@@ -33,7 +34,7 @@ export async function fetchGltfAndConvertToGlb(
   url: string,
   authHeaders?: AuthHeaders,
 ): Promise<ArrayBuffer> {
-  const gltfResponse = await fetch(url, { headers: authHeaders })
+  const gltfResponse = await fetchWithTimeout(url, { authHeaders })
   if (!gltfResponse.ok) {
     throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
   }

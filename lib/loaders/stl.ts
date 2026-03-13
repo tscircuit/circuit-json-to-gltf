@@ -9,6 +9,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
+import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const stlCache = new Map<string, STLMesh>()
@@ -30,7 +31,7 @@ export async function loadSTL({
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetch(resolvedUrl, { headers: authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
   stlCache.set(cacheKey, mesh)
