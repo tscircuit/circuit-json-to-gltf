@@ -263,6 +263,7 @@ test("cad-model-position-params-with-silkscreen", async () => {
       cameraOptions.camPos[2] * 0.74,
     ],
     backgroundColor: [1, 1, 1],
+    supersampling: 2,
   })
 
   expect(pngBuffer).toMatchPngSnapshot(
