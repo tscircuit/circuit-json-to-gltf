@@ -16,13 +16,56 @@ export const HIGH_QUALITY_MODE_REDUCED_SEGMENTS = 16
 // Threshold for when to use reduced segments
 export const HOLE_COUNT_THRESHOLD = 50
 
-const toBoardSpaceVec2 = (
+export const toBoardSpaceVec2 = (
   point: Point,
   center: { x: number; y: number },
 ): Vec2 => [point.x - center.x, -(point.y - center.y)]
 
-const isFiniteNumber = (value: unknown): value is number =>
+export const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && Number.isFinite(value)
+
+export const getCutoutRotationRadians = (rotation: unknown): number => {
+  if (typeof rotation === "number" && Number.isFinite(rotation)) {
+    return (rotation * Math.PI) / 180
+  }
+
+  if (rotation && typeof rotation === "object") {
+    const record = rotation as Record<string, unknown>
+    const degreeCandidate = [
+      record.deg,
+      record.degs,
+      record.degree,
+      record.degrees,
+      record.ccw,
+      record.ccw_degrees,
+      record.ccw_degree,
+    ].find(
+      (value): value is number =>
+        typeof value === "number" && Number.isFinite(value),
+    )
+
+    if (degreeCandidate !== undefined) {
+      return (degreeCandidate * Math.PI) / 180
+    }
+
+    const radCandidate = [
+      record.rad,
+      record.rads,
+      record.radian,
+      record.radians,
+      record.ccw_radians,
+    ].find(
+      (value): value is number =>
+        typeof value === "number" && Number.isFinite(value),
+    )
+
+    if (radCandidate !== undefined) {
+      return radCandidate
+    }
+  }
+
+  return 0
+}
 
 export const arePointsClockwise = (points: Vec2[]): boolean => {
   let area = 0
@@ -86,42 +129,7 @@ export const createCutoutGeoms = (
         let geom = extrudeLinear({ height: thickness + 1 }, rect2d)
         geom = translate([0, 0, -(thickness + 1) / 2], geom)
 
-        let rotationRad = 0
-        const { rotation } = cutout
-        if (typeof rotation === "number" && Number.isFinite(rotation)) {
-          rotationRad = (rotation * Math.PI) / 180
-        } else if (rotation && typeof rotation === "object") {
-          const record = rotation as Record<string, unknown>
-          const degreeCandidate = [
-            record.deg,
-            record.degs,
-            record.degree,
-            record.degrees,
-            record.ccw,
-            record.ccw_degrees,
-            record.ccw_degree,
-          ].find(
-            (value): value is number =>
-              typeof value === "number" && Number.isFinite(value),
-          )
-          if (degreeCandidate !== undefined) {
-            rotationRad = (degreeCandidate * Math.PI) / 180
-          } else {
-            const radCandidate = [
-              record.rad,
-              record.rads,
-              record.radian,
-              record.radians,
-              record.ccw_radians,
-            ].find(
-              (value): value is number =>
-                typeof value === "number" && Number.isFinite(value),
-            )
-            if (radCandidate !== undefined) {
-              rotationRad = radCandidate
-            }
-          }
-        }
+        const rotationRad = getCutoutRotationRadians(cutout.rotation)
         if (rotationRad) {
           geom = rotateZ(-rotationRad, geom)
         }

@@ -1,8 +1,6 @@
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
-import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
-import { subtract, union } from "@jscad/modeling/src/operations/booleans"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
 import {
   rotateX,
@@ -22,18 +20,20 @@ import type {
   Point,
 } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
-import { batchedUnion } from "./batched-union"
+import { normalizeLoop, signedArea, type Vec2Point } from "./geometry-loops"
 import type { BoardCutout } from "./pcb-board-cutouts"
 import {
   arePointsClockwise,
   createCircularHole,
-  createCutoutGeoms,
   DEFAULT_QUALITY_MODE_SEGMENTS,
-  HIGH_QUALITY_MODE_SEGMENTS,
   HIGH_QUALITY_MODE_REDUCED_SEGMENTS,
+  HIGH_QUALITY_MODE_SEGMENTS,
   HOLE_COUNT_THRESHOLD,
   REDUCED_QUALITY_MODE_SEGMENTS,
 } from "./pcb-board-cutouts"
+import { createCutoutLoops } from "./pcb-cutout-loops"
+import { createHoleLoops } from "./pcb-hole-loops"
+import { buildBoardMeshFromLoops } from "./triangles-from-loops"
 
 const RADIUS_EPSILON = 1e-4
 
@@ -75,10 +75,8 @@ export const createBoardOutlineGeom = (
   center: { x: number; y: number },
   thickness: number,
 ): Geom3 => {
-  // Boards may have custom outline, panels do not
   const outline = "outline" in board ? board.outline : undefined
   if (outline && outline.length >= 3) {
-    // Negate Y to account for rotateX(-PI/2) at the end, matching hole coordinate system
     let outlinePoints: Vec2[] = outline.map((pt: Point) => [
       pt.x - center.x,
       -(pt.y - center.y),
@@ -140,11 +138,9 @@ export const createHoleGeoms = (
   for (const hole of holes) {
     const holeRecord = hole as unknown as Record<string, unknown>
     const relX = hole.x - boardCenter.x
-    const relY = -(hole.y - boardCenter.y) // Negate y to account for rotateX(-PI/2)
-
+    const relY = -(hole.y - boardCenter.y)
     const holeShape = holeRecord.hole_shape as string | undefined
 
-    // Handle pill-shaped holes (non-rotated)
     if (holeShape === "pill") {
       const holeWidth = getNumberProperty(holeRecord, "hole_width")
       const holeHeight = getNumberProperty(holeRecord, "hole_height")
@@ -153,34 +149,28 @@ export const createHoleGeoms = (
       const rotate = holeHeight > holeWidth
       const width = rotate ? holeHeight : holeWidth
       const height = rotate ? holeWidth : holeHeight
-
-      const pillHole = createPillHoleWithSegments(
-        relX,
-        relY,
-        width,
-        height,
-        thickness,
-        rotate,
-        segments,
+      holeGeoms.push(
+        createPillHoleWithSegments(
+          relX,
+          relY,
+          width,
+          height,
+          thickness,
+          rotate,
+          segments,
+        ),
       )
-      holeGeoms.push(pillHole)
       continue
     }
 
-    // Handle rotated pill-shaped holes
     if (holeShape === "rotated_pill") {
       const holeWidth = getNumberProperty(holeRecord, "hole_width")
       const holeHeight = getNumberProperty(holeRecord, "hole_height")
       if (!holeWidth || !holeHeight) continue
 
       const rotation = getNumberProperty(holeRecord, "ccw_rotation") ?? 0
-      // Negate rotation because the board is flipped (rotateX(-PI/2) at the end)
-      // This converts CCW rotation in circuit coordinates to correct rotation in 3D
       const rotationRad = -(rotation * Math.PI) / 180
 
-      // For rotated pill, don't auto-rotate based on dimensions
-      // The pill shape is always created with the specified width/height
-      // and then rotated by ccw_rotation
       const minDimension = Math.min(holeWidth, holeHeight)
       const maxAllowedRadius = Math.max(0, minDimension / 2 - RADIUS_EPSILON)
       const roundRadius =
@@ -194,38 +184,29 @@ export const createHoleGeoms = (
 
       let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
       hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
-
-      // Apply rotation around center before positioning
       if (rotationRad !== 0) {
         hole3d = rotateZ(rotationRad, hole3d)
       }
-
-      // Finally translate to position
-      hole3d = translate([relX, relY, 0], hole3d)
-
-      holeGeoms.push(hole3d)
+      holeGeoms.push(translate([relX, relY, 0], hole3d))
       continue
     }
 
-    // Handle circular holes
     const diameter =
       getNumberProperty(holeRecord, "hole_diameter") ??
       getNumberProperty(holeRecord, "diameter")
     if (!diameter) continue
 
-    const radius = diameter / 2
-    holeGeoms.push(createCircularHole(relX, relY, radius, thickness, segments))
+    holeGeoms.push(
+      createCircularHole(relX, relY, diameter / 2, thickness, segments),
+    )
   }
 
   for (const plated of platedHoles) {
     const platedRecord = plated as unknown as Record<string, unknown>
-
-    // Get hole offset (for cases where hole is offset from pad center)
     const holeOffsetX = getNumberProperty(platedRecord, "hole_offset_x") ?? 0
     const holeOffsetY = getNumberProperty(platedRecord, "hole_offset_y") ?? 0
-
     const relX = plated.x - boardCenter.x + holeOffsetX
-    const relY = -(plated.y - boardCenter.y + holeOffsetY) // Negate y to account for rotateX(-PI/2)
+    const relY = -(plated.y - boardCenter.y + holeOffsetY)
 
     if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
       const holeWidth =
@@ -237,6 +218,7 @@ export const createHoleGeoms = (
         getNumberProperty(platedRecord, "hole_diameter") ??
         0
       if (!holeWidth || !holeHeight) continue
+
       const rotate = holeHeight > holeWidth
       const width = rotate ? holeHeight : holeWidth
       const height = rotate ? holeWidth : holeHeight
@@ -258,6 +240,7 @@ export const createHoleGeoms = (
       getNumberProperty(platedRecord, "hole_diameter") ??
       getNumberProperty(platedRecord, "outer_diameter")
     if (!diameter) continue
+
     holeGeoms.push(
       createCircularHole(relX, relY, diameter / 2, thickness, segments),
     )
@@ -301,15 +284,14 @@ export const geom3ToTriangles = (
     for (let i = 1; i < poly.vertices.length - 1; i++) {
       const v1 = poly.vertices[i]!
       const v2 = poly.vertices[i + 1]!
-      const triangle: Triangle = {
+      triangles.push({
         vertices: [
           { x: base[0]!, y: base[1]!, z: base[2]! },
           { x: v1[0]!, y: v1[1]!, z: v1[2]! },
           { x: v2[0]!, y: v2[1]!, z: v2[2]! },
         ],
         normal,
-      }
-      triangles.push(triangle)
+      })
     }
   }
 
@@ -335,44 +317,50 @@ export const createBoardMesh = (
     cutouts = [],
     drillQuality = "fast",
   } = options
+
   const center = board.center ?? { x: 0, y: 0 }
-
-  let boardGeom = createBoardOutlineGeom(board, center, thickness)
-
-  // Calculate total hole count to determine if we should use reduced segments
   const totalHoleCount = holes.length + platedHoles.length
   const segments = getHoleSegments(totalHoleCount, drillQuality)
 
-  const holeGeoms = createHoleGeoms(
-    center,
-    thickness,
-    holes,
-    platedHoles,
-    segments,
-  )
-  const cutoutGeoms = createCutoutGeoms(center, thickness, cutouts, segments)
-  const subtractGeoms = [...holeGeoms, ...cutoutGeoms]
+  const outerLoop = createBoardOuterLoop(board, center)
+  const holeLoops = [
+    ...createHoleLoops({
+      boardCenter: center,
+      holes,
+      platedHoles,
+      segments,
+    }),
+    ...createCutoutLoops({
+      boardCenter: center,
+      cutouts,
+      segments,
+    }),
+  ]
 
-  if (subtractGeoms.length > 0) {
-    // Optimization: Union all holes/cutouts first, then perform a single subtract
-    // This is much faster than subtracting each hole individually because:
-    // 1. Each subtract operation makes the board geometry more complex
-    // 2. Union operations between simple shapes (cylinders) are fast
-    // 3. A single subtract of a complex shape is faster than N subtracts
-    const unifiedHoles = batchedUnion(subtractGeoms)
-    boardGeom = subtract(boardGeom, unifiedHoles)
+  return buildBoardMeshFromLoops({ outerLoop, holeLoops, thickness })
+}
+
+const createBoardOuterLoop = (
+  board: PcbPanel | PcbBoard,
+  center: { x: number; y: number },
+): Vec2Point[] => {
+  const outline = "outline" in board ? board.outline : undefined
+  if (outline && outline.length >= 3) {
+    let points = outline.map((pt: Point) => ({
+      x: pt.x - center.x,
+      y: -(pt.y - center.y),
+    }))
+
+    if (signedArea(points) < 0) points = points.slice().reverse()
+    return normalizeLoop(points)
   }
 
-  boardGeom = rotateX(-Math.PI / 2, boardGeom)
-
-  const polygons = geom3.toPolygons(boardGeom)
-  const triangles = geom3ToTriangles(boardGeom, polygons)
-
-  const bboxValues = measureBoundingBox(boardGeom)
-  const boundingBox = createBoundingBox(bboxValues)
-
-  return {
-    triangles,
-    boundingBox,
-  }
+  const width = board.width!
+  const height = board.height!
+  return normalizeLoop([
+    { x: -width / 2, y: -height / 2 },
+    { x: width / 2, y: -height / 2 },
+    { x: width / 2, y: height / 2 },
+    { x: -width / 2, y: height / 2 },
+  ])
 }

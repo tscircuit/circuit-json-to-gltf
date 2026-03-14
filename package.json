@@ -18,19 +18,21 @@
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
+    "earcut": "^3.0.2",
     "jscad-electronics": "^0.0.120",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
-    "@playwright/test": "^1.58.2",
     "@google/model-viewer": "^4.1.0",
+    "@playwright/test": "^1.58.2",
     "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
     "@tscircuit/alphabet": "^0.0.8",
     "@tscircuit/circuit-json-util": "^0.0.72",
     "@types/bun": "latest",
+    "@types/earcut": "^3.0.0",
     "@types/react": "^19.1.9",
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
