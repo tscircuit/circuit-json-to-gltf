@@ -8,6 +8,9 @@ test("getMeshOrigin ignores inferred alignment without explicit origin position"
       cad_component_id: "cad1",
       pcb_component_id: "pcb1",
       source_component_id: "source1",
+      position: { x: 0, y: 0, z: 0 },
+      model_object_fit: "contain_within_bounds",
+      anchor_alignment: "center",
       model_origin_alignment: "center_of_component_on_board_surface",
     },
     {
@@ -16,7 +19,7 @@ test("getMeshOrigin ignores inferred alignment without explicit origin position"
     },
   )
 
-  expect(origin).toBeNull()
+  expect(origin).toEqual({ x: 0, y: 0, z: 0 })
 })
 
 test("getMeshOrigin returns explicit model origin position", () => {
@@ -26,6 +29,9 @@ test("getMeshOrigin returns explicit model origin position", () => {
       cad_component_id: "cad1",
       pcb_component_id: "pcb1",
       source_component_id: "source1",
+      position: { x: 0, y: 0, z: 0 },
+      model_object_fit: "contain_within_bounds",
+      anchor_alignment: "center",
       model_origin_alignment: "center_of_component_on_board_surface",
       model_origin_position: { x: 1, y: 2, z: 3 },
     },

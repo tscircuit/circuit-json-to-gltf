@@ -77,7 +77,7 @@ export function getMeshOrigin(
     return origin
   }
 
-  return null
+  return { x: 0, y: 0, z: 0 }
 }
 
 export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(
