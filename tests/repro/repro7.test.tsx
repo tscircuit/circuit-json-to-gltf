@@ -10,7 +10,7 @@ test("repro7: local CAD model should be included in GLTF output", async () => {
     <board width="40mm" height="40mm">
       <chip
         name="U1"
-        footprint="soic8"
+        footprint="pinrow1"
         cadModel={
           <cadassembly>
             <cadmodel modelUrl="tests/assets/ExampleModelPin.step" />

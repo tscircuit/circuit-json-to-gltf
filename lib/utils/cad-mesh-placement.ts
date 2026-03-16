@@ -77,18 +77,7 @@ export function getMeshOrigin(
     return origin
   }
 
-  switch (cad.model_origin_alignment) {
-    case "center":
-      return getBoundingBoxCenter(meshBounds)
-    case "center_of_component_on_board_surface":
-      return {
-        x: (meshBounds.min.x + meshBounds.max.x) / 2,
-        y: meshBounds.min.y,
-        z: (meshBounds.min.z + meshBounds.max.z) / 2,
-      }
-    default:
-      return null
-  }
+  return null
 }
 
 export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(
