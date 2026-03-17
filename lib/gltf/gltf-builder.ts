@@ -239,7 +239,7 @@ export class GLTFBuilder {
       const indicesAccessorIndex = this.addAccessor(
         transformedMeshData.indices,
         "SCALAR",
-        COMPONENT_TYPE.UNSIGNED_SHORT,
+        COMPONENT_TYPE.UNSIGNED_INT,
         TARGET.ELEMENT_ARRAY_BUFFER,
       )
 
@@ -722,6 +722,9 @@ export class GLTFBuilder {
     } else if (componentType === COMPONENT_TYPE.UNSIGNED_SHORT) {
       byteOffset = this.bufferBuilder.addUint16Array(data)
       byteLength = data.length * 2
+    } else if (componentType === COMPONENT_TYPE.UNSIGNED_INT) {
+      byteOffset = this.bufferBuilder.addUint32Array(data)
+      byteLength = data.length * 4
     } else {
       throw new Error(`Unsupported component type: ${componentType}`)
     }

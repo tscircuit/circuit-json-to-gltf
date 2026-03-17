@@ -67,6 +67,16 @@ export class BufferBuilder {
     return byteOffset
   }
 
+  addUint32Array(values: number[]): number {
+    const byteOffset = this.offset
+    this.ensureCapacity(values.length * 4)
+    for (const value of values) {
+      this.view.setUint32(this.offset, value, true)
+      this.offset += 4
+    }
+    return byteOffset
+  }
+
   addBytes(bytes: Uint8Array): number {
     const byteOffset = this.offset
     this.ensureCapacity(bytes.length)
