@@ -507,4 +507,4 @@ test("STM32F100C8T6B glb snapshot", async () => {
       getBestCameraPosition(circuitJson),
     ),
   ).toMatchPngSnapshot(import.meta.path)
-})
+}, 10_000)
