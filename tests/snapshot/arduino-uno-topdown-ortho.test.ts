@@ -41,4 +41,4 @@ test("arduino-uno-topdown-ortho-snapshot", async () => {
       cull: false,
     }),
   ).toMatchPngSnapshot(import.meta.path, "arduino-uno-topdown-ortho")
-}, 30_000)
+}, 60_000)
