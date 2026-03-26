@@ -6,8 +6,8 @@ const DEFAULT_PSEUDO_ORTHO_FOV = 4
 
 export const CAMERA_PRESET_DIRECTIONS = {
   isometric: DEFAULT_CAMERA_DIRECTION,
-  top_down: [TOP_DOWN_TILT, 1, TOP_DOWN_TILT],
-  bottom_up: [TOP_DOWN_TILT, -1, TOP_DOWN_TILT],
+  top_down: [0, 1, TOP_DOWN_TILT],
+  bottom_up: [0, -1, TOP_DOWN_TILT],
   left_side: [-1, 0, 0],
   right_side: [1, 0, 0],
   front: [0, 0, 1],
