@@ -30,7 +30,7 @@ test("bottom-layer-components-bottom-view", async () => {
   const cameraOptions = {
     position: { x: 15, y: -15, z: 15 }, // Position below and to the side
     target: { x: 0, y: 0, z: 0 }, // Look at board center
-    up: { x: 0, y: 1, z: 0 },
+    up: "y+" as const,
     fov: 50,
     width: 800,
     height: 600,
