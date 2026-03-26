@@ -1,8 +1,37 @@
 import type { CircuitJson, PcbBoard, PcbPanel } from "circuit-json"
 
 const DEFAULT_CAMERA_DIRECTION = [-0.7, 1.2, -0.8] as const
+const TOP_DOWN_TILT = 1e-3
+const DEFAULT_PSEUDO_ORTHO_FOV = 4
+
+export const CAMERA_PRESET_DIRECTIONS = {
+  isometric: DEFAULT_CAMERA_DIRECTION,
+  top_down: [TOP_DOWN_TILT, 1, TOP_DOWN_TILT],
+  bottom_up: [TOP_DOWN_TILT, -1, TOP_DOWN_TILT],
+  left_side: [-1, 0, 0],
+  right_side: [1, 0, 0],
+  front: [0, 0, 1],
+  back: [0, 0, -1],
+} as const
+
+export type CameraPreset = keyof typeof CAMERA_PRESET_DIRECTIONS
 
 export interface CameraFitOptions {
+  /**
+   * Named preset view. Useful for stable top/bottom/side snapshots.
+   *
+   * `top_down`/`bottom_up` use a tiny hidden tilt because the downstream
+   * renderer currently assumes a fixed up-vector and collapses on a perfectly
+   * vertical view.
+   */
+  preset?: CameraPreset
+  /**
+   * Approximate an orthographic view using a very narrow perspective FOV.
+   *
+   * This is a compatibility hack for renderers that only expose perspective
+   * cameras. It is not a true orthographic projection.
+   */
+  ortho?: boolean
   /**
    * Target-to-camera direction vector used for solved camera position.
    */
@@ -54,6 +83,12 @@ function cross(
   return [ay * bz - az * by, az * bx - ax * bz, ax * by - ay * bx]
 }
 
+function getPresetDirection(
+  preset?: CameraPreset,
+): readonly [number, number, number] {
+  return preset ? CAMERA_PRESET_DIRECTIONS[preset] : DEFAULT_CAMERA_DIRECTION
+}
+
 function getVerticalFovRadians(opts?: CameraFitOptions): number {
   if (
     opts?.focalLength !== undefined &&
@@ -64,7 +99,7 @@ function getVerticalFovRadians(opts?: CameraFitOptions): number {
     return 2 * Math.atan(opts.sensorHeight / (2 * opts.focalLength))
   }
 
-  const fovDegrees = opts?.fov ?? 50
+  const fovDegrees = opts?.fov ?? (opts?.ortho ? DEFAULT_PSEUDO_ORTHO_FOV : 50)
   const fovRadians = (fovDegrees * Math.PI) / 180
 
   if (!Number.isFinite(fovRadians) || fovRadians <= 0) {
@@ -162,7 +197,7 @@ export function getBestCameraPosition(
 
   // Camera ray direction from target to camera
   const cameraDirection = normalizeVector(
-    opts?.direction ?? DEFAULT_CAMERA_DIRECTION,
+    opts?.direction ?? getPresetDirection(opts?.preset),
   )
 
   // Camera forward points from camera to target

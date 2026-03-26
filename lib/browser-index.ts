@@ -29,6 +29,8 @@ export type {
 } from "./types"
 
 export {
+  CAMERA_PRESET_DIRECTIONS,
+  type CameraPreset,
   getBestCameraPosition,
   type CameraFitOptions,
 } from "./utils/camera-position"

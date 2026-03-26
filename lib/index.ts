@@ -76,6 +76,8 @@ export type {
   Triangle,
 } from "./types"
 export {
+  CAMERA_PRESET_DIRECTIONS,
+  type CameraPreset,
   type CameraFitOptions,
   getBestCameraPosition,
 } from "./utils/camera-position"
