@@ -38,7 +38,7 @@ test("arduino-uno-topdown-ortho-snapshot", async () => {
       supersampling: 2,
       backgroundColor: [1, 1, 1],
       ambient: 0.55,
-      cull: "none",
+      cull: false,
     }),
   ).toMatchPngSnapshot(import.meta.path, "arduino-uno-topdown-ortho")
 }, 30_000)

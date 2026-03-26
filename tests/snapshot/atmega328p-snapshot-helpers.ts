@@ -7,11 +7,45 @@ import {
 } from "../../lib/utils/camera-position"
 import * as fs from "node:fs"
 import * as path from "node:path"
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, PcbSmtPad } from "circuit-json"
 
 const SOURCE_COMPONENT_ID = "source_component_15"
 const PCB_COMPONENT_ID = "pcb_component_15"
 const CAD_COMPONENT_ID = "cad_component_5"
+
+function addSmtPadBounds(bounds: { x: number[]; y: number[] }, pad: PcbSmtPad) {
+  if (pad.shape === "polygon") {
+    for (const point of pad.points) {
+      bounds.x.push(point.x)
+      bounds.y.push(point.y)
+    }
+    return
+  }
+
+  if (pad.shape === "circle") {
+    bounds.x.push(pad.x - pad.radius, pad.x + pad.radius)
+    bounds.y.push(pad.y - pad.radius, pad.y + pad.radius)
+    return
+  }
+
+  const halfWidth = pad.width / 2
+  const halfHeight = pad.height / 2
+
+  if (pad.shape === "rotated_rect" || pad.shape === "rotated_pill") {
+    const rotationRadians = (pad.ccw_rotation * Math.PI) / 180
+    const cos = Math.abs(Math.cos(rotationRadians))
+    const sin = Math.abs(Math.sin(rotationRadians))
+    const xExtent = halfWidth * cos + halfHeight * sin
+    const yExtent = halfWidth * sin + halfHeight * cos
+
+    bounds.x.push(pad.x - xExtent, pad.x + xExtent)
+    bounds.y.push(pad.y - yExtent, pad.y + yExtent)
+    return
+  }
+
+  bounds.x.push(pad.x - halfWidth, pad.x + halfWidth)
+  bounds.y.push(pad.y - halfHeight, pad.y + halfHeight)
+}
 
 function createIsolatedAtmegaCircuit(
   fullCircuitJson: CircuitJson,
@@ -49,8 +83,7 @@ function createIsolatedAtmegaCircuit(
 
   for (const record of relevantRecords) {
     if (record.type === "pcb_smtpad") {
-      xBounds.push(record.x - record.width / 2, record.x + record.width / 2)
-      yBounds.push(record.y - record.height / 2, record.y + record.height / 2)
+      addSmtPadBounds({ x: xBounds, y: yBounds }, record)
     }
 
     if (record.type === "pcb_silkscreen_path") {
@@ -154,7 +187,7 @@ export async function expectAtmegaPresetSnapshot(
       height: 512,
       backgroundColor: [1, 1, 1],
       ambient: 0.55,
-      cull: "none",
+      cull: false,
     }),
   ).toMatchPngSnapshot(testPath)
 }

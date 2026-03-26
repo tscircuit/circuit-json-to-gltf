@@ -143,14 +143,6 @@ function getRequiredDistanceForFrustum(
   return requiredDistance
 }
 
-/**
- * Calculate optimal camera position for PCB viewing based on circuit dimensions
- */
-export function getBestCameraPosition(circuitJson: CircuitJson): {
-  camPos: readonly [number, number, number]
-  lookAt: readonly [number, number, number]
-  fov: number
-}
 export function getBestCameraPosition(
   circuitJson: CircuitJson,
   opts?: CameraFitOptions,
