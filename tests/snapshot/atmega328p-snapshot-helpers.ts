@@ -1,7 +1,10 @@
-import { test, expect } from "bun:test"
+import { expect } from "bun:test"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
+import {
+  getBestCameraPosition,
+  type CameraPreset,
+} from "../../lib/utils/camera-position"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import type { CircuitJson } from "circuit-json"
@@ -93,52 +96,65 @@ function createIsolatedAtmegaCircuit(
   ] as CircuitJson
 }
 
-const SNAPSHOT_CONFIGS = [
-  { preset: "isometric", name: "isometric-atmega328p", ortho: false },
-  { preset: "top_down", name: "topdown-atmega328p", ortho: true },
-  { preset: "bottom_up", name: "bottomup-atmega328p", ortho: true },
-  { preset: "left_side", name: "leftside-atmega328p", ortho: true },
-  { preset: "right_side", name: "rightside-atmega328p", ortho: true },
-  { preset: "front", name: "front-atmega328p", ortho: true },
-  { preset: "back", name: "back-atmega328p", ortho: true },
-] as const
+let snapshotContextPromise:
+  | Promise<{
+      circuitJson: CircuitJson
+      glbResult: ArrayBuffer
+    }>
+  | undefined
 
-test("camera-presets-atmega328p", async () => {
-  const fixturePath = path.join(
-    __dirname,
-    "../fixtures/arduino-uno.circuit.json",
-  )
-  const circuitData = fs.readFileSync(fixturePath, "utf-8")
-  const fullCircuitJson: CircuitJson = JSON.parse(circuitData)
-  const circuitJson = createIsolatedAtmegaCircuit(fullCircuitJson)
+async function getSnapshotContext() {
+  if (!snapshotContextPromise) {
+    snapshotContextPromise = (async () => {
+      const fixturePath = path.join(
+        __dirname,
+        "../fixtures/arduino-uno.circuit.json",
+      )
+      const circuitData = fs.readFileSync(fixturePath, "utf-8")
+      const fullCircuitJson: CircuitJson = JSON.parse(circuitData)
+      const circuitJson = createIsolatedAtmegaCircuit(fullCircuitJson)
 
-  const glbResult = await convertCircuitJsonToGltf(circuitJson, {
-    format: "glb",
-    boardTextureResolution: 1024,
-    includeModels: true,
-    showBoundingBoxes: false,
+      const glbResult = await convertCircuitJsonToGltf(circuitJson, {
+        format: "glb",
+        boardTextureResolution: 1024,
+        includeModels: true,
+        showBoundingBoxes: false,
+      })
+
+      expect(glbResult).toBeInstanceOf(ArrayBuffer)
+      expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
+
+      return {
+        circuitJson,
+        glbResult: glbResult as ArrayBuffer,
+      }
+    })()
+  }
+
+  return snapshotContextPromise
+}
+
+export async function expectAtmegaPresetSnapshot(
+  testPath: string,
+  preset: CameraPreset,
+  ortho = true,
+) {
+  const { circuitJson, glbResult } = await getSnapshotContext()
+
+  const cameraOptions = getBestCameraPosition(circuitJson, {
+    preset,
+    ortho,
+    aspectRatio: 1,
   })
 
-  expect(glbResult).toBeInstanceOf(ArrayBuffer)
-  expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
-
-  for (const config of SNAPSHOT_CONFIGS) {
-    const cameraOptions = getBestCameraPosition(circuitJson, {
-      preset: config.preset,
-      ortho: config.ortho,
-      aspectRatio: 1,
-    })
-
-    expect(
-      renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
-        ...cameraOptions,
-        width: 2048,
-        height: 2048,
-        supersampling: 2,
-        backgroundColor: [1, 1, 1],
-        ambient: 0.55,
-        cull: "none",
-      }),
-    ).toMatchPngSnapshot(import.meta.path, config.name)
-  }
-}, 90_000)
+  expect(
+    renderGLTFToPNGBufferFromGLBBuffer(glbResult, {
+      ...cameraOptions,
+      width: 512,
+      height: 512,
+      backgroundColor: [1, 1, 1],
+      ambient: 0.55,
+      cull: "none",
+    }),
+  ).toMatchPngSnapshot(testPath)
+}
