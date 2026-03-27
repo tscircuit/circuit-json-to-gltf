@@ -42,6 +42,8 @@ export class GLTFBuilder {
   private textures: GLTFTexture[]
   private images: GLTFImage[]
   private imageDataMap: Map<string, Uint8Array>
+  private meshCache: Map<string, number>
+  private materialCache: Map<string, number>
 
   constructor() {
     this.gltf = {
@@ -62,6 +64,8 @@ export class GLTFBuilder {
     this.textures = []
     this.images = []
     this.imageDataMap = new Map()
+    this.meshCache = new Map()
+    this.materialCache = new Map()
   }
 
   async buildFromScene3D(scene3D: Scene3D): Promise<void> {
@@ -110,7 +114,7 @@ export class GLTFBuilder {
     }
 
     // Apply transformations
-    meshData = transformMesh(meshData, box.center, box.rotation)
+    meshData = transformMesh(meshData, { x: 0, y: 0, z: 0 }, box.rotation)
     meshData = convertMeshToGLTFOrientation(meshData)
 
     // Create material
@@ -144,6 +148,7 @@ export class GLTFBuilder {
     this.nodes.push({
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
+      translation: this.toGltfTranslation(box.center),
     })
 
     // Add node to scene
@@ -207,71 +212,43 @@ export class GLTFBuilder {
       objMaterialIndices.set(materialIndex, gltfMaterialIndex)
     }
 
-    // Create primitives for each material group
-    const primitives: any[] = []
+    const preparedPrimitives: Array<{
+      material: number
+      meshData: MeshData
+    }> = []
 
     for (const { meshData, materialIndex } of meshDataArray) {
       // Apply translation and rotation, then convert to GLTF orientation
-      const translatedMesh = transformMesh(meshData, box.center, box.rotation)
+      const translatedMesh = transformMesh(
+        meshData,
+        { x: 0, y: 0, z: 0 },
+        box.rotation,
+      )
       const transformedMeshData = convertMeshToGLTFOrientation(translatedMesh)
-
-      const positionAccessorIndex = this.addAccessor(
-        transformedMeshData.positions,
-        "VEC3",
-        COMPONENT_TYPE.FLOAT,
-        TARGET.ARRAY_BUFFER,
-      )
-
-      const normalAccessorIndex = this.addAccessor(
-        transformedMeshData.normals,
-        "VEC3",
-        COMPONENT_TYPE.FLOAT,
-        TARGET.ARRAY_BUFFER,
-      )
-
-      const texcoordAccessorIndex = this.addAccessor(
-        transformedMeshData.texcoords,
-        "VEC2",
-        COMPONENT_TYPE.FLOAT,
-        TARGET.ARRAY_BUFFER,
-      )
-
-      const indicesAccessorIndex = this.addAccessor(
-        transformedMeshData.indices,
-        "SCALAR",
-        COMPONENT_TYPE.UNSIGNED_INT,
-        TARGET.ELEMENT_ARRAY_BUFFER,
-      )
 
       const gltfMaterialIndex =
         objMaterialIndices.get(materialIndex) ??
         objMaterialIndices.values().next().value ??
         this.materials.length - 1
 
-      primitives.push({
-        attributes: {
-          POSITION: positionAccessorIndex,
-          NORMAL: normalAccessorIndex,
-          TEXCOORD_0: texcoordAccessorIndex,
-        },
-        indices: indicesAccessorIndex,
+      preparedPrimitives.push({
         material: gltfMaterialIndex,
-        mode: PRIMITIVE_MODE.TRIANGLES,
+        meshData: transformedMeshData,
       })
     }
 
-    // Create mesh with all material primitives
-    const meshIndex = this.meshes.length
-    this.meshes.push({
-      name: box.label || `OBJMesh${meshIndex}`,
-      primitives,
-    })
+    const meshIndex = this.addMultiPrimitiveMesh(
+      preparedPrimitives,
+      box.label || `OBJMesh${this.meshes.length}`,
+      "obj",
+    )
 
     // Create node
     const nodeIndex = this.nodes.length
     this.nodes.push({
       name: box.label || `OBJBox${nodeIndex}`,
       mesh: meshIndex,
+      translation: this.toGltfTranslation(box.center),
     })
 
     // Add node to scene
@@ -434,7 +411,7 @@ export class GLTFBuilder {
 
       const meshData: MeshData = { positions, normals, texcoords, indices }
       const transformedMeshData = convertMeshToGLTFOrientation(
-        transformMesh(meshData, box.center, box.rotation),
+        transformMesh(meshData, { x: 0, y: 0, z: 0 }, box.rotation),
       )
 
       const positionAccessorIndex = this.addAccessor(
@@ -489,6 +466,7 @@ export class GLTFBuilder {
     this.nodes.push({
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
+      translation: this.toGltfTranslation(box.center),
     })
 
     // Add node to scene
@@ -585,7 +563,7 @@ export class GLTFBuilder {
     for (const [faceName, faceData] of Object.entries(faceMeshes)) {
       // Apply transformations to each face
       const transformedFaceData = convertMeshToGLTFOrientation(
-        transformMesh(faceData, box.center, box.rotation),
+        transformMesh(faceData, { x: 0, y: 0, z: 0 }, box.rotation),
       )
 
       // Create accessors for this face
@@ -641,6 +619,7 @@ export class GLTFBuilder {
     this.nodes.push({
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
+      translation: this.toGltfTranslation(box.center),
     })
 
     // Add node to scene
@@ -652,6 +631,12 @@ export class GLTFBuilder {
     materialIndex: number,
     name?: string,
   ): number {
+    const meshCacheKey = this.getMeshCacheKey(meshData, materialIndex)
+    const cachedMeshIndex = this.meshCache.get(meshCacheKey)
+    if (cachedMeshIndex !== undefined) {
+      return cachedMeshIndex
+    }
+
     const meshIndex = this.meshes.length
 
     // Create accessors for vertex data
@@ -700,7 +685,101 @@ export class GLTFBuilder {
       ],
     })
 
+    this.meshCache.set(meshCacheKey, meshIndex)
+
     return meshIndex
+  }
+
+  private toGltfTranslation(center: Box3D["center"]): [number, number, number] {
+    return [-center.x, center.y, center.z]
+  }
+
+  private getMeshCacheKey(meshData: MeshData, materialIndex: number): string {
+    return `${materialIndex}:${this.hashNumberArray(meshData.positions)}:${this.hashNumberArray(meshData.normals)}:${this.hashNumberArray(meshData.texcoords)}:${this.hashNumberArray(meshData.indices)}`
+  }
+
+  private hashNumberArray(values: number[]): string {
+    let hash = 2166136261
+    for (let i = 0; i < values.length; i++) {
+      const rounded = Math.round(values[i]! * 1e6)
+      hash ^= rounded
+      hash = Math.imul(hash, 16777619)
+    }
+    return `${values.length}:${hash >>> 0}`
+  }
+
+  private addMultiPrimitiveMesh(
+    primitives: Array<{ material: number; meshData: MeshData }>,
+    name: string,
+    cachePrefix: string,
+  ): number {
+    const meshCacheKey = `${cachePrefix}:${primitives
+      .map(
+        (primitive) =>
+          `${primitive.material}:${this.hashNumberArray(
+            primitive.meshData.positions,
+          )}:${this.hashNumberArray(primitive.meshData.normals)}:${this.hashNumberArray(
+            primitive.meshData.texcoords,
+          )}:${this.hashNumberArray(primitive.meshData.indices)}`,
+      )
+      .join("|")}`
+
+    const cachedMeshIndex = this.meshCache.get(meshCacheKey)
+    if (cachedMeshIndex !== undefined) {
+      return cachedMeshIndex
+    }
+
+    const meshIndex = this.meshes.length
+    const gltfPrimitives = primitives.map((primitive) => {
+      const positionAccessorIndex = this.addAccessor(
+        primitive.meshData.positions,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+      const normalAccessorIndex = this.addAccessor(
+        primitive.meshData.normals,
+        "VEC3",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+      const texcoordAccessorIndex = this.addAccessor(
+        primitive.meshData.texcoords,
+        "VEC2",
+        COMPONENT_TYPE.FLOAT,
+        TARGET.ARRAY_BUFFER,
+      )
+      const indicesAccessorIndex = this.addAccessor(
+        primitive.meshData.indices,
+        "SCALAR",
+        COMPONENT_TYPE.UNSIGNED_INT,
+        TARGET.ELEMENT_ARRAY_BUFFER,
+      )
+
+      return {
+        attributes: {
+          POSITION: positionAccessorIndex,
+          NORMAL: normalAccessorIndex,
+          TEXCOORD_0: texcoordAccessorIndex,
+        },
+        indices: indicesAccessorIndex,
+        material: primitive.material,
+        mode: PRIMITIVE_MODE.TRIANGLES,
+      }
+    })
+
+    this.meshes.push({
+      name,
+      primitives: gltfPrimitives,
+    })
+    this.meshCache.set(meshCacheKey, meshIndex)
+
+    return meshIndex
+  }
+
+  private getMaterialCacheKey(material: GLTFMaterial): string {
+    const { name: _name, ...materialWithoutName } = material
+    return JSON.stringify(materialWithoutName)
   }
 
   private addAccessor(
@@ -774,8 +853,15 @@ export class GLTFBuilder {
   }
 
   private addMaterial(material: GLTFMaterial): number {
+    const materialCacheKey = this.getMaterialCacheKey(material)
+    const cachedMaterialIndex = this.materialCache.get(materialCacheKey)
+    if (cachedMaterialIndex !== undefined) {
+      return cachedMaterialIndex
+    }
+
     const index = this.materials.length
     this.materials.push(material)
+    this.materialCache.set(materialCacheKey, index)
     return index
   }
 
