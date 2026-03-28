@@ -368,10 +368,14 @@ export async function convertCircuitJsonTo3D(
               : hasFootprinterModel
                 ? "glb"
                 : undefined
+    const sourceComponent = db.source_component.get(
+      cad.source_component_id,
+    )
     const box: Box3D = {
       center,
       size,
       isTranslucent: cad.show_as_translucent_model,
+      label: sourceComponent?.name,
     }
 
     if (
