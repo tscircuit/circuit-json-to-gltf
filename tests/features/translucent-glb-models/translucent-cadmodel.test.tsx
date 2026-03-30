@@ -15,7 +15,6 @@ test("translucent-cadmodel-standalone", async () => {
           <cadassembly>
             <cadmodel
               modelUrl="https://modelcdn.tscircuit.com/jscad_models/soic8.step"
-              rotationOffset={{ x: 0, y: 0, z: 180 }}
               showAsTranslucentModel
             />
           </cadassembly>

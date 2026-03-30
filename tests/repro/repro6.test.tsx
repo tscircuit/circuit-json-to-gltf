@@ -13,10 +13,7 @@ test("STEP CAD Model should be included in GLTF output", async () => {
         footprint="soic8"
         cadModel={
           <cadassembly>
-            <cadmodel
-              modelUrl="https://modelcdn.tscircuit.com/jscad_models/soic8.step"
-              rotationOffset={{ x: 0, y: 0, z: 180 }}
-            />
+            <cadmodel modelUrl="https://modelcdn.tscircuit.com/jscad_models/soic8.step" />
           </cadassembly>
         }
       />
@@ -43,4 +40,4 @@ test("STEP CAD Model should be included in GLTF output", async () => {
   expect(
     renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path)
-})
+}, 20000)

@@ -106,9 +106,9 @@ export const COORDINATE_TRANSFORMS = {
     axisMapping: { x: "x", y: "z", z: "-y" },
   } as CoordinateTransformConfig,
 
-  // For step models, the models are being loaded inverted
+  // STEP models need Y/Z remap without the extra 180-degree board-direction flip.
   STEP_INVERTED: {
-    axisMapping: { x: "-x", y: "z", z: "-y" },
+    axisMapping: { x: "x", y: "z", z: "y" },
   } as CoordinateTransformConfig,
 
   // USB port fix: flip to top of board (flip Y axis after Z-up conversion)
