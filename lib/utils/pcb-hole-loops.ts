@@ -46,7 +46,9 @@ export const createHoleLoops = ({
       const height = rotate ? holeWidth : holeHeight
 
       let loop = createRoundedRectLoop({ width, height, segments })
-      if (rotate) loop = rotateLoop({ loop, angle: Math.PI / 2 })
+      if (rotate) {
+        loop = rotateLoop({ loop, angle: Math.PI / 2 })
+      }
       loops.push(translateLoop({ loop, offset: { x: relX, y: relY } }))
       continue
     }
@@ -56,17 +58,16 @@ export const createHoleLoops = ({
       const holeHeight = getNumberProperty(holeRecord, "hole_height")
       if (!holeWidth || !holeHeight) continue
 
+      const rotation = getNumberProperty(holeRecord, "ccw_rotation") ?? 0
+      const rotationRad = -(rotation * Math.PI) / 180
       let loop = createRoundedRectLoop({
         width: holeWidth,
         height: holeHeight,
         segments,
       })
-      const rotation = getNumberProperty(holeRecord, "ccw_rotation") ?? 0
-      const rotationRad = -(rotation * Math.PI) / 180
       if (rotationRad !== 0) {
         loop = rotateLoop({ loop, angle: rotationRad })
       }
-
       loops.push(translateLoop({ loop, offset: { x: relX, y: relY } }))
       continue
     }
@@ -104,12 +105,16 @@ export const createHoleLoops = ({
         0
       if (!holeWidth || !holeHeight) continue
 
-      const rotate = holeHeight > holeWidth
-      const width = rotate ? holeHeight : holeWidth
-      const height = rotate ? holeWidth : holeHeight
-
-      let loop = createRoundedRectLoop({ width, height, segments })
-      if (rotate) loop = rotateLoop({ loop, angle: Math.PI / 2 })
+      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotationRad = -(rotation * Math.PI) / 180
+      let loop = createRoundedRectLoop({
+        width: holeWidth,
+        height: holeHeight,
+        segments,
+      })
+      if (rotationRad !== 0) {
+        loop = rotateLoop({ loop, angle: rotationRad })
+      }
       loops.push(translateLoop({ loop, offset: { x: relX, y: relY } }))
       continue
     }

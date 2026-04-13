@@ -13,7 +13,7 @@ import {
   roundedRectangle,
 } from "@jscad/modeling/src/primitives"
 import type {
-  PCBPlatedHole,
+  PcbPlatedHole,
   PcbBoard,
   PcbHole,
   PcbPanel,
@@ -43,7 +43,7 @@ export { arePointsClockwise } from "./pcb-board-cutouts"
 export interface BoardGeometryOptions {
   thickness: number
   holes?: PcbHole[]
-  platedHoles?: PCBPlatedHole[]
+  platedHoles?: PcbPlatedHole[]
   cutouts?: BoardCutout[]
   drillQuality?: "high" | "fast"
 }
@@ -104,7 +104,7 @@ const createPillHoleWithSegments = (
   width: number,
   height: number,
   thickness: number,
-  rotate: boolean,
+  rotationRad: number = 0,
   segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3 => {
   const minDimension = Math.min(width, height)
@@ -119,8 +119,8 @@ const createPillHoleWithSegments = (
   let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
   hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
 
-  if (rotate) {
-    hole3d = rotateZ(Math.PI / 2, hole3d)
+  if (rotationRad !== 0) {
+    hole3d = rotateZ(rotationRad, hole3d)
   }
 
   return translate([x, y, 0], hole3d)
@@ -130,7 +130,7 @@ export const createHoleGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
   holes: PcbHole[] = [],
-  platedHoles: PCBPlatedHole[] = [],
+  platedHoles: PcbPlatedHole[] = [],
   segments: number = DEFAULT_QUALITY_MODE_SEGMENTS,
 ): Geom3[] => {
   const holeGeoms: Geom3[] = []
@@ -156,7 +156,7 @@ export const createHoleGeoms = (
           width,
           height,
           thickness,
-          rotate,
+          rotate ? Math.PI / 2 : 0,
           segments,
         ),
       )
@@ -170,24 +170,17 @@ export const createHoleGeoms = (
 
       const rotation = getNumberProperty(holeRecord, "ccw_rotation") ?? 0
       const rotationRad = -(rotation * Math.PI) / 180
-
-      const minDimension = Math.min(holeWidth, holeHeight)
-      const maxAllowedRadius = Math.max(0, minDimension / 2 - RADIUS_EPSILON)
-      const roundRadius =
-        maxAllowedRadius <= 0 ? 0 : Math.min(holeHeight / 2, maxAllowedRadius)
-
-      const hole2d = roundedRectangle({
-        size: [holeWidth, holeHeight],
-        roundRadius,
-        segments,
-      })
-
-      let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
-      hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
-      if (rotationRad !== 0) {
-        hole3d = rotateZ(rotationRad, hole3d)
-      }
-      holeGeoms.push(translate([relX, relY, 0], hole3d))
+      holeGeoms.push(
+        createPillHoleWithSegments(
+          relX,
+          relY,
+          holeWidth,
+          holeHeight,
+          thickness,
+          rotationRad,
+          segments,
+        ),
+      )
       continue
     }
 
@@ -219,17 +212,16 @@ export const createHoleGeoms = (
         0
       if (!holeWidth || !holeHeight) continue
 
-      const rotate = holeHeight > holeWidth
-      const width = rotate ? holeHeight : holeWidth
-      const height = rotate ? holeWidth : holeHeight
+      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotationRad = -(rotation * Math.PI) / 180
       holeGeoms.push(
         createPillHoleWithSegments(
           relX,
           relY,
-          width,
-          height,
+          holeWidth,
+          holeHeight,
           thickness,
-          rotate,
+          rotationRad,
           segments,
         ),
       )
