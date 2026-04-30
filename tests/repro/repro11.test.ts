@@ -1,16 +1,12 @@
 import { expect, test } from "bun:test"
-import type { CircuitJson, PCBPlatedHole } from "circuit-json"
-import * as fs from "node:fs"
-import * as path from "node:path"
+import type { CircuitJson, PcbPlatedHole } from "circuit-json"
 import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
+import circuitJson from "../assets/repro11.json"
 
 test("repro11 circuit 11 3d snapshot", async () => {
-  const circuitPath = path.join(__dirname, "../../circuit (11).json")
-  const circuitData = fs.readFileSync(circuitPath, "utf-8")
-  const circuitJson: CircuitJson = JSON.parse(circuitData)
-  const interiorPlatedHole: PCBPlatedHole = {
+  const interiorPlatedHole: PcbPlatedHole = {
     type: "pcb_plated_hole",
     pcb_plated_hole_id: "repro11_interior_plated_hole",
     x: 0,
@@ -22,14 +18,20 @@ test("repro11 circuit 11 3d snapshot", async () => {
     is_covered_with_solder_mask: false,
   }
 
-  circuitJson.push(interiorPlatedHole)
+  const circuitJsonWithInteriorPlatedHole: CircuitJson = [
+    ...(circuitJson as CircuitJson),
+    interiorPlatedHole,
+  ]
 
-  const glb = await convertCircuitJsonToGltf(circuitJson, {
-    format: "glb",
-    boardTextureResolution: 1024,
-    includeModels: true,
-    showBoundingBoxes: false,
-  })
+  const glb = await convertCircuitJsonToGltf(
+    circuitJsonWithInteriorPlatedHole,
+    {
+      format: "glb",
+      boardTextureResolution: 1024,
+      includeModels: true,
+      showBoundingBoxes: false,
+    },
+  )
 
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
@@ -37,7 +39,7 @@ test("repro11 circuit 11 3d snapshot", async () => {
   expect(
     renderGLTFToPNGBufferFromGLBBuffer(
       glb as ArrayBuffer,
-      getBestCameraPosition(circuitJson),
+      getBestCameraPosition(circuitJsonWithInteriorPlatedHole),
     ),
   ).toMatchPngSnapshot(import.meta.path, "repro11-circuit-11")
 })
