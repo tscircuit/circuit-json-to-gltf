@@ -2,11 +2,7 @@ import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
-import {
-  rotateX,
-  rotateZ,
-  translate,
-} from "@jscad/modeling/src/operations/transforms"
+import { rotateZ, translate } from "@jscad/modeling/src/operations/transforms"
 import {
   polygon,
   rectangle,
@@ -20,6 +16,8 @@ import type {
   Point,
 } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
+import { cutBoardMeshOutsideBoardBoundary } from "./cut-board-mesh-outside-board-boundary"
+import { hasBoundaryCrossingLoops } from "./has-boundary-crossing-loops"
 import { normalizeLoop, signedArea, type Vec2Point } from "./geometry-loops"
 import type { BoardCutout } from "./pcb-board-cutouts"
 import {
@@ -328,6 +326,18 @@ export const createBoardMesh = (
       segments,
     }),
   ]
+
+  if (hasBoundaryCrossingLoops(outerLoop, holeLoops)) {
+    return cutBoardMeshOutsideBoardBoundary({
+      board,
+      center,
+      thickness,
+      holes,
+      platedHoles,
+      cutouts,
+      segments,
+    })
+  }
 
   return buildBoardMeshFromLoops({ outerLoop, holeLoops, thickness })
 }
