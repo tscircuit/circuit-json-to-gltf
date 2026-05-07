@@ -11,6 +11,7 @@ test("pcb-panel-cutouts", async () => {
       pcb_panel_id: "panel1",
       width: 100,
       height: 80,
+      thickness: 1.6,
       center: { x: 0, y: 0 },
       covered_with_solder_mask: true,
     },
