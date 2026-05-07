@@ -21,6 +21,7 @@ const circuitWithPcbNote: CircuitJson = [
     text: "NOTE",
     font: "tscircuit2024",
     font_size: 1.4,
+    layer: "top",
     anchor_position: { x: 0, y: 0 },
     anchor_alignment: "center",
   },
