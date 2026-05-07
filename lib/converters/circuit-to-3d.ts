@@ -520,8 +520,9 @@ export async function convertCircuitJsonTo3D(
       box.size = getBoundingBoxSize(box.mesh.boundingBox)
     }
 
-    // Only set color if mesh loading failed (fallback to simple box)
+    // Skip empty generated footprint models unless debug boxes are requested.
     if (!box.mesh) {
+      if (hasFootprinterModel && !showBoundingBoxes) continue
       box.color = componentColor
     }
 
