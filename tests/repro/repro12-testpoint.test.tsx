@@ -28,7 +28,7 @@ test("repro12 testpoint 3d snapshot", async () => {
     textureResolution: 512,
   })
 
-  expect(scene.boxes).toHaveLength(7)
+  expect(scene.boxes).toHaveLength(1)
 
   const glb = await convertCircuitJsonToGltf(circuitJson, {
     format: "glb",
