@@ -66,8 +66,18 @@ export async function convertCircuitJsonTo3D(
     color: pcbColor,
   })
 
-  // Add generic boxes for components
+  const pcbComponentIdsWithBoundingBox = new Set<string>()
+  for (const cadComponent of db.cad_component?.list?.() ?? []) {
+    if (cadComponent.show_as_bounding_box) {
+      pcbComponentIdsWithBoundingBox.add(cadComponent.pcb_component_id)
+    }
+  }
+
+  // Add generic boxes for components explicitly marked as bounding boxes
   for (const component of db.pcb_component!.list()) {
+    if (!pcbComponentIdsWithBoundingBox.has(component.pcb_component_id))
+      continue
+
     const sourceComponent = db.source_component!.get(
       component.source_component_id,
     )
