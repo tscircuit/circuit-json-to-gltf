@@ -111,5 +111,82 @@
     "source_component_id": "sw1",
     "name": "SW1",
     "display_value": "RESET"
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad1",
+    "pcb_component_id": "comp1",
+    "source_component_id": "mcu",
+    "position": { "x": 0, "y": 0, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad2",
+    "pcb_component_id": "comp2",
+    "source_component_id": "led1",
+    "position": { "x": -12, "y": 8, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad3",
+    "pcb_component_id": "comp3",
+    "source_component_id": "led2",
+    "position": { "x": 12, "y": 8, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad4",
+    "pcb_component_id": "comp4",
+    "source_component_id": "r1",
+    "position": { "x": -8, "y": -8, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad5",
+    "pcb_component_id": "comp5",
+    "source_component_id": "r2",
+    "position": { "x": 8, "y": -8, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad6",
+    "pcb_component_id": "comp6",
+    "source_component_id": "c1",
+    "position": { "x": -15, "y": 0, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
+  },
+  {
+    "type": "cad_component",
+    "cad_component_id": "cad7",
+    "pcb_component_id": "comp7",
+    "source_component_id": "sw1",
+    "position": { "x": 15, "y": 0, "z": 0.8 },
+    "rotation": { "x": 0, "y": 0, "z": 0 },
+    "model_origin_alignment": "center_of_component_on_board_surface",
+    "anchor_alignment": "center_of_component_on_board_surface",
+    "show_as_bounding_box": true
   }
 ]

@@ -17,6 +17,13 @@ test("drawFauxBoard adds board when no pcb_board exists", async () => {
       height: 6,
       layer: "top",
     },
+    {
+      type: "cad_component",
+      cad_component_id: "cad1",
+      pcb_component_id: "comp1",
+      source_component_id: "source1",
+      show_as_bounding_box: true,
+    },
   ]
 
   const withoutFauxBoard = await convertCircuitJsonTo3D(

@@ -287,6 +287,7 @@ export async function convertCircuitJsonTo3D(
   // Process CAD components (3D models)
   const cadComponents = (db.cad_component?.list?.() ?? []) as CadComponent[]
   const pcbComponentIdsWith3D = new Set<string>()
+  const pcbComponentIdsWithBoundingBox = new Set<string>()
 
   for (const cad of cadComponents) {
     const {
@@ -305,6 +306,10 @@ export async function convertCircuitJsonTo3D(
         !model_gltf_url &&
         !model_step_url,
     )
+
+    if (cad.show_as_bounding_box) {
+      pcbComponentIdsWithBoundingBox.add(cad.pcb_component_id)
+    }
 
     const hasModelSource = Boolean(
       model_stl_url ||
@@ -533,6 +538,8 @@ export async function convertCircuitJsonTo3D(
   if (showBoundingBoxes) {
     for (const component of pcbComponents) {
       if (pcbComponentIdsWith3D.has(component.pcb_component_id)) continue
+      if (!pcbComponentIdsWithBoundingBox.has(component.pcb_component_id))
+        continue
 
       const sourceComponent = db.source_component.get(
         component.source_component_id,
