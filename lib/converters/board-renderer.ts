@@ -2,6 +2,27 @@ import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import type { BoardRenderOptions } from "../types"
 
+/** W15.P4.B (EnergyCitizen fork): solder mask color preset → hex map.
+ *  Matches the BoardColor enum in @tscircuit/props (green, red, blue,
+ *  purple, black, white, yellow, not_specified). */
+const SOLDER_MASK_HEX: Record<string, { mask: string; over: string }> = {
+  green: { mask: "#0F3812", over: "#69e778ff" },
+  red: { mask: "#3a0a0a", over: "#d63232ff" },
+  blue: { mask: "#0a1a3a", over: "#3252d6ff" },
+  purple: { mask: "#1f0a3a", over: "#9a3ad6ff" },
+  black: { mask: "#0a0a0a", over: "#404040ff" },
+  white: { mask: "#e8e8e8", over: "#ffffffff" },
+  yellow: { mask: "#3a3000", over: "#e2c800ff" },
+  not_specified: { mask: "#0F3812", over: "#69e778ff" },
+}
+
+const getBoardColor = (circuitJson: CircuitJson): string => {
+  const board = (circuitJson as Array<{ type?: string; solder_mask_color?: string }>).find(
+    (x) => x?.type === "pcb_board",
+  )
+  return board?.solder_mask_color ?? "not_specified"
+}
+
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
   options: BoardRenderOptions,
@@ -15,6 +36,9 @@ export async function renderBoardLayer(
     drillColor = "rgba(0,0,0,0.5)",
     showPcbNotes = false,
   } = options
+
+  const colorKey = getBoardColor(circuitJson)
+  const colors = SOLDER_MASK_HEX[colorKey] ?? SOLDER_MASK_HEX.not_specified!
 
   const svg = convertCircuitJsonToPcbSvg(circuitJson, {
     layer,
@@ -33,8 +57,8 @@ export async function renderBoardLayer(
         bottom: silkscreenColor,
       },
       soldermaskWithCopperUnderneath: {
-        top: "#69e778ff",
-        bottom: "#69e778ff",
+        top: colors.over,
+        bottom: colors.over,
       },
       drill: drillColor,
     },
@@ -126,16 +150,18 @@ export async function renderBoardTextures(
 }> {
   // Render sequentially to avoid concurrent Resvg WASM usage
   // which causes "recursive use of an object" Rust aliasing errors
+  const colorKey = getBoardColor(circuitJson)
+  const colors = SOLDER_MASK_HEX[colorKey] ?? SOLDER_MASK_HEX.not_specified!
   const top = await renderBoardLayer(circuitJson, {
     layer: "top",
     resolution,
-    backgroundColor: "#0F3812", // Green PCB background
+    backgroundColor: colors.mask,
     showPcbNotes,
   })
   const bottom = await renderBoardLayer(circuitJson, {
     layer: "bottom",
     resolution,
-    backgroundColor: "#0F3812", // Darker green for bottom layer
+    backgroundColor: colors.mask,
     showPcbNotes,
   })
 
