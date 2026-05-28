@@ -72,7 +72,7 @@ export async function convertCircuitJsonTo3D(
   options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
   const {
-    pcbColor = "rgba(0,140,0,0.8)",
+    pcbColor: pcbColorOption,
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
     boardThickness = DEFAULT_BOARD_THICKNESS,
@@ -93,6 +93,29 @@ export async function convertCircuitJsonTo3D(
 
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
   const pcbBoard = db.pcb_board?.list?.()[0]
+
+  /** W15.P4.B (EnergyCitizen fork): solder mask color dispatch.
+   *
+   *  Priority: explicit `pcbColor` option > pcb_board.solder_mask_color
+   *  (preset enum from @tscircuit/props BoardColor) > stock green.
+   *  Preset mapping uses standard PCB fab finish colors.
+   */
+  const SOLDER_MASK_COLOR_MAP: Record<string, string> = {
+    green: "rgba(0,140,0,0.85)",
+    red: "rgba(180,30,30,0.85)",
+    blue: "rgba(20,60,180,0.85)",
+    purple: "rgba(110,40,160,0.85)",
+    black: "rgba(20,20,20,0.95)",
+    white: "rgba(235,235,235,0.95)",
+    yellow: "rgba(220,200,30,0.9)",
+    not_specified: "rgba(0,140,0,0.8)",
+  }
+  const boardSolderMaskColor =
+    (pcbBoard as { solder_mask_color?: string } | undefined)?.solder_mask_color
+  const pcbColor =
+    pcbColorOption ??
+    (boardSolderMaskColor && SOLDER_MASK_COLOR_MAP[boardSolderMaskColor]) ??
+    SOLDER_MASK_COLOR_MAP.not_specified
   const pcbComponents = db.pcb_component?.list?.() ?? []
 
   // Panels don't have thickness, so always use board's thickness as fallback
