@@ -27,7 +27,7 @@ test("repro for silkscreencircle ", async () => {
 
   // Render the GLB to PNG with camera position derived from circuit dimensions
 
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })

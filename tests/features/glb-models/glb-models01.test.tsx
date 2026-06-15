@@ -23,7 +23,7 @@ test("glb-models01", async () => {
     format: "glb",
   })
 
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })

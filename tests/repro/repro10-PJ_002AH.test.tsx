@@ -122,7 +122,7 @@ test("PJ_002AH glb snapshot", async () => {
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 }, 10_000)

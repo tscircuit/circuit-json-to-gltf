@@ -35,7 +35,7 @@ test("STEP CAD Model should be included in GLTF output", async () => {
 
   // Render the GLB to PNG with camera position derived from circuit dimensions
 
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 }, 20000)

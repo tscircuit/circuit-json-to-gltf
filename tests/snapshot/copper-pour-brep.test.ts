@@ -188,9 +188,6 @@ test("pcb-copper-pour-brep-snapshot", async () => {
     ] as const,
   }
   expect(
-    renderGLTFToPNGFromGLB(
-      glbResult as ArrayBuffer,
-      bottomCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, bottomCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-brep-bottom")
 })

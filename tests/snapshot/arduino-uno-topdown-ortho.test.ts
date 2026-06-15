@@ -27,7 +27,14 @@ test("arduino-uno-topdown-ortho-snapshot", async () => {
     renderGlbToPng(
       glbResult as ArrayBuffer,
       circuitJson,
-      { width: 2048, height: 2048, supersampling: 2, backgroundColor: [1, 1, 1], ambient: 0.55, cull: false },
+      {
+        width: 2048,
+        height: 2048,
+        supersampling: 2,
+        backgroundColor: [1, 1, 1],
+        ambient: 0.55,
+        cull: false,
+      },
       { preset: "top_down", ortho: true, aspectRatio: 1 },
     ),
   ).toMatchPngSnapshot(import.meta.path, "arduino-uno-topdown-ortho")

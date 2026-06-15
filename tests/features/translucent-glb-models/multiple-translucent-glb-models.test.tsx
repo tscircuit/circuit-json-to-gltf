@@ -74,11 +74,9 @@ test("multiple-translucent-glb-models", async () => {
     format: "glb",
   })
 
-  const pngBuffer = await renderGlbToPng(
-    glb as ArrayBuffer,
-    circuitJson,
-    { backgroundColor: [1, 1, 1] },
-  )
+  const pngBuffer = await renderGlbToPng(glb as ArrayBuffer, circuitJson, {
+    backgroundColor: [1, 1, 1],
+  })
 
   expect(pngBuffer).toMatchPngSnapshot(
     import.meta.path,

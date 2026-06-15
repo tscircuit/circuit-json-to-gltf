@@ -81,9 +81,6 @@ test("pcb-panel-cutouts", async () => {
   }
 
   expect(
-    renderGLTFToPNGFromGLB(
-      glbResult as ArrayBuffer,
-      rotatedCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, rotatedCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "pcb-panel-cutouts")
 })

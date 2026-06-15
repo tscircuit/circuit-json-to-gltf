@@ -52,7 +52,7 @@ test("repro8-scale: board with ~880 plated holes", async () => {
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
   // Render the GLB to PNG with camera position derived from circuit dimensions
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 }, 100000)

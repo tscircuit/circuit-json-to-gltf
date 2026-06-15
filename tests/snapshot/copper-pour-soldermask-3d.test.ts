@@ -176,9 +176,6 @@ test("copper pours respect soldermask coverage flag in 3D", async () => {
     ] as const,
   }
   expect(
-    renderGLTFToPNGFromGLB(
-      glbResult as ArrayBuffer,
-      bottomCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, bottomCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-soldermask-3d-bottom")
 })
