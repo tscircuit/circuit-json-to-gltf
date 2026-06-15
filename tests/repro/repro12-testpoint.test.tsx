@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
+import { renderGlbToPng } from "../helpers"
 import { Circuit } from "tscircuit"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 const Repro12Testpoint = () => (
   <board width="18mm" height="12mm">
@@ -41,9 +40,6 @@ test("repro12 testpoint 3d snapshot", async () => {
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glb as ArrayBuffer,
-      getBestCameraPosition(circuitJson),
-    ),
+    renderGlbToPng(glb as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path)
 })

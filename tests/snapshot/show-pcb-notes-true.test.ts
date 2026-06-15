@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
+import { renderGlbToPng } from "../helpers"
 import type { CircuitJson } from "circuit-json"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 const circuitWithPcbNote: CircuitJson = [
   {
@@ -36,9 +35,7 @@ test("pcb-note-visible-when-showPcbNotes-true", async () => {
     showPcbNotes: true,
   })
 
-  const cameraOptions = getBestCameraPosition(circuitWithPcbNote)
-
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
+    renderGlbToPng(glb as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path)
 })

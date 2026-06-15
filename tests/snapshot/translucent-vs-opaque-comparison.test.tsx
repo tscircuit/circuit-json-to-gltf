@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
+import { renderGlbToPng } from "../helpers"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
 test("translucent-vs-opaque-comparison", async () => {
   const circuit = new Circuit()
@@ -47,14 +46,10 @@ test("translucent-vs-opaque-comparison", async () => {
     showBoundingBoxes: false,
   })
 
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
-  const pngBuffer = await renderGLTFToPNGBufferFromGLBBuffer(
+  const pngBuffer = await renderGlbToPng(
     glb as ArrayBuffer,
-    {
-      ...cameraOptions,
-      backgroundColor: [1, 1, 1],
-    },
+    circuitJson,
+    { backgroundColor: [1, 1, 1] },
   )
 
   expect(pngBuffer).toMatchPngSnapshot(

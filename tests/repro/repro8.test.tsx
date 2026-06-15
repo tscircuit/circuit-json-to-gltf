@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../helpers"
 import { Circuit } from "tscircuit"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 /**
  * This test attempts to reproduce the scale of repro8 (~884 holes).
  * We create a grid of DIP8 chips to generate many plated holes.
@@ -53,8 +52,7 @@ test("repro8-scale: board with ~880 plated holes", async () => {
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
   // Render the GLB to PNG with camera position derived from circuit dimensions
-  const cameraOptions = getBestCameraPosition(circuitJson)
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
+    renderGlbToPng(glb as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path)
 }, 100000)

@@ -1,7 +1,6 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../helpers"
 import { convertCircuitJsonToGltf } from "../../lib/index"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import type { CircuitJson } from "circuit-json"
 import * as fs from "node:fs"
 import * as path from "node:path"
@@ -28,9 +27,8 @@ test("usb-c-flashlight-pcb-snapshot", async () => {
   expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   // Render the GLB to PNG with camera position derived from circuit dimensions
-  const cameraOptions = getBestCameraPosition(circuitJson)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGlbToPng(glbResult as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path, "usb-c-flashlight")
 })

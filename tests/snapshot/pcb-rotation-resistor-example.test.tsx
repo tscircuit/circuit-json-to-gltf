@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import { Circuit } from "tscircuit"
@@ -58,11 +58,11 @@ test("pcb rotation top-bottom resistor example with dual 3d views", async () => 
   const cameraOptions = getBestCameraPosition(circuitJson as CircuitJson)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "pcb-rotation-resistor-example-top")
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, {
       camPos: [8, -8, 8],
     }),
   ).toMatchPngSnapshot(import.meta.path, "pcb-rotation-resistor-example-bottom")

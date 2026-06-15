@@ -1,7 +1,6 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../helpers"
 import { convertCircuitJsonToGltf } from "../../lib/index"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import type { CircuitJson } from "circuit-json"
 import * as fs from "node:fs"
 import * as path from "node:path"
@@ -24,21 +23,12 @@ test("arduino-uno-topdown-ortho-snapshot", async () => {
   expect(glbResult).toBeInstanceOf(ArrayBuffer)
   expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
-  const cameraOptions = getBestCameraPosition(circuitJson, {
-    preset: "top_down",
-    ortho: true,
-    aspectRatio: 1,
-  })
-
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, {
-      ...cameraOptions,
-      width: 2048,
-      height: 2048,
-      supersampling: 2,
-      backgroundColor: [1, 1, 1],
-      ambient: 0.55,
-      cull: false,
-    }),
+    renderGlbToPng(
+      glbResult as ArrayBuffer,
+      circuitJson,
+      { width: 2048, height: 2048, supersampling: 2, backgroundColor: [1, 1, 1], ambient: 0.55, cull: false },
+      { preset: "top_down", ortho: true, aspectRatio: 1 },
+    ),
   ).toMatchPngSnapshot(import.meta.path, "arduino-uno-topdown-ortho")
 }, 60_000)

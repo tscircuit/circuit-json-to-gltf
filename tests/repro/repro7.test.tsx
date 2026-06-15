@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../helpers"
 import { Circuit } from "tscircuit"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 test("repro7: local CAD model should be included in GLTF output", async () => {
   const circuit = new Circuit()
@@ -35,9 +34,8 @@ test("repro7: local CAD model should be included in GLTF output", async () => {
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   // Render the GLB to PNG with camera position derived from circuit dimensions
-  const cameraOptions = getBestCameraPosition(circuitJson)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
+    renderGlbToPng(glb as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path)
 })

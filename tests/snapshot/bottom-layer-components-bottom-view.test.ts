@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import type { CircuitJson } from "circuit-json"
 import * as fs from "node:fs"
@@ -37,6 +37,6 @@ test("bottom-layer-components-bottom-view", async () => {
   }
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "bottom-layer-components-bottom-view")
 })

@@ -1,10 +1,9 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../helpers"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import * as fs from "node:fs"
 import * as path from "node:path"
 import type { CircuitJson } from "circuit-json"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 test("gltf-url-component-snapshot", async () => {
   // Load the fixture
@@ -28,9 +27,6 @@ test("gltf-url-component-snapshot", async () => {
   expect((glbResult as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glbResult as ArrayBuffer,
-      getBestCameraPosition(circuitJson),
-    ),
+    renderGlbToPng(glbResult as ArrayBuffer, circuitJson),
   ).toMatchPngSnapshot(import.meta.path)
 })
