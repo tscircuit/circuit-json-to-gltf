@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGlbToPng } from "../../helpers"
+import { renderGlbToPng } from "../../renderGlbToPng"
 import { convertCircuitJsonToGltf } from "../../../lib/index"
 import type { CircuitJson } from "circuit-json"
 import * as fs from "node:fs"

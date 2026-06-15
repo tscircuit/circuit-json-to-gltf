@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { renderGlbToPng } from "../helpers"
+import { renderGlbToPng } from "../renderGlbToPng"
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToGltf } from "../../lib"
 

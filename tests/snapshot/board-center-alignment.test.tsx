@@ -1,7 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { renderGlbToPng } from "../helpers"
+import { renderGlbToPng } from "../renderGlbToPng"
 
 test("board-center-alignment-3d-view", async () => {
   const circuit = new Circuit()

@@ -1,6 +1,6 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
-import { renderGlbToPng } from "../helpers"
+import { renderGlbToPng } from "../renderGlbToPng"
 import { convertCircuitJsonToGltf } from "../../lib"
 
 test("pinheader-double-row-snapshot", async () => {

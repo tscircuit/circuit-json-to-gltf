@@ -2,7 +2,7 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf } from "../../../lib"
-import { renderGlbToPng } from "../../helpers"
+import { renderGlbToPng } from "../../renderGlbToPng"
 
 test("models-from-footprint-strings-without-board", async () => {
   const circuit = new Circuit()
