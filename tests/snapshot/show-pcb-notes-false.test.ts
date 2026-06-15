@@ -35,7 +35,7 @@ test("pcb-note-hidden-when-showPcbNotes-false", async () => {
     showPcbNotes: false,
   })
 
-  expect(
-    renderGlbToPng(glb as ArrayBuffer, circuitJson),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitWithPcbNote)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })
