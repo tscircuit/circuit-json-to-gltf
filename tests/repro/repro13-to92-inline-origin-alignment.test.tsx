@@ -37,7 +37,7 @@ async function getTo92InlineCircuitJson() {
   return circuit.getCircuitJson()
 }
 
-test("repro13: TO-92 KiCad STEP model shows the inferred-origin offset bug", async () => {
+test("repro13: TO-92 KiCad STEP model should align to the footprint origin", async () => {
   const circuitJson = await getTo92InlineCircuitJson()
 
   const platedHoles = circuitJson.filter(
@@ -73,12 +73,10 @@ test("repro13: TO-92 KiCad STEP model shows the inferred-origin offset bug", asy
   const contactMinZ = Math.min(...contactVertices.map((vertex) => vertex.z))
   const contactMaxZ = Math.max(...contactVertices.map((vertex) => vertex.z))
 
-  // Repro for a circuit-json-to-gltf bug: when
-  // `center_of_component_on_board_surface` is used without an explicit
-  // `model_origin_position`, the current implementation leaves the STEP mesh at
-  // its raw local origin instead of re-centering it to the footprint origin.
+  // The STEP model should keep its board-surface height plane while its
+  // through-hole contact patch is centered on the footprint origin.
   expect(bounds.min.y).toBeCloseTo(-2.5, 6)
-  expect((contactMinX + contactMaxX) / 2).toBeCloseTo(1.27, 6)
+  expect((contactMinX + contactMaxX) / 2).toBeCloseTo(0, 6)
   expect((contactMinZ + contactMaxZ) / 2).toBeCloseTo(0, 6)
 })
 
