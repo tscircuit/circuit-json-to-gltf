@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import type { CadComponent } from "circuit-json"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { Circuit } from "tscircuit"
 import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
 import to92InlineFootprint from "../assets/TO-92_Inline.json"
@@ -94,7 +94,7 @@ test("repro13: TO-92 KiCad STEP model snapshot", async () => {
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
+    renderGLTFToPNGFromGLB(
       glb as ArrayBuffer,
       getBestCameraPosition(circuitJson),
     ),
