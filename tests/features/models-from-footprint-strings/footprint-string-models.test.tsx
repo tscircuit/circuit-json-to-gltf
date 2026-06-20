@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
-import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../../lib"
-import { getBestCameraPosition } from "../../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../../renderGlbToPng"
+import { convertCircuitJsonToGltf } from "../../../lib"
 
 test("models-from-footprint-strings", async () => {
   const circuit = new Circuit()
@@ -18,9 +17,7 @@ test("models-from-footprint-strings", async () => {
     format: "glb",
   })
 
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
-  expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })

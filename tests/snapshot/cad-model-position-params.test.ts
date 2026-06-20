@@ -2,7 +2,7 @@ import { test, expect } from "bun:test"
 import { mkdir } from "node:fs/promises"
 import { dirname, join } from "node:path"
 import type { CircuitJson } from "circuit-json"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
@@ -251,7 +251,7 @@ test("cad-model-position-params-with-silkscreen", async () => {
   }
 
   const cameraOptions = getBestCameraPosition(circuitJson)
-  const pngBuffer = await renderGLTFToPNGBufferFromGLBBuffer(glb, {
+  const pngBuffer = await renderGLTFToPNGFromGLB(glb, {
     ...cameraOptions,
     camPos: [
       cameraOptions.camPos[0] * 0.74,

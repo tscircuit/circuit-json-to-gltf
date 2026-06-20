@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
+import { renderGlbToPng } from "../../renderGlbToPng"
 import { convertCircuitJsonToGltf } from "../../../lib"
-import { getBestCameraPosition } from "../../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
 test("multiple-translucent-glb-models", async () => {
   const circuit = new Circuit()
@@ -75,15 +74,9 @@ test("multiple-translucent-glb-models", async () => {
     format: "glb",
   })
 
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
-  const pngBuffer = await renderGLTFToPNGBufferFromGLBBuffer(
-    glb as ArrayBuffer,
-    {
-      ...cameraOptions,
-      backgroundColor: [1, 1, 1],
-    },
-  )
+  const pngBuffer = await renderGlbToPng(glb as ArrayBuffer, circuitJson, {
+    backgroundColor: [1, 1, 1],
+  })
 
   expect(pngBuffer).toMatchPngSnapshot(
     import.meta.path,

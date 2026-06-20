@@ -1,8 +1,7 @@
 import { expect, test } from "bun:test"
+import { renderGlbToPng } from "../renderGlbToPng"
 import type { CircuitJson, PcbPlatedHole } from "circuit-json"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import circuitJson from "../assets/repro11.json"
 
 test("repro11 circuit 11 3d snapshot", async () => {
@@ -37,9 +36,6 @@ test("repro11 circuit 11 3d snapshot", async () => {
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glb as ArrayBuffer,
-      getBestCameraPosition(circuitJsonWithInteriorPlatedHole),
-    ),
+    renderGlbToPng(glb as ArrayBuffer, circuitJsonWithInteriorPlatedHole),
   ).toMatchPngSnapshot(import.meta.path, "repro11-circuit-11")
 })

@@ -1,5 +1,5 @@
 import { expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import {
   getBestCameraPosition,
@@ -181,7 +181,7 @@ export async function expectAtmegaPresetSnapshot(
   })
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult, {
+    renderGLTFToPNGFromGLB(glbResult, {
       ...cameraOptions,
       width: 512,
       height: 512,

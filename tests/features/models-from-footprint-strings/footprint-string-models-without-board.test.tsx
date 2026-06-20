@@ -2,8 +2,7 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf } from "../../../lib"
-import { getBestCameraPosition } from "../../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../../renderGlbToPng"
 
 test("models-from-footprint-strings-without-board", async () => {
   const circuit = new Circuit()
@@ -22,11 +21,9 @@ test("models-from-footprint-strings-without-board", async () => {
     format: "glb",
   })
 
-  const cameraOptions = getBestCameraPosition(circuitJsonWithoutBoard)
-
-  const pngBuffer = await renderGLTFToPNGBufferFromGLBBuffer(
+  const pngBuffer = await renderGlbToPng(
     glb as ArrayBuffer,
-    cameraOptions,
+    circuitJsonWithoutBoard,
   )
 
   const normalizedBuffer = Buffer.isBuffer(pngBuffer)

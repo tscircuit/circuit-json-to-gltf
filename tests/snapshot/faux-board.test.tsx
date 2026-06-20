@@ -2,7 +2,7 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 
 test("faux-board-snapshot", async () => {
   const circuit = new Circuit()
@@ -44,6 +44,6 @@ test("faux-board-snapshot", async () => {
   }
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGFromGLB(glb as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path)
 })

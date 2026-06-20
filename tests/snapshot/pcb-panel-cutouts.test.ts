@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToGltf } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
@@ -81,9 +81,6 @@ test("pcb-panel-cutouts", async () => {
   }
 
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glbResult as ArrayBuffer,
-      rotatedCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, rotatedCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "pcb-panel-cutouts")
 })

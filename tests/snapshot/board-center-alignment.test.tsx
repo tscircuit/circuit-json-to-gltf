@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGlbToPng } from "../renderGlbToPng"
 
 test("board-center-alignment-3d-view", async () => {
   const circuit = new Circuit()
@@ -48,12 +47,7 @@ test("board-center-alignment-3d-view", async () => {
     showBoundingBoxes: false,
   })
 
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
-  const pngBuffer = await renderGLTFToPNGBufferFromGLBBuffer(
-    glb as ArrayBuffer,
-    cameraOptions,
-  )
+  const pngBuffer = await renderGlbToPng(glb as ArrayBuffer, circuitJson)
 
   expect(pngBuffer).toMatchPngSnapshot(
     import.meta.path,

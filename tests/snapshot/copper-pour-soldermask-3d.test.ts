@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import type {
@@ -163,7 +163,7 @@ test("copper pours respect soldermask coverage flag in 3D", async () => {
 
   // TOP VIEW
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-soldermask-3d-top")
 
   // BOTTOM VIEW
@@ -176,9 +176,6 @@ test("copper pours respect soldermask coverage flag in 3D", async () => {
     ] as const,
   }
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glbResult as ArrayBuffer,
-      bottomCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, bottomCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-soldermask-3d-bottom")
 })

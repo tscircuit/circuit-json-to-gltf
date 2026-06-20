@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
+import { renderGlbToPng } from "../renderGlbToPng"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 import type { ChipProps } from "@tscircuit/props"
 
 const pinLabels = {
@@ -501,10 +500,7 @@ test("STM32F100C8T6B glb snapshot", async () => {
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
-  expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glb as ArrayBuffer,
-      getBestCameraPosition(circuitJson),
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 }, 10_000)

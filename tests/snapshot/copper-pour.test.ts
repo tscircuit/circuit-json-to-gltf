@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib/index"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import type { CircuitJson } from "circuit-json"
@@ -58,7 +58,7 @@ test("pcb-copper-pour-snapshot", async () => {
 
   // TOP VIEW
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glbResult as ArrayBuffer, cameraOptions),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-top")
 
   // BOTTOM VIEW
@@ -71,9 +71,6 @@ test("pcb-copper-pour-snapshot", async () => {
     ] as const,
   }
   expect(
-    renderGLTFToPNGBufferFromGLBBuffer(
-      glbResult as ArrayBuffer,
-      bottomCameraOptions,
-    ),
+    renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, bottomCameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "copper-pour-bottom")
 })

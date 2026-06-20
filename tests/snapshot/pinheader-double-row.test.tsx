@@ -1,8 +1,7 @@
 import { Circuit } from "tscircuit"
 import { test, expect } from "bun:test"
+import { renderGlbToPng } from "../renderGlbToPng"
 import { convertCircuitJsonToGltf } from "../../lib"
-import { getBestCameraPosition } from "../../lib/utils/camera-position"
-import { renderGLTFToPNGBufferFromGLBBuffer } from "poppygl"
 
 test("pinheader-double-row-snapshot", async () => {
   const circuit = new Circuit()
@@ -24,9 +23,7 @@ test("pinheader-double-row-snapshot", async () => {
   expect(glb).toBeInstanceOf(ArrayBuffer)
   expect((glb as ArrayBuffer).byteLength).toBeGreaterThan(0)
 
-  const cameraOptions = getBestCameraPosition(circuitJson)
-
-  expect(
-    renderGLTFToPNGBufferFromGLBBuffer(glb as ArrayBuffer, cameraOptions),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })
