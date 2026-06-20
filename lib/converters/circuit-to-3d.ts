@@ -502,7 +502,7 @@ export async function convertCircuitJsonTo3D(
         cad.model_board_normal_direction,
       )
 
-      const meshOrigin = getMeshOrigin(cad, box.mesh.boundingBox, {
+      const meshOrigin = getMeshOrigin(cad, box.mesh, {
         loaderTransform: defaultTransform,
         modelBoardNormalDirection: cad.model_board_normal_direction,
       })

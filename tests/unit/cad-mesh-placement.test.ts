@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { getMeshOrigin } from "../../lib/utils/cad-mesh-placement"
 
-test("getMeshOrigin ignores inferred alignment without explicit origin position", () => {
+test("getMeshOrigin infers board-surface origin from the contact patch", () => {
   const origin = getMeshOrigin(
     {
       type: "cad_component",
@@ -14,12 +14,32 @@ test("getMeshOrigin ignores inferred alignment without explicit origin position"
       model_origin_alignment: "center_of_component_on_board_surface",
     },
     {
-      min: { x: -2, y: -3, z: -4 },
-      max: { x: 6, y: 7, z: 8 },
+      triangles: [
+        {
+          vertices: [
+            { x: -2, y: -3, z: -1 },
+            { x: 6, y: -3, z: -1 },
+            { x: -2, y: -3, z: 1 },
+          ],
+          normal: { x: 0, y: -1, z: 0 },
+        },
+        {
+          vertices: [
+            { x: 6, y: -3, z: -1 },
+            { x: 6, y: -3, z: 1 },
+            { x: -2, y: -3, z: 1 },
+          ],
+          normal: { x: 0, y: -1, z: 0 },
+        },
+      ],
+      boundingBox: {
+        min: { x: -2, y: -3, z: -4 },
+        max: { x: 6, y: 7, z: 8 },
+      },
     },
   )
 
-  expect(origin).toEqual({ x: 0, y: 0, z: 0 })
+  expect(origin).toEqual({ x: 2, y: 0, z: 0 })
 })
 
 test("getMeshOrigin returns explicit model origin position", () => {
@@ -36,8 +56,11 @@ test("getMeshOrigin returns explicit model origin position", () => {
       model_origin_position: { x: 1, y: 2, z: 3 },
     },
     {
-      min: { x: -2, y: -3, z: -4 },
-      max: { x: 6, y: 7, z: 8 },
+      triangles: [],
+      boundingBox: {
+        min: { x: -2, y: -3, z: -4 },
+        max: { x: 6, y: 7, z: 8 },
+      },
     },
   )
 

@@ -48,9 +48,65 @@ export function getMeshWithBoardNormalTransform<T extends STLMesh | OBJMesh>(
   )
 }
 
+function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
+  const minY = mesh.boundingBox.min.y
+  const height = mesh.boundingBox.max.y - minY
+  const tolerance = Math.max(1e-6, height * 1e-5)
+
+  let minX = Infinity
+  let maxX = -Infinity
+  let minZ = Infinity
+  let maxZ = -Infinity
+  let hasContactVertex = false
+
+  for (const triangle of mesh.triangles) {
+    for (const vertex of triangle.vertices) {
+      if (Math.abs(vertex.y - minY) > tolerance) continue
+
+      hasContactVertex = true
+      minX = Math.min(minX, vertex.x)
+      maxX = Math.max(maxX, vertex.x)
+      minZ = Math.min(minZ, vertex.z)
+      maxZ = Math.max(maxZ, vertex.z)
+    }
+  }
+
+  if (!hasContactVertex) return null
+
+  return {
+    min: { x: minX, y: minY, z: minZ },
+    max: { x: maxX, y: minY, z: maxZ },
+  }
+}
+
+function getInferredMeshOrigin(
+  cad: CadComponent,
+  mesh: STLMesh | OBJMesh,
+): Point3 {
+  const meshBounds = mesh.boundingBox
+  const alignment = cad.model_origin_alignment ?? cad.anchor_alignment
+
+  if (alignment === "center_of_component_on_board_surface") {
+    const contactBounds = getBoardContactBounds(mesh)
+    const center = getBoundingBoxCenter(contactBounds ?? meshBounds)
+
+    return {
+      x: center.x,
+      y: 0,
+      z: center.z,
+    }
+  }
+
+  if (alignment === "center") {
+    return getBoundingBoxCenter(meshBounds)
+  }
+
+  return { x: 0, y: 0, z: 0 }
+}
+
 export function getMeshOrigin(
   cad: CadComponent,
-  meshBounds: { min: Point3; max: Point3 },
+  mesh: STLMesh | OBJMesh,
   options?: {
     loaderTransform?: CoordinateTransformConfig
     modelBoardNormalDirection?: CadComponent["model_board_normal_direction"]
@@ -77,7 +133,7 @@ export function getMeshOrigin(
     return origin
   }
 
-  return { x: 0, y: 0, z: 0 }
+  return getInferredMeshOrigin(cad, mesh)
 }
 
 export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(
