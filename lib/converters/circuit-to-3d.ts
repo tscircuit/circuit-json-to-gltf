@@ -55,6 +55,60 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
+type PcbComponentRotationSource = {
+  rotation?: number
+  ccw_rotation?: number
+} | null
+
+function getPcbComponentRotationDegrees(
+  pcbComponent: PcbComponentRotationSource | undefined,
+): number {
+  const rotation = pcbComponent?.rotation ?? pcbComponent?.ccw_rotation
+  return typeof rotation === "number" && Number.isFinite(rotation)
+    ? rotation
+    : 0
+}
+
+export function getCadComponentSceneRotation({
+  cad,
+  pcbComponent,
+  isBottomLayer,
+  usesGlbModelRotation,
+}: {
+  cad: Pick<CadComponent, "rotation">
+  pcbComponent?: PcbComponentRotationSource
+  isBottomLayer: boolean
+  usesGlbModelRotation: boolean
+}): Point3 | undefined {
+  if (cad.rotation) {
+    // Circuit JSON uses Z-up, while scene meshes use Y-up after conversion.
+    return convertRotationFromCadRotation({
+      x: cad.rotation.x,
+      y: cad.rotation.z,
+      z: cad.rotation.y,
+    })
+  }
+
+  const pcbRotation = getPcbComponentRotationDegrees(pcbComponent)
+  const boardRotation = isBottomLayer ? -pcbRotation : pcbRotation
+
+  if (isBottomLayer) {
+    return convertRotationFromCadRotation({
+      x: usesGlbModelRotation ? 0 : 180,
+      y: boardRotation,
+      z: usesGlbModelRotation ? 180 : 0,
+    })
+  }
+
+  if (boardRotation === 0) return undefined
+
+  return convertRotationFromCadRotation({
+    x: 0,
+    y: boardRotation,
+    z: 0,
+  })
+}
+
 function convertCadSizeToSceneSize(size: { x: number; y: number; z: number }): {
   x: number
   y: number
@@ -397,32 +451,14 @@ export async function convertCircuitJsonTo3D(
       box.meshType = meshType as any
     }
 
-    // Add rotation if specified
-    if (cad.rotation) {
-      // For GLB/GLTF models, we need to remap rotation axes because the coordinate
-      // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
-      // model uses Y-up.
-      box.rotation = convertRotationFromCadRotation({
-        x: cad.rotation.x,
-        y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
-        z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
-      })
-    } else if (isBottomLayer) {
-      // If no rotation specified but component is on bottom, flip it
-      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
-        box.rotation = convertRotationFromCadRotation({
-          x: 0,
-          y: 0,
-          z: 180, // Flip via Z rotation for GLB models (matches circuit JSON convention)
-        })
-      } else {
-        box.rotation = convertRotationFromCadRotation({
-          x: 180,
-          y: 0,
-          z: 0,
-        })
-      }
-    }
+    box.rotation = getCadComponentSceneRotation({
+      cad,
+      pcbComponent,
+      isBottomLayer,
+      usesGlbModelRotation: Boolean(
+        model_glb_url || model_gltf_url || hasFootprinterModel,
+      ),
+    })
 
     // Try to load the mesh with default coordinate transform if none specified
     // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
