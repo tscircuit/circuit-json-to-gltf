@@ -10,6 +10,7 @@ import type {
 import { loadFootprinterModel } from "../loaders/footprinter"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
+import { loadJscadPlan } from "../loaders/jscad-plan"
 import { loadOBJ } from "../loaders/obj"
 import { loadSTEP } from "../loaders/step"
 import { loadSTL } from "../loaders/stl"
@@ -295,6 +296,7 @@ export async function convertCircuitJsonTo3D(
       model_obj_url,
       model_glb_url,
       model_gltf_url,
+      model_jscad,
       model_step_url,
     } = cad
 
@@ -304,6 +306,7 @@ export async function convertCircuitJsonTo3D(
         !model_obj_url &&
         !model_glb_url &&
         !model_gltf_url &&
+        !model_jscad &&
         !model_step_url,
     )
 
@@ -316,6 +319,7 @@ export async function convertCircuitJsonTo3D(
         model_obj_url ||
         model_glb_url ||
         model_gltf_url ||
+        model_jscad ||
         model_step_url ||
         hasFootprinterModel,
     )
@@ -485,6 +489,9 @@ export async function convertCircuitJsonTo3D(
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
       }
+    } else if (model_jscad) {
+      box.mesh = loadJscadPlan(model_jscad)
+      box.color = componentColor
     } else if (hasFootprinterModel && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(
         cad.footprinter_string,

@@ -52,6 +52,7 @@ export {
 export { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 export { convertSceneToGLTF } from "./converters/scene-to-gltf"
 export { clearGLBCache, loadGLB } from "./loaders/glb"
+export { loadJscadPlan } from "./loaders/jscad-plan"
 export { clearOBJCache, loadOBJ } from "./loaders/obj"
 // Re-export loaders
 export { clearSTLCache, loadSTL } from "./loaders/stl"
