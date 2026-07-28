@@ -124,6 +124,19 @@ const createPillHoleWithSegments = (
   return translate([x, y, 0], hole3d)
 }
 
+const createRectHole = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+): Geom3 => {
+  const hole2d = rectangle({ size: [width, height] })
+  let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
+  hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
+  return translate([x, y, 0], hole3d)
+}
+
 export const createHoleGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
@@ -138,6 +151,17 @@ export const createHoleGeoms = (
     const relX = hole.x - boardCenter.x
     const relY = -(hole.y - boardCenter.y)
     const holeShape = holeRecord.hole_shape as string | undefined
+
+    if (holeShape === "rect") {
+      const holeWidth = getNumberProperty(holeRecord, "hole_width")
+      const holeHeight = getNumberProperty(holeRecord, "hole_height")
+      if (!holeWidth || !holeHeight) continue
+
+      holeGeoms.push(
+        createRectHole(relX, relY, holeWidth, holeHeight, thickness),
+      )
+      continue
+    }
 
     if (holeShape === "pill") {
       const holeWidth = getNumberProperty(holeRecord, "hole_width")
