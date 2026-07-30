@@ -91,6 +91,33 @@ export const createCircleLoop = ({
   return points
 }
 
+export const createEllipseLoop = ({
+  center,
+  width,
+  height,
+  segments,
+}: {
+  center: Vec2Point
+  width: number
+  height: number
+  segments: number
+}): Vec2Point[] => {
+  const points: Vec2Point[] = []
+  const count = Math.max(8, segments)
+  const rx = width / 2
+  const ry = height / 2
+
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2
+    points.push({
+      x: center.x + Math.cos(angle) * rx,
+      y: center.y + Math.sin(angle) * ry,
+    })
+  }
+
+  return points
+}
+
 export const createRectLoop = ({
   width,
   height,
