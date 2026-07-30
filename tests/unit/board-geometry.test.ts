@@ -3,7 +3,7 @@ import type {
   CircuitJson,
   PcbBoard,
   PcbHole,
-  PCBPlatedHole,
+  PcbPlatedHole,
 } from "circuit-json"
 import { createBoardMesh } from "../../lib/utils/pcb-board-geometry"
 import { convertCircuitJsonTo3D } from "../../lib/converters/circuit-to-3d"
@@ -56,7 +56,7 @@ test("createBoardMesh subtracts drilled and plated holes", () => {
     },
   ]
 
-  const platedHoles: PCBPlatedHole[] = [
+  const platedHoles: PcbPlatedHole[] = [
     {
       type: "pcb_plated_hole",
       pcb_plated_hole_id: "ph1",
@@ -93,6 +93,54 @@ test("createBoardMesh subtracts drilled and plated holes", () => {
 
   expect(topArea).toBeCloseTo(expectedArea, 1)
 })
+
+test("createBoardMesh subtracts rectangular holes", () => {
+  const board = {
+    type: "pcb_board",
+    pcb_board_id: "rect_hole_board",
+    center: { x: 0, y: 0 },
+    width: 30,
+    height: 20,
+    thickness: 1.4,
+    num_layers: 2,
+    material: "fr4",
+  } as PcbBoard
+  const rectangularHole = {
+    type: "pcb_hole",
+    pcb_hole_id: "rect_hole",
+    x: 0,
+    y: 0,
+    hole_shape: "rect",
+    hole_width: 5,
+    hole_height: 2,
+  } as unknown as PcbHole
+
+  const mesh = createBoardMesh(board, {
+    thickness: board.thickness ?? 1.4,
+    holes: [rectangularHole],
+  })
+
+  const topArea = mesh.triangles
+    .filter((triangle) => triangle.normal.y > 0.9)
+    .reduce((sum, triangle) => {
+      const [a, b, c] = triangle.vertices
+      return sum + triangleArea(a, b, c)
+    }, 0)
+
+  expect(topArea).toBeCloseTo(30 * 20 - 5 * 2, 6)
+
+  const rectangularHoleWallTriangles = mesh.triangles.filter(
+    (triangle) =>
+      Math.abs(triangle.normal.y) < 0.1 &&
+      triangle.vertices.every(
+        (vertex) =>
+          (Math.abs(vertex.x) === 2.5 && Math.abs(vertex.z) <= 1) ||
+          (Math.abs(vertex.z) === 1 && Math.abs(vertex.x) <= 2.5),
+      ),
+  )
+  expect(rectangularHoleWallTriangles).toHaveLength(8)
+})
+
 test("convertCircuitJsonTo3D includes board mesh for outline boards", async () => {
   const board: PcbBoard = {
     type: "pcb_board",
@@ -112,7 +160,7 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
     ],
   }
 
-  const platedHoles: PCBPlatedHole[] = [
+  const platedHoles: PcbPlatedHole[] = [
     {
       type: "pcb_plated_hole",
       pcb_plated_hole_id: "outline_via",

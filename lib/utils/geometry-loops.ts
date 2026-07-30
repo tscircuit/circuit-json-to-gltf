@@ -91,6 +91,19 @@ export const createCircleLoop = ({
   return points
 }
 
+export const createRectLoop = ({
+  width,
+  height,
+}: {
+  width: number
+  height: number
+}): Vec2Point[] => [
+  { x: -width / 2, y: -height / 2 },
+  { x: width / 2, y: -height / 2 },
+  { x: width / 2, y: height / 2 },
+  { x: -width / 2, y: height / 2 },
+]
+
 export const createRoundedRectLoop = ({
   width,
   height,
