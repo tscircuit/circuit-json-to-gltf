@@ -7,13 +7,7 @@ test("rect-hole-snapshot", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm">
-      <hole
-        shape="rect"
-        width="6mm"
-        height="3mm"
-        pcbX={0}
-        pcbY={0}
-      />
+      <hole shape="rect" width="6mm" height="3mm" pcbX={0} pcbY={0} />
     </board>,
   )
 
