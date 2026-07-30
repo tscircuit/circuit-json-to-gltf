@@ -189,6 +189,44 @@ test("createBoardMesh subtracts oval holes", () => {
   expect(ovalHoleWallTriangles.length).toBeGreaterThan(0)
 })
 
+test("createBoardMesh subtracts plated oval holes using emitted outer dimensions", () => {
+  const board = {
+    type: "pcb_board",
+    pcb_board_id: "plated_oval_hole_board",
+    center: { x: 0, y: 0 },
+    width: 30,
+    height: 20,
+    thickness: 1.4,
+    num_layers: 2,
+    material: "fr4",
+  } as PcbBoard
+  const platedOvalHole = {
+    type: "pcb_plated_hole",
+    pcb_plated_hole_id: "plated_oval_hole",
+    x: 0,
+    y: 0,
+    shape: "oval",
+    outer_width: 3,
+    outer_height: 2,
+    layers: ["top", "bottom"],
+  } as unknown as PcbPlatedHole
+
+  const mesh = createBoardMesh(board, {
+    thickness: board.thickness ?? 1.4,
+    platedHoles: [platedOvalHole],
+  })
+
+  const topArea = mesh.triangles
+    .filter((triangle) => triangle.normal.y > 0.9)
+    .reduce((sum, triangle) => {
+      const [a, b, c] = triangle.vertices
+      return sum + triangleArea(a, b, c)
+    }, 0)
+
+  const expectedOvalArea = Math.PI * (3 / 2) * (2 / 2)
+  expect(topArea).toBeCloseTo(30 * 20 - expectedOvalArea, 0)
+})
+
 test("convertCircuitJsonTo3D includes board mesh for outline boards", async () => {
   const board: PcbBoard = {
     type: "pcb_board",
