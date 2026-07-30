@@ -145,6 +145,7 @@ const createEllipseHole = (
   height: number,
   thickness: number,
   segments: number,
+  rotationRad: number = 0,
 ): Geom3 => {
   const points = createEllipseLoop({
     center: { x: 0, y: 0 },
@@ -155,6 +156,11 @@ const createEllipseHole = (
   const hole2d = polygon({ points })
   let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
   hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
+
+  if (rotationRad !== 0) {
+    hole3d = rotateZ(rotationRad, hole3d)
+  }
+
   return translate([x, y, 0], hole3d)
 }
 
@@ -261,6 +267,37 @@ export const createHoleGeoms = (
     const holeOffsetY = getNumberProperty(platedRecord, "hole_offset_y") ?? 0
     const relX = plated.x - boardCenter.x + holeOffsetX
     const relY = -(plated.y - boardCenter.y + holeOffsetY)
+
+    if (plated.shape === "oval") {
+      const holeWidth =
+        getNumberProperty(platedRecord, "hole_width") ??
+        getNumberProperty(platedRecord, "outer_width") ??
+        getNumberProperty(platedRecord, "hole_diameter") ??
+        getNumberProperty(platedRecord, "outer_diameter") ??
+        0
+      const holeHeight =
+        getNumberProperty(platedRecord, "hole_height") ??
+        getNumberProperty(platedRecord, "outer_height") ??
+        getNumberProperty(platedRecord, "hole_diameter") ??
+        getNumberProperty(platedRecord, "outer_diameter") ??
+        0
+      if (!holeWidth || !holeHeight) continue
+
+      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotationRad = -(rotation * Math.PI) / 180
+      holeGeoms.push(
+        createEllipseHole(
+          relX,
+          relY,
+          holeWidth,
+          holeHeight,
+          thickness,
+          segments,
+          rotationRad,
+        ),
+      )
+      continue
+    }
 
     if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
       const holeWidth =
