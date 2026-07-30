@@ -141,6 +141,54 @@ test("createBoardMesh subtracts rectangular holes", () => {
   expect(rectangularHoleWallTriangles).toHaveLength(8)
 })
 
+test("createBoardMesh subtracts oval holes", () => {
+  const board = {
+    type: "pcb_board",
+    pcb_board_id: "oval_hole_board",
+    center: { x: 0, y: 0 },
+    width: 30,
+    height: 20,
+    thickness: 1.4,
+    num_layers: 2,
+    material: "fr4",
+  } as PcbBoard
+  const ovalHole = {
+    type: "pcb_hole",
+    pcb_hole_id: "oval_hole",
+    x: 0,
+    y: 0,
+    hole_shape: "oval",
+    hole_width: 5,
+    hole_height: 2.5,
+  } as unknown as PcbHole
+
+  const mesh = createBoardMesh(board, {
+    thickness: board.thickness ?? 1.4,
+    holes: [ovalHole],
+  })
+
+  const topArea = mesh.triangles
+    .filter((triangle) => triangle.normal.y > 0.9)
+    .reduce((sum, triangle) => {
+      const [a, b, c] = triangle.vertices
+      return sum + triangleArea(a, b, c)
+    }, 0)
+
+  const expectedOvalArea = Math.PI * (5 / 2) * (2.5 / 2)
+  expect(topArea).toBeCloseTo(30 * 20 - expectedOvalArea, 0)
+
+  const ovalHoleWallTriangles = mesh.triangles.filter(
+    (triangle) =>
+      Math.abs(triangle.normal.y) < 0.1 &&
+      triangle.vertices.some(
+        (vertex) =>
+          Math.abs(Math.abs(vertex.x) - 2.5) < 0.15 ||
+          Math.abs(Math.abs(vertex.z) - 1.25) < 0.15,
+      ),
+  )
+  expect(ovalHoleWallTriangles.length).toBeGreaterThan(0)
+})
+
 test("convertCircuitJsonTo3D includes board mesh for outline boards", async () => {
   const board: PcbBoard = {
     type: "pcb_board",

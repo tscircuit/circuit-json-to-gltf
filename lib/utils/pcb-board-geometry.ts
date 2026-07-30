@@ -19,6 +19,7 @@ import type { BoundingBox, STLMesh, Triangle } from "../types"
 import { cutBoardMeshOutsideBoardBoundary } from "./cut-board-mesh-outside-board-boundary"
 import { hasBoundaryCrossingLoops } from "./has-boundary-crossing-loops"
 import { normalizeLoop, signedArea, type Vec2Point } from "./geometry-loops"
+import { createEllipseLoop } from "./geometry-loops"
 import type { BoardCutout } from "./pcb-board-cutouts"
 import {
   arePointsClockwise,
@@ -137,6 +138,26 @@ const createRectHole = (
   return translate([x, y, 0], hole3d)
 }
 
+const createEllipseHole = (
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  thickness: number,
+  segments: number,
+): Geom3 => {
+  const points = createEllipseLoop({
+    center: { x: 0, y: 0 },
+    width,
+    height,
+    segments,
+  }).map((point) => [point.x, point.y] as Vec2)
+  const hole2d = polygon({ points })
+  let hole3d = extrudeLinear({ height: thickness + 1 }, hole2d)
+  hole3d = translate([0, 0, -(thickness + 1) / 2], hole3d)
+  return translate([x, y, 0], hole3d)
+}
+
 export const createHoleGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
@@ -159,6 +180,24 @@ export const createHoleGeoms = (
 
       holeGeoms.push(
         createRectHole(relX, relY, holeWidth, holeHeight, thickness),
+      )
+      continue
+    }
+
+    if (holeShape === "oval") {
+      const holeWidth = getNumberProperty(holeRecord, "hole_width")
+      const holeHeight = getNumberProperty(holeRecord, "hole_height")
+      if (!holeWidth || !holeHeight) continue
+
+      holeGeoms.push(
+        createEllipseHole(
+          relX,
+          relY,
+          holeWidth,
+          holeHeight,
+          thickness,
+          segments,
+        ),
       )
       continue
     }

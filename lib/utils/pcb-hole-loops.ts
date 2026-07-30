@@ -1,6 +1,7 @@
 import type { PcbPlatedHole, PcbHole } from "circuit-json"
 import {
   createCircleLoop,
+  createEllipseLoop,
   createRectLoop,
   createRoundedRectLoop,
   isValidLoop,
@@ -44,6 +45,22 @@ export const createHoleLoops = ({
 
       const loop = createRectLoop({ width: holeWidth, height: holeHeight })
       loops.push(translateLoop({ loop, offset: { x: relX, y: relY } }))
+      continue
+    }
+
+    if (holeShape === "oval") {
+      const holeWidth = getNumberProperty(holeRecord, "hole_width")
+      const holeHeight = getNumberProperty(holeRecord, "hole_height")
+      if (!holeWidth || !holeHeight) continue
+
+      loops.push(
+        createEllipseLoop({
+          center: { x: relX, y: relY },
+          width: holeWidth,
+          height: holeHeight,
+          segments,
+        }),
+      )
       continue
     }
 
