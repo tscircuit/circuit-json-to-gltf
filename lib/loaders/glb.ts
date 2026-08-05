@@ -7,6 +7,7 @@ import type {
   STLMesh,
   Triangle,
 } from "../types"
+import { boundsOfTriangles } from "../utils/bounding-box"
 import { transformTriangles } from "../utils/coordinate-transform"
 import {
   applyNodeTransform,
@@ -118,7 +119,7 @@ export function parseGLB(
 
   return {
     triangles: transformedTriangles,
-    boundingBox: calculateBoundingBox(transformedTriangles),
+    boundingBox: boundsOfTriangles(transformedTriangles),
   }
 }
 
@@ -172,7 +173,7 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
 
   return {
     triangles: trianglesWithMaterialIndex,
-    boundingBox: calculateBoundingBox(trianglesWithMaterialIndex),
+    boundingBox: boundsOfTriangles(trianglesWithMaterialIndex),
     materials,
     materialIndexMap,
   }
@@ -621,41 +622,6 @@ function computeNormal(v0: Point3, v1: Point3, v2: Point3): Point3 {
     x: edge1.y * edge2.z - edge1.z * edge2.y,
     y: edge1.z * edge2.x - edge1.x * edge2.z,
     z: edge1.x * edge2.y - edge1.y * edge2.x,
-  }
-}
-
-function calculateBoundingBox(triangles: Triangle[]): {
-  min: Point3
-  max: Point3
-} {
-  if (triangles.length === 0) {
-    return {
-      min: { x: 0, y: 0, z: 0 },
-      max: { x: 0, y: 0, z: 0 },
-    }
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let minZ = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  let maxZ = -Infinity
-
-  for (const triangle of triangles) {
-    for (const vertex of triangle.vertices) {
-      minX = Math.min(minX, vertex.x)
-      minY = Math.min(minY, vertex.y)
-      minZ = Math.min(minZ, vertex.z)
-      maxX = Math.max(maxX, vertex.x)
-      maxY = Math.max(maxY, vertex.y)
-      maxZ = Math.max(maxZ, vertex.z)
-    }
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
   }
 }
 

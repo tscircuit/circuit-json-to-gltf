@@ -5,6 +5,7 @@ import type {
   STLMesh,
   Triangle,
 } from "../types"
+import { boundsOfTriangles } from "../utils/bounding-box"
 import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
@@ -119,7 +120,7 @@ function parseASCIISTL(
 
   return {
     triangles: transformedTriangles,
-    boundingBox: calculateBoundingBox(transformedTriangles),
+    boundingBox: boundsOfTriangles(transformedTriangles),
   }
 }
 
@@ -177,42 +178,7 @@ function parseBinarySTL(
 
   return {
     triangles: transformedTriangles,
-    boundingBox: calculateBoundingBox(transformedTriangles),
-  }
-}
-
-function calculateBoundingBox(triangles: Triangle[]): {
-  min: Point3
-  max: Point3
-} {
-  if (triangles.length === 0) {
-    return {
-      min: { x: 0, y: 0, z: 0 },
-      max: { x: 0, y: 0, z: 0 },
-    }
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let minZ = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  let maxZ = -Infinity
-
-  for (const triangle of triangles) {
-    for (const vertex of triangle.vertices) {
-      minX = Math.min(minX, vertex.x)
-      minY = Math.min(minY, vertex.y)
-      minZ = Math.min(minZ, vertex.z)
-      maxX = Math.max(maxX, vertex.x)
-      maxY = Math.max(maxY, vertex.y)
-      maxZ = Math.max(maxZ, vertex.z)
-    }
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
+    boundingBox: boundsOfTriangles(transformedTriangles),
   }
 }
 

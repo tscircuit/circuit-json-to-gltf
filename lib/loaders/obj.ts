@@ -7,6 +7,7 @@ import type {
   Point3,
   Triangle,
 } from "../types"
+import { boundsOfTriangles } from "../utils/bounding-box"
 import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
@@ -212,41 +213,9 @@ function parseOBJ(
 
   return {
     triangles: transformedTriangles,
-    boundingBox: calculateBoundingBox(transformedTriangles),
+    boundingBox: boundsOfTriangles(transformedTriangles),
     materials: materials.size > 0 ? materials : undefined,
     materialIndexMap: materials.size > 0 ? materialIndexMap : undefined,
-  }
-}
-
-function calculateBoundingBox(triangles: Triangle[]): {
-  min: Point3
-  max: Point3
-} {
-  if (triangles.length === 0) {
-    return { min: { x: 0, y: 0, z: 0 }, max: { x: 0, y: 0, z: 0 } }
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let minZ = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  let maxZ = -Infinity
-
-  for (const tri of triangles) {
-    for (const v of tri.vertices) {
-      if (v.x < minX) minX = v.x
-      if (v.y < minY) minY = v.y
-      if (v.z < minZ) minZ = v.z
-      if (v.x > maxX) maxX = v.x
-      if (v.y > maxY) maxY = v.y
-      if (v.z > maxZ) maxZ = v.z
-    }
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
   }
 }
 
