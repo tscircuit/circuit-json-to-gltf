@@ -1,4 +1,4 @@
-import type { Point3, CoordinateTransformConfig, Triangle } from "../types"
+import type { CoordinateTransformConfig, Point3, Triangle } from "../types"
 
 export function applyCoordinateTransform(
   point: Point3,
@@ -96,6 +96,23 @@ export function transformTriangles(
 
 // Predefined transformation configs for common model orientations
 export const COORDINATE_TRANSFORMS = {
+  // Circuit/CAD Z-up (JSCAD geometry) to the intermediate Scene3D Y-up frame.
+  // NOTE the name says SCENE, not GLTF: this is NOT the final glTF frame.
+  // GLTFBuilder.convertMeshToGLTFOrientation applies the single canonical
+  // X-mirror (and winding flip) to every mesh when exporting Scene3D -> glTF,
+  // so X is intentionally NOT negated here -- negating it here as well would
+  // mirror JSCAD geometry alone, away from the board and OBJ models.
+  //   Circuit +X -> Scene +X   (mirrored to glTF -X later, like all meshes)
+  //   Circuit +Y -> Scene +Z   (forward)
+  //   Circuit +Z -> Scene +Y   (up)
+  // Identical to OBJ_Z_UP_TO_Y_UP by construction: JSCAD geometry has to share
+  // one frame with the OBJ component models it sits beside. The rotateX(-PI/2)
+  // this replaced sent Circuit +Y to Scene -Z, rotating every model_jscad
+  // component 180 degrees about X relative to its own cad_component.position.
+  CIRCUIT_Z_UP_TO_SCENE_Y_UP: {
+    axisMapping: { x: "x", y: "z", z: "y" },
+  } as CoordinateTransformConfig,
+
   // Default: Z-up to Y-up (current STL behavior)
   Z_UP_TO_Y_UP: {
     axisMapping: { x: "x", y: "-z", z: "y" },
