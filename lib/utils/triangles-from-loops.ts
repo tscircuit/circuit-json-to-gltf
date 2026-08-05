@@ -1,5 +1,6 @@
 import earcut from "earcut"
-import type { BoundingBox, Point3, STLMesh, Triangle } from "../types"
+import type { Point3, STLMesh, Triangle } from "../types"
+import { boundsOfTriangles } from "./bounding-box"
 import type { Vec2Point } from "./geometry-loops"
 import { signedArea } from "./geometry-loops"
 
@@ -96,7 +97,7 @@ export const buildBoardMeshFromLoops = ({
 
   return {
     triangles,
-    boundingBox: computeBoundingBox(triangles),
+    boundingBox: boundsOfTriangles(triangles),
   }
 }
 
@@ -181,30 +182,5 @@ const addLoopSideWalls = ({
       triangles.push(makeTriangle({ a: topA, b: bottomB, c: topB }))
       triangles.push(makeTriangle({ a: topA, b: bottomA, c: bottomB }))
     }
-  }
-}
-
-const computeBoundingBox = (triangles: Triangle[]): BoundingBox => {
-  let minX = Infinity
-  let minY = Infinity
-  let minZ = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  let maxZ = -Infinity
-
-  for (const triangle of triangles) {
-    for (const vertex of triangle.vertices) {
-      minX = Math.min(minX, vertex.x)
-      minY = Math.min(minY, vertex.y)
-      minZ = Math.min(minZ, vertex.z)
-      maxX = Math.max(maxX, vertex.x)
-      maxY = Math.max(maxY, vertex.y)
-      maxZ = Math.max(maxZ, vertex.z)
-    }
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
   }
 }
