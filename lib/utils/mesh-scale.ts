@@ -1,4 +1,5 @@
 import type { BoundingBox, OBJMesh, Point3, STLMesh, Triangle } from "../types"
+import { boundsOfTriangles } from "./bounding-box"
 
 function scalePoint(point: Point3, scale: number): Point3 {
   return {
@@ -110,7 +111,7 @@ export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
   return {
     ...mesh,
     triangles: scaledTriangles,
-    boundingBox: calculateBoundingBox(scaledTriangles),
+    boundingBox: boundsOfTriangles(scaledTriangles),
   } as T
 }
 
@@ -168,7 +169,7 @@ export function rotateMesh<T extends STLMesh | OBJMesh>(
   return {
     ...mesh,
     triangles: rotatedTriangles,
-    boundingBox: calculateBoundingBox(rotatedTriangles),
+    boundingBox: boundsOfTriangles(rotatedTriangles),
   } as T
 }
 
@@ -185,37 +186,5 @@ export function getBoundingBoxCenter(bounds: BoundingBox): Point3 {
     x: (bounds.min.x + bounds.max.x) / 2,
     y: (bounds.min.y + bounds.max.y) / 2,
     z: (bounds.min.z + bounds.max.z) / 2,
-  }
-}
-
-function calculateBoundingBox(triangles: Triangle[]): BoundingBox {
-  if (triangles.length === 0) {
-    return {
-      min: { x: 0, y: 0, z: 0 },
-      max: { x: 0, y: 0, z: 0 },
-    }
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let minZ = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-  let maxZ = -Infinity
-
-  for (const triangle of triangles) {
-    for (const vertex of triangle.vertices) {
-      minX = Math.min(minX, vertex.x)
-      minY = Math.min(minY, vertex.y)
-      minZ = Math.min(minZ, vertex.z)
-      maxX = Math.max(maxX, vertex.x)
-      maxY = Math.max(maxY, vertex.y)
-      maxZ = Math.max(maxZ, vertex.z)
-    }
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
   }
 }

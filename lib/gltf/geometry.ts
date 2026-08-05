@@ -1,4 +1,6 @@
 import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
+import type { BoundingBox } from "../types"
+import { boundsOfPositions } from "../utils/bounding-box"
 
 export interface MeshData {
   positions: number[]
@@ -503,36 +505,11 @@ export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
   return result
 }
 
-export function getBounds(positions: number[]): { min: Point3; max: Point3 } {
-  if (positions.length === 0) {
-    return {
-      min: { x: 0, y: 0, z: 0 },
-      max: { x: 0, y: 0, z: 0 },
-    }
-  }
-
-  let minX = Infinity,
-    minY = Infinity,
-    minZ = Infinity
-  let maxX = -Infinity,
-    maxY = -Infinity,
-    maxZ = -Infinity
-
-  for (let i = 0; i < positions.length; i += 3) {
-    const x = positions[i]!
-    const y = positions[i + 1]!
-    const z = positions[i + 2]!
-
-    minX = Math.min(minX, x)
-    minY = Math.min(minY, y)
-    minZ = Math.min(minZ, z)
-    maxX = Math.max(maxX, x)
-    maxY = Math.max(maxY, y)
-    maxZ = Math.max(maxZ, z)
-  }
-
-  return {
-    min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: maxY, z: maxZ },
-  }
+/**
+ * Axis-aligned bounds of a flat position array, as glTF accessors declare
+ * them. Delegates to the shared scan so the empty-input rule (a zero box, not
+ * Infinity) is stated once for every bounds in this package.
+ */
+export function getBounds(positions: number[]): BoundingBox {
+  return boundsOfPositions(positions)
 }
