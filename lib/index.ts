@@ -16,6 +16,10 @@ export async function convertCircuitJsonToGltf(
     includeModels = true,
     modelCache,
     backgroundColor,
+    copperColor,
+    silkscreenColor,
+    solderMaskWithCopperColor,
+    drillColor,
     showBoundingBoxes = false,
   } = options
 
@@ -26,6 +30,11 @@ export async function convertCircuitJsonToGltf(
     showPcbNotes,
     boardDrillQuality,
     drawFauxBoard,
+    pcbColor: backgroundColor,
+    copperColor,
+    silkscreenColor,
+    solderMaskWithCopperColor,
+    drillColor,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
     projectBaseUrl: options.projectBaseUrl,

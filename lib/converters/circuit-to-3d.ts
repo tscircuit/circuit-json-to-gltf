@@ -76,6 +76,9 @@ export async function convertCircuitJsonTo3D(
     pcbColor = "rgba(0,140,0,0.8)",
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
+    silkscreenColor,
+    solderMaskWithCopperColor,
+    drillColor,
     boardThickness = DEFAULT_BOARD_THICKNESS,
     boardDrillQuality = "fast",
     drawFauxBoard = false,
@@ -84,13 +87,25 @@ export async function convertCircuitJsonTo3D(
     textureResolution = 1024,
     showPcbNotes = false,
     coordinateTransform,
-    showBoundingBoxes = true,
+    showBoundingBoxes = false,
     projectBaseUrl,
     authHeaders,
   } = options
 
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
+
+  const boardTextureColors = {
+    ...(typeof options.pcbColor === "string"
+      ? { backgroundColor: options.pcbColor }
+      : {}),
+    ...(typeof options.copperColor === "string"
+      ? { copperColor: options.copperColor }
+      : {}),
+    silkscreenColor,
+    solderMaskWithCopperColor,
+    drillColor,
+  }
 
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
   const pcbBoard = db.pcb_board?.list?.()[0]
@@ -140,6 +155,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(circuitJson, {
           resolution: textureResolution,
           showPcbNotes,
+          ...boardTextureColors,
         })
         panelBox.texture = {
           top: textures.top,
@@ -196,6 +212,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(circuitJson, {
           resolution: textureResolution,
           showPcbNotes,
+          ...boardTextureColors,
         })
         boardBox.texture = {
           top: textures.top,
@@ -270,6 +287,7 @@ export async function convertCircuitJsonTo3D(
         const textures = await renderBoardTextures(fauxBoardCircuitJson, {
           resolution: textureResolution,
           showPcbNotes,
+          ...boardTextureColors,
         })
 
         fauxBoardBox.texture = {
