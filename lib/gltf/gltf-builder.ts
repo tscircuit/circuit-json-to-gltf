@@ -343,18 +343,20 @@ export class GLTFBuilder {
       })
     }
 
-    // Side material (green)
+    // Side material defaults to green but follows a custom board-side color.
     if (sideTriangles.length > 0) {
-      const sideMaterialIndex = this.addMaterial({
-        name: `GreenSideMaterial_${this.materials.length}`,
-        pbrMetallicRoughness: {
-          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
-          metallicFactor: 0.0,
-          roughnessFactor: 0.8,
-        },
-        alphaMode: "OPAQUE",
-        doubleSided: true,
-      })
+      const sideMaterialIndex = box.sideColor
+        ? this.addMaterialFromColor({ color: box.sideColor })
+        : this.addMaterial({
+            name: `GreenSideMaterial_${this.materials.length}`,
+            pbrMetallicRoughness: {
+              baseColorFactor: [0.04, 0.16, 0.08, 1.0],
+              metallicFactor: 0.0,
+              roughnessFactor: 0.8,
+            },
+            alphaMode: "OPAQUE",
+            doubleSided: true,
+          })
       materials.push({
         triangles: sideTriangles,
         materialIndex: sideMaterialIndex,
@@ -541,20 +543,22 @@ export class GLTFBuilder {
       faceMaterials.bottom = defaultMaterialIndex
     }
 
-    // Side faces - use green color
-    const greenMaterialIndex = this.addMaterial({
-      name: `GreenSideMaterial_${this.materials.length}`,
-      pbrMetallicRoughness: {
-        baseColorFactor: [0.04, 0.16, 0.08, 1.0], // Green color for PCB sides
-        metallicFactor: 0.0,
-        roughnessFactor: 0.8,
-      },
-      alphaMode: "OPAQUE",
-    })
-    faceMaterials.front = greenMaterialIndex
-    faceMaterials.back = greenMaterialIndex
-    faceMaterials.left = greenMaterialIndex
-    faceMaterials.right = greenMaterialIndex
+    // Side faces default to green but follow a custom board-side color.
+    const sideMaterialIndex = box.sideColor
+      ? this.addMaterialFromColor({ color: box.sideColor })
+      : this.addMaterial({
+          name: `GreenSideMaterial_${this.materials.length}`,
+          pbrMetallicRoughness: {
+            baseColorFactor: [0.04, 0.16, 0.08, 1.0],
+            metallicFactor: 0.0,
+            roughnessFactor: 0.8,
+          },
+          alphaMode: "OPAQUE",
+        })
+    faceMaterials.front = sideMaterialIndex
+    faceMaterials.back = sideMaterialIndex
+    faceMaterials.left = sideMaterialIndex
+    faceMaterials.right = sideMaterialIndex
 
     // Create a single mesh with multiple primitives (one per face)
     const meshIndex = this.meshes.length

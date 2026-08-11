@@ -71,6 +71,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `includeModels`: Whether to load external 3D models - default: true
 - `modelCache`: Map for caching loaded models
 - `backgroundColor`: Board texture background color
+- `boardSideColor`: Physical substrate/edge color (defaults to `backgroundColor` when customized)
 - `copperColor`: Exposed copper color in board textures
 - `silkscreenColor`: Silkscreen color in board textures
 - `solderMaskWithCopperColor`: Color of traces and copper covered by solder mask
