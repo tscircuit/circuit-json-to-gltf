@@ -11,6 +11,7 @@ export interface ConversionOptions {
   includeModels?: boolean
   modelCache?: Map<string, STLMesh | OBJMesh>
   backgroundColor?: string
+  boardSideColor?: Color
   copperColor?: string
   silkscreenColor?: string
   solderMaskWithCopperColor?: string
@@ -91,6 +92,7 @@ export interface Box3D {
   size: Size3
   rotation?: Point3
   color?: Color
+  sideColor?: Color
   texture?: {
     top?: string
     bottom?: string
@@ -143,6 +145,7 @@ export interface GLTFExportOptions {
 
 export interface CircuitTo3DOptions {
   pcbColor?: Color
+  boardSideColor?: Color
   componentColor?: Color
   copperColor?: Color
   silkscreenColor?: string

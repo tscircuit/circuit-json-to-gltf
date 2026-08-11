@@ -33,6 +33,24 @@ test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {
   expect((result as ArrayBuffer).byteLength).toBeGreaterThan(0)
 })
 
+test("custom board color applies to textured board sides", async () => {
+  const result = await convertCircuitJsonToGltf(simpleCircuit as any, {
+    boardTextureResolution: 64,
+    backgroundColor: "#aeb8c6",
+  })
+
+  const gltf = result as any
+  const expectedSideColor = [174 / 255, 184 / 255, 198 / 255, 1]
+  const hasExpectedSideMaterial = gltf.materials.some((material: any) =>
+    material.pbrMetallicRoughness?.baseColorFactor?.every(
+      (channel: number, index: number) =>
+        Math.abs(channel - expectedSideColor[index]!) < 1e-6,
+    ),
+  )
+
+  expect(hasExpectedSideMaterial).toBe(true)
+})
+
 test("convertCircuitJsonTo3D should create 3D scene", async () => {
   const scene = await convertCircuitJsonTo3D(simpleCircuit as any, {
     showBoundingBoxes: true,

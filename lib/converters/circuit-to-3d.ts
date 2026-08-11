@@ -74,6 +74,7 @@ export async function convertCircuitJsonTo3D(
 ): Promise<Scene3D> {
   const {
     pcbColor = "rgba(0,140,0,0.8)",
+    boardSideColor,
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
     silkscreenColor,
@@ -94,6 +95,9 @@ export async function convertCircuitJsonTo3D(
 
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
+
+  const resolvedBoardSideColor =
+    boardSideColor ?? (options.pcbColor !== undefined ? pcbColor : undefined)
 
   const boardTextureColors = {
     ...(typeof options.pcbColor === "string"
@@ -147,6 +151,7 @@ export async function convertCircuitJsonTo3D(
       },
       mesh: panelMesh,
       color: pcbColor,
+      sideColor: resolvedBoardSideColor,
     }
 
     // Render panel textures if requested and resolution > 0
@@ -204,6 +209,7 @@ export async function convertCircuitJsonTo3D(
       },
       mesh: boardMesh,
       color: pcbColor,
+      sideColor: resolvedBoardSideColor,
     }
 
     // Render board textures if requested and resolution > 0
@@ -262,6 +268,7 @@ export async function convertCircuitJsonTo3D(
         z: fauxHeight,
       },
       color: pcbColor,
+      sideColor: resolvedBoardSideColor,
     }
 
     if (shouldRenderTextures && textureResolution > 0) {
