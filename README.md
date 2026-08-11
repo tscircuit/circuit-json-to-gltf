@@ -65,6 +65,9 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
+- `boardSurfaceMode`: `"realistic"` exports normal, metallic-roughness, and
+  clearcoat materials modeled after `@tscircuit/3d-viewer`; `"flat"` exports
+  only the base-color textures - default: `"realistic"`
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)
 - `boardDrillQuality`: Drill geometry detail level, "high" or "fast" - default: "fast"
 - `drawFauxBoard`: Draw a fallback board if no `pcb_board` or `pcb_panel` is present - default: false

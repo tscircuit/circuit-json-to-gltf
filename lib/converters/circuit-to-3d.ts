@@ -23,6 +23,10 @@ import type {
   Scene3D,
 } from "../types"
 import {
+  colorToCssString,
+  getBoardColorPalette,
+} from "../utils/board-color-palette"
+import {
   fitMeshToCadBounds,
   getMeshOrigin,
   getMeshWithBoardNormalTransform,
@@ -36,10 +40,6 @@ import {
 import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
-import {
-  colorToCssString,
-  getBoardColorPalette,
-} from "../utils/board-color-palette"
 import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
@@ -93,6 +93,7 @@ export async function convertCircuitJsonTo3D(
     showPcbNotes = false,
     coordinateTransform,
     showBoundingBoxes = false,
+    boardSurfaceMode = "realistic",
     projectBaseUrl,
     authHeaders,
   } = options
@@ -120,6 +121,7 @@ export async function convertCircuitJsonTo3D(
     solderMaskWithCopperColor:
       solderMaskWithCopperColor ?? palette.solderMaskWithCopperColor,
     drillColor,
+    surfaceMode: boardSurfaceMode,
   }
 
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
@@ -176,6 +178,10 @@ export async function convertCircuitJsonTo3D(
         panelBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
+          topNormal: textures.topNormal,
+          bottomNormal: textures.bottomNormal,
+          topMetallicRoughness: textures.topMetallicRoughness,
+          bottomMetallicRoughness: textures.bottomMetallicRoughness,
         }
       } catch (error) {
         console.warn("Failed to render panel textures:", error)
@@ -234,6 +240,10 @@ export async function convertCircuitJsonTo3D(
         boardBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
+          topNormal: textures.topNormal,
+          bottomNormal: textures.bottomNormal,
+          topMetallicRoughness: textures.topMetallicRoughness,
+          bottomMetallicRoughness: textures.bottomMetallicRoughness,
         }
       } catch (error) {
         console.warn("Failed to render board textures:", error)
@@ -311,6 +321,10 @@ export async function convertCircuitJsonTo3D(
         fauxBoardBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
+          topNormal: textures.topNormal,
+          bottomNormal: textures.bottomNormal,
+          topMetallicRoughness: textures.topMetallicRoughness,
+          bottomMetallicRoughness: textures.bottomMetallicRoughness,
         }
       } catch (error) {
         console.warn("Failed to render faux board textures:", error)

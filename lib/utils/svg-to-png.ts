@@ -8,14 +8,21 @@ export interface SvgToPngOptions {
   fonts?: string[]
 }
 
+export interface SvgRaster {
+  width: number
+  height: number
+  pixels: Uint8Array
+  png: Uint8Array
+}
+
 // Helper to check if we're in a Node.js environment
 const isNode =
   typeof process !== "undefined" && process.versions && process.versions.node
 
-export async function svgToPng(
+export async function svgToRaster(
   svgString: string,
   options: SvgToPngOptions = {},
-): Promise<Buffer> {
+): Promise<SvgRaster> {
   const fontBuffer = Buffer.from(tscircuitFont, "base64")
 
   let tempFontPath: string | undefined
@@ -75,16 +82,29 @@ export async function svgToPng(
     }
 
     const resvg = new Resvg(svgString, opts)
-    const pngData = resvg.render()
-    const pngBuffer = pngData.asPng()
+    const renderedImage = resvg.render()
+    const pngBuffer = renderedImage.asPng()
 
-    return Buffer.from(pngBuffer)
+    return {
+      width: renderedImage.width,
+      height: renderedImage.height,
+      pixels: Uint8Array.from(renderedImage.pixels),
+      png: Uint8Array.from(pngBuffer),
+    }
   } finally {
     // Clean up temporary font file
     if (cleanupFn) {
       cleanupFn()
     }
   }
+}
+
+export async function svgToPng(
+  svgString: string,
+  options: SvgToPngOptions = {},
+): Promise<Buffer> {
+  const raster = await svgToRaster(svgString, options)
+  return Buffer.from(raster.png)
 }
 
 export async function svgToPngDataUrl(

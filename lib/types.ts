@@ -17,6 +17,7 @@ export interface ConversionOptions {
   solderMaskWithCopperColor?: string
   drillColor?: string
   showBoundingBoxes?: boolean
+  boardSurfaceMode?: "flat" | "realistic"
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
@@ -96,6 +97,10 @@ export interface Box3D {
   texture?: {
     top?: string
     bottom?: string
+    topNormal?: string
+    bottomNormal?: string
+    topMetallicRoughness?: string
+    bottomMetallicRoughness?: string
     front?: string
     back?: string
     left?: string
@@ -160,6 +165,7 @@ export interface CircuitTo3DOptions {
   showPcbNotes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
+  boardSurfaceMode?: "flat" | "realistic"
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
 }
@@ -174,4 +180,5 @@ export interface BoardRenderOptions {
   padColor?: string
   drillColor?: string
   showPcbNotes?: boolean
+  surfaceMode?: "flat" | "realistic"
 }

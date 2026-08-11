@@ -1,5 +1,5 @@
-import { test, expect } from "bun:test"
-import { convertCircuitJsonToGltf, convertCircuitJsonTo3D } from "../../lib"
+import { expect, test } from "bun:test"
+import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
 import simpleCircuit from "../fixtures/simple-circuit.json"
 
 test("convertCircuitJsonToGltf should convert circuit to GLTF", async () => {
@@ -21,6 +21,49 @@ test("convertCircuitJsonToGltf should convert circuit to GLTF", async () => {
   expect(gltf.buffers).toBeDefined()
   expect(gltf.bufferViews).toBeDefined()
   expect(gltf.accessors).toBeDefined()
+
+  expect(gltf.extensionsUsed).toContain("KHR_materials_clearcoat")
+  const boardSurfaceMaterials = gltf.materials.filter(
+    (material: any) =>
+      material.name?.startsWith("TopMaterial") ||
+      material.name?.startsWith("BottomMaterial"),
+  )
+  expect(boardSurfaceMaterials).toHaveLength(2)
+  for (const material of boardSurfaceMaterials) {
+    expect(material.normalTexture?.index).toBeNumber()
+    expect(material.normalTexture?.scale).toBe(0.2)
+    expect(
+      material.pbrMetallicRoughness?.metallicRoughnessTexture?.index,
+    ).toBeNumber()
+    expect(material.extensions?.KHR_materials_clearcoat?.clearcoatFactor).toBe(
+      0.08,
+    )
+    expect(
+      material.extensions?.KHR_materials_clearcoat?.clearcoatRoughnessFactor,
+    ).toBe(0.55)
+  }
+  expect(gltf.images).toHaveLength(6)
+  expect(gltf.textures).toHaveLength(6)
+})
+
+test("flat board surface mode omits realistic PBR maps", async () => {
+  const gltf = (await convertCircuitJsonToGltf(simpleCircuit as any, {
+    boardTextureResolution: 64,
+    boardSurfaceMode: "flat",
+  })) as any
+
+  const boardSurfaceMaterials = gltf.materials.filter(
+    (material: any) =>
+      material.name?.startsWith("TopMaterial") ||
+      material.name?.startsWith("BottomMaterial"),
+  )
+  for (const material of boardSurfaceMaterials) {
+    expect(material.normalTexture).toBeUndefined()
+    expect(
+      material.pbrMetallicRoughness?.metallicRoughnessTexture,
+    ).toBeUndefined()
+  }
+  expect(gltf.images).toHaveLength(2)
 })
 
 test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {

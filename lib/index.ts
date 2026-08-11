@@ -22,6 +22,7 @@ export async function convertCircuitJsonToGltf(
     solderMaskWithCopperColor,
     drillColor,
     showBoundingBoxes = false,
+    boardSurfaceMode = "realistic",
   } = options
 
   // Convert circuit JSON to 3D scene
@@ -39,6 +40,7 @@ export async function convertCircuitJsonToGltf(
     drillColor,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
+    boardSurfaceMode,
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
   })
@@ -89,8 +91,8 @@ export type {
 } from "./types"
 export {
   CAMERA_PRESET_DIRECTIONS,
-  type CameraPreset,
   type CameraFitOptions,
+  type CameraPreset,
   getBestCameraPosition,
 } from "./utils/camera-position"
 // Re-export coordinate transform utilities
