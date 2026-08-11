@@ -65,20 +65,24 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
-- `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)Run bunx tsc --noEmit.
+- `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)
 - `boardDrillQuality`: Drill geometry detail level, "high" or "fast" - default: "fast"
 - `drawFauxBoard`: Draw a fallback board if no `pcb_board` or `pcb_panel` is present - default: false
 - `includeModels`: Whether to load external 3D models - default: true
 - `modelCache`: Map for caching loaded models
-- `backgroundColor`: Board texture background color
-- `boardSideColor`: Physical substrate/edge color (defaults to `backgroundColor` when customized)
+- `backgroundColor`: Board texture background color; overrides `pcb_board.solder_mask_color`
+- `boardSideColor`: Physical substrate/edge color; otherwise derived from the solder-mask color
 - `copperColor`: Exposed copper color in board textures
-- `silkscreenColor`: Silkscreen color in board textures
-- `solderMaskWithCopperColor`: Color of traces and copper covered by solder mask
+- `silkscreenColor`: Silkscreen color in board textures; overrides `pcb_board.silkscreen_color`
+- `solderMaskWithCopperColor`: Color of traces and copper covered by solder mask; otherwise derived from the solder-mask color
 - `drillColor`: Drill opening color in board textures
 - `showBoundingBoxes`: Show bounding boxes for debugging (default: `false`)
 - `projectBaseUrl`: Optional base URL used to resolve `node_modules` model assets via `/package_files/download`
 - `authHeaders`: Optional auth headers for model downloads, e.g. `{ Authorization: "Bearer ..." }`
+
+When a `pcb_board` supplies `solder_mask_color`, the renderer uses it for the
+board surface and derives contrasting covered-copper, substrate-edge, and
+silkscreen colors. Explicit conversion options take precedence.
 
 ## Architecture
 
