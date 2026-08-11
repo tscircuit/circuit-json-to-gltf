@@ -36,6 +36,10 @@ import {
 import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
+import {
+  colorToCssString,
+  getBoardColorPalette,
+} from "../utils/board-color-palette"
 import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
@@ -96,18 +100,25 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
-  const resolvedBoardSideColor =
-    boardSideColor ?? (options.pcbColor !== undefined ? pcbColor : undefined)
+  const palette = getBoardColorPalette(circuitJson, {
+    solderMaskColor:
+      options.pcbColor !== undefined
+        ? colorToCssString(options.pcbColor)
+        : undefined,
+    silkscreenColor,
+  })
+  const resolvedPcbColor =
+    options.pcbColor ?? palette.backgroundColor ?? pcbColor
+  const resolvedBoardSideColor = boardSideColor ?? palette.boardSideColor
 
   const boardTextureColors = {
-    ...(typeof options.pcbColor === "string"
-      ? { backgroundColor: options.pcbColor }
-      : {}),
+    backgroundColor: palette.backgroundColor,
     ...(typeof options.copperColor === "string"
       ? { copperColor: options.copperColor }
       : {}),
-    silkscreenColor,
-    solderMaskWithCopperColor,
+    silkscreenColor: silkscreenColor ?? palette.silkscreenColor,
+    solderMaskWithCopperColor:
+      solderMaskWithCopperColor ?? palette.solderMaskWithCopperColor,
     drillColor,
   }
 
@@ -150,7 +161,7 @@ export async function convertCircuitJsonTo3D(
         z: Number.isFinite(meshHeight) ? meshHeight : pcbPanel.height,
       },
       mesh: panelMesh,
-      color: pcbColor,
+      color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
 
@@ -169,11 +180,11 @@ export async function convertCircuitJsonTo3D(
       } catch (error) {
         console.warn("Failed to render panel textures:", error)
         // If texture rendering fails, use the fallback color
-        panelBox.color = pcbColor
+        panelBox.color = resolvedPcbColor
       }
     } else {
       // No textures requested, use solid color
-      panelBox.color = pcbColor
+      panelBox.color = resolvedPcbColor
     }
 
     boxes.push(panelBox)
@@ -208,7 +219,7 @@ export async function convertCircuitJsonTo3D(
         z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
       },
       mesh: boardMesh,
-      color: pcbColor,
+      color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
 
@@ -227,11 +238,11 @@ export async function convertCircuitJsonTo3D(
       } catch (error) {
         console.warn("Failed to render board textures:", error)
         // If texture rendering fails, use the fallback color
-        boardBox.color = pcbColor
+        boardBox.color = resolvedPcbColor
       }
     } else {
       // No textures requested, use solid color
-      boardBox.color = pcbColor
+      boardBox.color = resolvedPcbColor
     }
 
     boxes.push(boardBox)
@@ -267,7 +278,7 @@ export async function convertCircuitJsonTo3D(
         y: effectiveBoardThickness,
         z: fauxHeight,
       },
-      color: pcbColor,
+      color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
 
@@ -303,7 +314,7 @@ export async function convertCircuitJsonTo3D(
         }
       } catch (error) {
         console.warn("Failed to render faux board textures:", error)
-        fauxBoardBox.color = pcbColor
+        fauxBoardBox.color = resolvedPcbColor
       }
     }
 

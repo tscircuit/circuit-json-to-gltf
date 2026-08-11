@@ -33,14 +33,14 @@ test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {
   expect((result as ArrayBuffer).byteLength).toBeGreaterThan(0)
 })
 
-test("custom board color applies to textured board sides", async () => {
+test("custom board color derives textured board sides", async () => {
   const result = await convertCircuitJsonToGltf(simpleCircuit as any, {
     boardTextureResolution: 64,
     backgroundColor: "#aeb8c6",
   })
 
   const gltf = result as any
-  const expectedSideColor = [174 / 255, 184 / 255, 198 / 255, 1]
+  const expectedSideColor = [150 / 255, 158 / 255, 170 / 255, 1]
   const hasExpectedSideMaterial = gltf.materials.some((material: any) =>
     material.pbrMetallicRoughness?.baseColorFactor?.every(
       (channel: number, index: number) =>
@@ -49,6 +49,36 @@ test("custom board color applies to textured board sides", async () => {
   )
 
   expect(hasExpectedSideMaterial).toBe(true)
+})
+
+test("pcb_board solder mask derives board colors unless explicitly overridden", async () => {
+  const circuitWithBoardColors = simpleCircuit.map((element) =>
+    element.type === "pcb_board"
+      ? {
+          ...element,
+          solder_mask_color: "#aeb8c6",
+          silkscreen_color: "#ffffff",
+        }
+      : element,
+  )
+
+  const derivedScene = await convertCircuitJsonTo3D(
+    circuitWithBoardColors as any,
+    { renderBoardTextures: false },
+  )
+  expect(derivedScene.boxes[0]?.color).toBe("#aeb8c6")
+  expect(derivedScene.boxes[0]?.sideColor).toBe("#969eaa")
+
+  const overriddenScene = await convertCircuitJsonTo3D(
+    circuitWithBoardColors as any,
+    {
+      pcbColor: "#112233",
+      boardSideColor: "#445566",
+      renderBoardTextures: false,
+    },
+  )
+  expect(overriddenScene.boxes[0]?.color).toBe("#112233")
+  expect(overriddenScene.boxes[0]?.sideColor).toBe("#445566")
 })
 
 test("convertCircuitJsonTo3D should create 3D scene", async () => {

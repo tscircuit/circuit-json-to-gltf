@@ -12,6 +12,8 @@ const circuitJson: CircuitJson = [
     thickness: 1.6,
     num_layers: 2,
     material: "fr4",
+    solder_mask_color: "#aeb8c6",
+    silkscreen_color: "#ffffff",
   },
   {
     type: "pcb_trace",
@@ -23,14 +25,10 @@ const circuitJson: CircuitJson = [
   },
 ]
 
-test("customizes solder-mask-covered copper independently", async () => {
+test("derives board texture colors from pcb_board metadata", async () => {
   const dataUrl = await renderBoardLayer(circuitJson, {
     layer: "top",
     resolution: 320,
-    backgroundColor: "#aeb8c6",
-    copperColor: "#c99f4e",
-    solderMaskWithCopperColor: "#7f8a99",
-    silkscreenColor: "#ffffff",
   })
 
   const png = Buffer.from(dataUrl.split(",")[1]!, "base64")

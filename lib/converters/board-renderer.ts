@@ -1,21 +1,31 @@
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import type { BoardRenderOptions } from "../types"
+import { getBoardColorPalette } from "../utils/board-color-palette"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
   options: BoardRenderOptions,
 ): Promise<string> {
+  const palette = getBoardColorPalette(circuitJson, {
+    solderMaskColor: options.backgroundColor,
+    silkscreenColor: options.silkscreenColor,
+  })
   const {
     layer,
     resolution = 1024,
-    backgroundColor = "transparent",
     copperColor = "#ffe066",
-    silkscreenColor = "#ffffff",
-    solderMaskWithCopperColor = "#69e778ff",
     drillColor = "rgba(0,0,0,0.5)",
     showPcbNotes = false,
   } = options
+  const backgroundColor =
+    options.backgroundColor ?? palette.backgroundColor ?? "transparent"
+  const silkscreenColor =
+    options.silkscreenColor ?? palette.silkscreenColor ?? "#ffffff"
+  const solderMaskWithCopperColor =
+    options.solderMaskWithCopperColor ??
+    palette.solderMaskWithCopperColor ??
+    "#69e778ff"
 
   const svg = convertCircuitJsonToPcbSvg(circuitJson, {
     layer,
@@ -25,6 +35,14 @@ export async function renderBoardLayer(
     showSolderMask: true,
     showPcbNotes,
     colorOverrides: {
+      soldermask: {
+        top: backgroundColor,
+        bottom: backgroundColor,
+      },
+      soldermaskOverCopper: {
+        top: solderMaskWithCopperColor,
+        bottom: solderMaskWithCopperColor,
+      },
       copper: {
         top: copperColor,
         bottom: copperColor,
@@ -122,7 +140,7 @@ export async function renderBoardTextures(
   circuitJson: CircuitJson,
   {
     resolution = 1024,
-    backgroundColor = "#0F3812",
+    backgroundColor,
     copperColor,
     silkscreenColor,
     solderMaskWithCopperColor,
@@ -133,25 +151,38 @@ export async function renderBoardTextures(
   top: string
   bottom: string
 }> {
+  const palette = getBoardColorPalette(circuitJson, {
+    solderMaskColor: backgroundColor,
+    silkscreenColor,
+  })
+  const resolvedBackgroundColor =
+    backgroundColor ?? palette.backgroundColor ?? "#0F3812"
+  const resolvedSilkscreenColor =
+    silkscreenColor ?? palette.silkscreenColor ?? "#ffffff"
+  const resolvedSolderMaskWithCopperColor =
+    solderMaskWithCopperColor ??
+    palette.solderMaskWithCopperColor ??
+    "#69e778ff"
+
   // Render sequentially to avoid concurrent Resvg WASM usage
   // which causes "recursive use of an object" Rust aliasing errors
   const top = await renderBoardLayer(circuitJson, {
     layer: "top",
     resolution,
-    backgroundColor,
+    backgroundColor: resolvedBackgroundColor,
     copperColor,
-    silkscreenColor,
-    solderMaskWithCopperColor,
+    silkscreenColor: resolvedSilkscreenColor,
+    solderMaskWithCopperColor: resolvedSolderMaskWithCopperColor,
     drillColor,
     showPcbNotes,
   })
   const bottom = await renderBoardLayer(circuitJson, {
     layer: "bottom",
     resolution,
-    backgroundColor,
+    backgroundColor: resolvedBackgroundColor,
     copperColor,
-    silkscreenColor,
-    solderMaskWithCopperColor,
+    silkscreenColor: resolvedSilkscreenColor,
+    solderMaskWithCopperColor: resolvedSolderMaskWithCopperColor,
     drillColor,
     showPcbNotes,
   })
