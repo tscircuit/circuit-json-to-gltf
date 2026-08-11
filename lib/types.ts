@@ -11,6 +11,10 @@ export interface ConversionOptions {
   includeModels?: boolean
   modelCache?: Map<string, STLMesh | OBJMesh>
   backgroundColor?: string
+  copperColor?: string
+  silkscreenColor?: string
+  solderMaskWithCopperColor?: string
+  drillColor?: string
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
@@ -141,6 +145,9 @@ export interface CircuitTo3DOptions {
   pcbColor?: Color
   componentColor?: Color
   copperColor?: Color
+  silkscreenColor?: string
+  solderMaskWithCopperColor?: string
+  drillColor?: string
   boardThickness?: number
   boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
@@ -160,6 +167,7 @@ export interface BoardRenderOptions {
   backgroundColor?: string
   copperColor?: string
   silkscreenColor?: string
+  solderMaskWithCopperColor?: string
   padColor?: string
   drillColor?: string
   showPcbNotes?: boolean

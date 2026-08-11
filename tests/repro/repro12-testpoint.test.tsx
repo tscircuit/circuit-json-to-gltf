@@ -5,12 +5,12 @@ import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
 
 const Repro12Testpoint = () => (
   <board width="18mm" height="12mm">
-    <testpoint name="T1" pcbX={-7} pcbY={3} padDiameter="0.8mm" />
-    <testpoint name="T2" pcbX={7} pcbY={3} padDiameter="0.8mm" />
-    <testpoint name="M1" pcbX={-7} pcbY={0} padDiameter="0.8mm" />
-    <testpoint name="M2" pcbX={7} pcbY={0} padDiameter="0.8mm" />
-    <testpoint name="B1" pcbX={-7} pcbY={-3} padDiameter="0.8mm" />
-    <testpoint name="B2" pcbX={7} pcbY={-3} padDiameter="0.8mm" />
+    <testpoint name="T1" pcbX={-7} pcbY={3} footprint="smtpad_circle_d1.1" />
+    <testpoint name="T2" pcbX={7} pcbY={3} footprint="smtpad_circle_d1.1" />
+    <testpoint name="M1" pcbX={-7} pcbY={0} footprint="smtpad_circle_d1.1" />
+    <testpoint name="M2" pcbX={7} pcbY={0} footprint="smtpad_circle_d1.1" />
+    <testpoint name="B1" pcbX={-7} pcbY={-3} footprint="smtpad_circle_d1.1" />
+    <testpoint name="B2" pcbX={7} pcbY={-3} footprint="smtpad_circle_d1.1" />
   </board>
 )
 
@@ -22,7 +22,6 @@ test("repro12 testpoint 3d snapshot", async () => {
 
   const circuitJson = await circuit.getCircuitJson()
   const scene = await convertCircuitJsonTo3D(circuitJson, {
-    showBoundingBoxes: false,
     renderBoardTextures: true,
     textureResolution: 512,
   })

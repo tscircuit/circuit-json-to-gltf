@@ -70,8 +70,12 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `drawFauxBoard`: Draw a fallback board if no `pcb_board` or `pcb_panel` is present - default: false
 - `includeModels`: Whether to load external 3D models - default: true
 - `modelCache`: Map for caching loaded models
-- `backgroundColor`: Background color for board rendering
-- `showBoundingBoxes`: Show bounding boxes for debugging
+- `backgroundColor`: Board texture background color
+- `copperColor`: Exposed copper color in board textures
+- `silkscreenColor`: Silkscreen color in board textures
+- `solderMaskWithCopperColor`: Color of traces and copper covered by solder mask
+- `drillColor`: Drill opening color in board textures
+- `showBoundingBoxes`: Show bounding boxes for debugging (default: `false`)
 - `projectBaseUrl`: Optional base URL used to resolve `node_modules` model assets via `/package_files/download`
 - `authHeaders`: Optional auth headers for model downloads, e.g. `{ Authorization: "Bearer ..." }`
 

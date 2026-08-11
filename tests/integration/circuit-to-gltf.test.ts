@@ -34,7 +34,9 @@ test("convertCircuitJsonToGltf should convert circuit to GLB", async () => {
 })
 
 test("convertCircuitJsonTo3D should create 3D scene", async () => {
-  const scene = await convertCircuitJsonTo3D(simpleCircuit as any)
+  const scene = await convertCircuitJsonTo3D(simpleCircuit as any, {
+    showBoundingBoxes: true,
+  })
 
   expect(scene).toBeDefined()
   expect(scene.boxes).toBeInstanceOf(Array)

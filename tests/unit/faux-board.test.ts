@@ -31,6 +31,7 @@ test("drawFauxBoard adds board when no pcb_board exists", async () => {
     {
       renderBoardTextures: false,
       drawFauxBoard: false,
+      showBoundingBoxes: true,
     },
   )
 
@@ -39,6 +40,7 @@ test("drawFauxBoard adds board when no pcb_board exists", async () => {
     {
       renderBoardTextures: false,
       drawFauxBoard: true,
+      showBoundingBoxes: true,
     },
   )
 
