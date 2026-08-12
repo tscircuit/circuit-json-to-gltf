@@ -107,6 +107,7 @@ export interface Box3D {
   label?: string
   labelColor?: Color
   isTranslucent?: boolean
+  showHiddenEdges?: boolean
 }
 
 export interface Scene3D {

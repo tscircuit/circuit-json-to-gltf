@@ -32,6 +32,11 @@ export interface GLTFNode {
   scale?: [number, number, number]
   matrix?: number[]
   children?: number[]
+  extras?: {
+    poppygl?: {
+      showHiddenEdges?: boolean
+    }
+  }
 }
 
 export interface GLTFMesh {

@@ -418,6 +418,8 @@ export async function convertCircuitJsonTo3D(
       center,
       size,
       isTranslucent: cad.show_as_translucent_model,
+      showHiddenEdges: (cad as CadComponent & { show_hidden_edges?: boolean })
+        .show_hidden_edges,
       label: sourceComponent?.name,
     }
 

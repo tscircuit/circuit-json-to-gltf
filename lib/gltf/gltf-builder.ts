@@ -149,6 +149,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
+      ...this.getPoppyglNodeExtras(box),
     })
 
     // Add node to scene
@@ -249,6 +250,7 @@ export class GLTFBuilder {
       name: box.label || `OBJBox${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
+      ...this.getPoppyglNodeExtras(box),
     })
 
     // Add node to scene
@@ -469,6 +471,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
+      ...this.getPoppyglNodeExtras(box),
     })
 
     // Add node to scene
@@ -624,6 +627,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
+      ...this.getPoppyglNodeExtras(box),
     })
 
     // Add node to scene
@@ -696,6 +700,18 @@ export class GLTFBuilder {
 
   private toGltfTranslation(center: Box3D["center"]): [number, number, number] {
     return [-center.x, center.y, center.z]
+  }
+
+  private getPoppyglNodeExtras(box: Box3D): Partial<Pick<GLTFNode, "extras">> {
+    if (!box.showHiddenEdges) return {}
+
+    return {
+      extras: {
+        poppygl: {
+          showHiddenEdges: true,
+        },
+      },
+    }
   }
 
   private getMeshCacheKey(meshData: MeshData, materialIndex: number): string {
