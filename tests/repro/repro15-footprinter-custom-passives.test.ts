@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test"
-import { convertCircuitJsonTo3D } from "../../lib"
+import type { CircuitJson } from "circuit-json"
+import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
+import { renderGlbToPng } from "../renderGlbToPng"
 
 const circuit = [
   {
@@ -58,7 +60,8 @@ const circuit = [
 ]
 
 test("custom passive footprinter models are present and use the requested pitch", async () => {
-  const scene = await convertCircuitJsonTo3D(circuit as any, {
+  const circuitJson = circuit as CircuitJson
+  const scene = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: false,
   })
 
@@ -72,4 +75,14 @@ test("custom passive footprinter models are present and use the requested pitch"
   expect(resistor?.size.z).toBeCloseTo(0.85, 4)
   expect(capacitor?.size.x).toBeCloseTo(1.6, 4)
   expect(capacitor?.size.z).toBeCloseTo(0.85, 4)
+
+  const glb = await convertCircuitJsonToGltf(circuitJson, {
+    format: "glb",
+    boardTextureResolution: 512,
+    includeModels: true,
+  })
+
+  expect(renderGlbToPng(glb as ArrayBuffer, circuitJson)).toMatchPngSnapshot(
+    import.meta.path,
+  )
 })
