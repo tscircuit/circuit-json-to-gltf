@@ -1,35 +1,36 @@
-import type { Scene3D, Box3D, Color, OBJMesh } from "../types"
+import type { Box3D, Color, OBJMesh, Scene3D } from "../types"
+import { REALISTIC_BOARD_SURFACE_MATERIAL } from "../utils/board-surface-textures"
+import { BufferBuilder } from "./buffer-builder"
+import {
+  convertMeshToGLTFOrientation,
+  createBoxMesh,
+  createBoxMeshByFaces,
+  createMeshFromOBJ,
+  createMeshFromSTL,
+  type FaceMeshData,
+  getBounds,
+  type MeshData,
+  transformMesh,
+} from "./geometry"
 import type {
   GLTF,
-  GLTFScene,
-  GLTFNode,
-  GLTFMesh,
+  GLTFAccessor,
   GLTFBuffer,
   GLTFBufferView,
-  GLTFAccessor,
-  GLTFMaterial,
-  GLTFTexture,
   GLTFImage,
+  GLTFMaterial,
+  GLTFMesh,
+  GLTFNode,
+  GLTFScene,
+  GLTFTexture,
 } from "./gltf-types"
 import {
   COMPONENT_TYPE,
-  TARGET,
-  PRIMITIVE_MODE,
   FILTER,
+  PRIMITIVE_MODE,
+  TARGET,
   WRAP,
 } from "./gltf-types"
-import { BufferBuilder } from "./buffer-builder"
-import {
-  createBoxMesh,
-  createBoxMeshByFaces,
-  createMeshFromSTL,
-  createMeshFromOBJ,
-  convertMeshToGLTFOrientation,
-  transformMesh,
-  getBounds,
-  type MeshData,
-  type FaceMeshData,
-} from "./geometry"
 
 export class GLTFBuilder {
   private gltf: GLTF
@@ -287,58 +288,30 @@ export class GLTFBuilder {
       materialIndex: number
     }[] = []
 
-    // Top material with texture
+    // Top material with portable realistic surface maps
     if (topTriangles.length > 0 && box.texture?.top) {
-      const topMaterialIndex = this.addMaterial({
+      const topMaterialIndex = await this.addBoardSurfaceMaterial({
         name: `TopMaterial_${this.materials.length}`,
-        pbrMetallicRoughness: {
-          baseColorFactor: [1.0, 1.0, 1.0, 1.0],
-          metallicFactor: 0.0,
-          roughnessFactor: 0.8,
-        },
-        alphaMode: "OPAQUE",
+        baseColor: box.texture.top,
+        normal: box.texture.topNormal,
+        metallicRoughness: box.texture.topMetallicRoughness,
         doubleSided: true,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-      if (textureIndex !== -1) {
-        const material = this.materials[topMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       materials.push({
         triangles: topTriangles,
         materialIndex: topMaterialIndex,
       })
     }
 
-    // Bottom material with texture
+    // Bottom material with portable realistic surface maps
     if (bottomTriangles.length > 0 && box.texture?.bottom) {
-      const bottomMaterialIndex = this.addMaterial({
+      const bottomMaterialIndex = await this.addBoardSurfaceMaterial({
         name: `BottomMaterial_${this.materials.length}`,
-        pbrMetallicRoughness: {
-          // baseColorFactor: [     0.04,
-          //   0.16,
-          //   0.08, 1.0],
-          metallicFactor: 0.0,
-          roughnessFactor: 0.8,
-        },
-        alphaMode: "OPAQUE",
+        baseColor: box.texture.bottom,
+        normal: box.texture.bottomNormal,
+        metallicRoughness: box.texture.bottomMetallicRoughness,
         doubleSided: true,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
-      if (textureIndex !== -1) {
-        const material = this.materials[bottomMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       materials.push({
         triangles: bottomTriangles,
         materialIndex: bottomMaterialIndex,
@@ -347,18 +320,10 @@ export class GLTFBuilder {
 
     // Side material defaults to green but follows a custom board-side color.
     if (sideTriangles.length > 0) {
-      const sideMaterialIndex = box.sideColor
-        ? this.addMaterialFromColor({ color: box.sideColor })
-        : this.addMaterial({
-            name: `GreenSideMaterial_${this.materials.length}`,
-            pbrMetallicRoughness: {
-              baseColorFactor: [0.04, 0.16, 0.08, 1.0],
-              metallicFactor: 0.0,
-              roughnessFactor: 0.8,
-            },
-            alphaMode: "OPAQUE",
-            doubleSided: true,
-          })
+      const sideMaterialIndex = this.addBoardSideMaterial(
+        box.sideColor ?? [10, 41, 20, 1],
+        true,
+      )
       materials.push({
         triangles: sideTriangles,
         materialIndex: sideMaterialIndex,
@@ -496,25 +461,12 @@ export class GLTFBuilder {
 
     // Top face - use texture if available
     if (box.texture?.top) {
-      const topMaterialIndex = this.addMaterial({
+      const topMaterialIndex = await this.addBoardSurfaceMaterial({
         name: `TopMaterial_${this.materials.length}`,
-        pbrMetallicRoughness: {
-          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
-          metallicFactor: 0.0,
-          roughnessFactor: 0.8,
-        },
-        alphaMode: "OPAQUE",
+        baseColor: box.texture.top,
+        normal: box.texture.topNormal,
+        metallicRoughness: box.texture.topMetallicRoughness,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-      if (textureIndex !== -1) {
-        const material = this.materials[topMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       faceMaterials.top = topMaterialIndex
     } else {
       faceMaterials.top = defaultMaterialIndex
@@ -522,42 +474,21 @@ export class GLTFBuilder {
 
     // Bottom face - use texture if available
     if (box.texture?.bottom) {
-      const bottomMaterialIndex = this.addMaterial({
+      const bottomMaterialIndex = await this.addBoardSurfaceMaterial({
         name: `BottomMaterial_${this.materials.length}`,
-        pbrMetallicRoughness: {
-          baseColorFactor: [0.04, 0.16, 0.08, 1.0],
-          metallicFactor: 0.0,
-          roughnessFactor: 0.8,
-        },
-        alphaMode: "OPAQUE",
+        baseColor: box.texture.bottom,
+        normal: box.texture.bottomNormal,
+        metallicRoughness: box.texture.bottomMetallicRoughness,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
-      if (textureIndex !== -1) {
-        const material = this.materials[bottomMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       faceMaterials.bottom = bottomMaterialIndex
     } else {
       faceMaterials.bottom = defaultMaterialIndex
     }
 
     // Side faces default to green but follow a custom board-side color.
-    const sideMaterialIndex = box.sideColor
-      ? this.addMaterialFromColor({ color: box.sideColor })
-      : this.addMaterial({
-          name: `GreenSideMaterial_${this.materials.length}`,
-          pbrMetallicRoughness: {
-            baseColorFactor: [0.04, 0.16, 0.08, 1.0],
-            metallicFactor: 0.0,
-            roughnessFactor: 0.8,
-          },
-          alphaMode: "OPAQUE",
-        })
+    const sideMaterialIndex = this.addBoardSideMaterial(
+      box.sideColor ?? [10, 41, 20, 1],
+    )
     faceMaterials.front = sideMaterialIndex
     faceMaterials.back = sideMaterialIndex
     faceMaterials.left = sideMaterialIndex
@@ -873,6 +804,13 @@ export class GLTFBuilder {
   }
 
   private addMaterial(material: GLTFMaterial): number {
+    for (const extensionName of Object.keys(material.extensions ?? {})) {
+      this.gltf.extensionsUsed ??= []
+      if (!this.gltf.extensionsUsed.includes(extensionName)) {
+        this.gltf.extensionsUsed.push(extensionName)
+      }
+    }
+
     const materialCacheKey = this.getMaterialCacheKey(material)
     const cachedMaterialIndex = this.materialCache.get(materialCacheKey)
     if (cachedMaterialIndex !== undefined) {
@@ -883,6 +821,92 @@ export class GLTFBuilder {
     this.materials.push(material)
     this.materialCache.set(materialCacheKey, index)
     return index
+  }
+
+  private async addBoardSurfaceMaterial({
+    name,
+    baseColor,
+    normal,
+    metallicRoughness,
+    doubleSided,
+  }: {
+    name: string
+    baseColor: string
+    normal?: string
+    metallicRoughness?: string
+    doubleSided?: boolean
+  }): Promise<number> {
+    const baseColorTextureIndex = await this.addTextureFromDataUrl(baseColor)
+    const normalTextureIndex = normal
+      ? await this.addTextureFromDataUrl(normal)
+      : -1
+    const metallicRoughnessTextureIndex = metallicRoughness
+      ? await this.addTextureFromDataUrl(metallicRoughness)
+      : -1
+
+    const material: GLTFMaterial = {
+      name,
+      pbrMetallicRoughness: {
+        baseColorFactor: [1, 1, 1, 1],
+        metallicFactor: metallicRoughnessTextureIndex === -1 ? 0.015 : 1,
+        roughnessFactor:
+          metallicRoughnessTextureIndex === -1
+            ? REALISTIC_BOARD_SURFACE_MATERIAL.roughness
+            : 1,
+      },
+      alphaMode: "OPAQUE",
+      doubleSided,
+      extensions: {
+        KHR_materials_clearcoat: {
+          clearcoatFactor: REALISTIC_BOARD_SURFACE_MATERIAL.clearcoat,
+          clearcoatRoughnessFactor:
+            REALISTIC_BOARD_SURFACE_MATERIAL.clearcoatRoughness,
+        },
+      },
+    }
+
+    if (baseColorTextureIndex !== -1) {
+      material.pbrMetallicRoughness!.baseColorTexture = {
+        index: baseColorTextureIndex,
+      }
+    }
+    if (normalTextureIndex !== -1) {
+      material.normalTexture = {
+        index: normalTextureIndex,
+        scale: REALISTIC_BOARD_SURFACE_MATERIAL.normalScale,
+      }
+    }
+    if (metallicRoughnessTextureIndex !== -1) {
+      material.pbrMetallicRoughness!.metallicRoughnessTexture = {
+        index: metallicRoughnessTextureIndex,
+      }
+    }
+
+    return this.addMaterial(material)
+  }
+
+  private addBoardSideMaterial(color: Color, doubleSided?: boolean): number {
+    const baseColor: [number, number, number, number] =
+      typeof color === "string"
+        ? this.parseColorString(color)
+        : [color[0] / 255, color[1] / 255, color[2] / 255, color[3]]
+
+    return this.addMaterial({
+      name: `BoardSideMaterial_${this.materials.length}`,
+      pbrMetallicRoughness: {
+        baseColorFactor: baseColor,
+        metallicFactor: 0,
+        roughnessFactor: 0.48,
+      },
+      alphaMode: "OPAQUE",
+      doubleSided,
+      extensions: {
+        KHR_materials_clearcoat: {
+          clearcoatFactor: 0.16,
+          clearcoatRoughnessFactor: 0.3,
+        },
+      },
+    })
   }
 
   private addMaterialFromColor(opts: {

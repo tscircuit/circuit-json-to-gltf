@@ -46,7 +46,7 @@ async function ensureWasmInitialized() {
           Resvg = resvgModule.Resvg
           initWasm = resvgModule.initWasm
 
-          // @ts-ignore - Vite will handle this import
+          // @ts-expect-error - Vite will handle this import
           const wasmUrl = await import("@resvg/resvg-wasm/index_bg.wasm?url")
           await initWasm(fetch(wasmUrl.default))
         } catch {
@@ -54,7 +54,7 @@ async function ensureWasmInitialized() {
           try {
             const cdnUrl =
               "https://cdn.jsdelivr.net/npm/@resvg/resvg-wasm@2.6.2/+esm"
-            // @ts-ignore - Dynamic CDN import not recognized by TypeScript
+            // @ts-expect-error - Dynamic CDN import not recognized by TypeScript
             const resvgModule = await import(/* @vite-ignore */ cdnUrl)
             Resvg = resvgModule.Resvg
             initWasm = resvgModule.initWasm
@@ -83,10 +83,17 @@ export interface SvgToPngOptions {
   fonts?: string[]
 }
 
-export async function svgToPng(
+export interface SvgRaster {
+  width: number
+  height: number
+  pixels: Uint8Array
+  png: Uint8Array
+}
+
+export async function svgToRaster(
   svgString: string,
   options: SvgToPngOptions = {},
-): Promise<Uint8Array> {
+): Promise<SvgRaster> {
   await ensureWasmInitialized()
 
   // Decode the base64-encoded font to Uint8Array
@@ -132,10 +139,23 @@ export async function svgToPng(
   }
 
   const resvg = new Resvg(svgString, opts)
-  const pngData = resvg.render()
-  const pngBuffer = pngData.asPng()
+  const renderedImage = resvg.render()
+  const pngBuffer = renderedImage.asPng()
 
-  return pngBuffer
+  return {
+    width: renderedImage.width,
+    height: renderedImage.height,
+    pixels: Uint8Array.from(renderedImage.pixels),
+    png: Uint8Array.from(pngBuffer),
+  }
+}
+
+export async function svgToPng(
+  svgString: string,
+  options: SvgToPngOptions = {},
+): Promise<Uint8Array> {
+  const raster = await svgToRaster(svgString, options)
+  return raster.png
 }
 
 export async function svgToPngDataUrl(

@@ -17,6 +17,8 @@ export interface GLTF {
   textures?: GLTFTexture[]
   images?: GLTFImage[]
   samplers?: GLTFSampler[]
+  extensionsUsed?: string[]
+  extensionsRequired?: string[]
 }
 
 export interface GLTFScene {
@@ -90,6 +92,10 @@ export interface GLTFMaterial {
     }
     metallicFactor?: number
     roughnessFactor?: number
+    metallicRoughnessTexture?: {
+      index: number
+      texCoord?: number
+    }
   }
   normalTexture?: {
     index: number
@@ -109,6 +115,26 @@ export interface GLTFMaterial {
   alphaMode?: "OPAQUE" | "MASK" | "BLEND"
   alphaCutoff?: number
   doubleSided?: boolean
+  extensions?: {
+    KHR_materials_clearcoat?: {
+      clearcoatFactor?: number
+      clearcoatRoughnessFactor?: number
+      clearcoatTexture?: {
+        index: number
+        texCoord?: number
+      }
+      clearcoatRoughnessTexture?: {
+        index: number
+        texCoord?: number
+      }
+      clearcoatNormalTexture?: {
+        index: number
+        texCoord?: number
+        scale?: number
+      }
+    }
+    [extensionName: string]: unknown
+  }
 }
 
 export interface GLTFTexture {
