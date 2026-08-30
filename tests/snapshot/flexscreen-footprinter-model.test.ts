@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test"
 import type { CircuitJson } from "circuit-json"
-import { convertCircuitJsonTo3D } from "../../lib"
+import { convertCircuitJsonToGltf } from "../../lib"
+import { renderGlbToPng } from "../renderGlbToPng"
 
-test("renders a flexscreen cad_component footprinter string as a mesh", async () => {
+test("flexscreen footprinter model snapshot", async () => {
   const circuitJson = [
     {
       type: "source_component",
@@ -33,15 +34,19 @@ test("renders a flexscreen cad_component footprinter string as a mesh", async ()
     },
   ] as CircuitJson
 
-  const scene = await convertCircuitJsonTo3D(circuitJson, {
-    renderBoardTextures: false,
+  const glb = await convertCircuitJsonToGltf(circuitJson, {
+    format: "glb",
     showBoundingBoxes: false,
   })
 
-  const screen = scene.boxes.find((box) => box.label === "SCREEN")
-  expect(screen?.mesh).toBeDefined()
-  expect(screen?.mesh?.triangles.length).toBeGreaterThan(0)
-  expect(screen?.size.x).toBeGreaterThan(0)
-  expect(screen?.size.y).toBeGreaterThan(0)
-  expect(screen?.size.z).toBeGreaterThan(0)
+  expect(glb).toBeInstanceOf(ArrayBuffer)
+  expect(
+    renderGlbToPng(glb as ArrayBuffer, circuitJson, {
+      backgroundColor: [1, 1, 1],
+      // poppygl camera coordinates are in the glTF frame: +Y is up, in mm.
+      camPos: [55, 55, 45],
+      lookAt: [0, 11, -12],
+      supersampling: 2,
+    }),
+  ).toMatchPngSnapshot(import.meta.path)
 })
