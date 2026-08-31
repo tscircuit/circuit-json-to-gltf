@@ -23,7 +23,7 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
     "earcut": "^3.0.2",
-    "jscad-electronics": "^0.0.155",
+    "jscad-electronics": "^0.0.159",
     "jscad-planner": "^0.0.14",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
