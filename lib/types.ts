@@ -2,6 +2,11 @@ export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
+/** Minimal filesystem capability used to load local model URLs. */
+export interface FilesystemInterface {
+  readFile(fileUrl: URL): Promise<ArrayBuffer | Uint8Array>
+}
+
 export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
@@ -20,6 +25,7 @@ export interface ConversionOptions {
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }
 
 export interface CoordinateTransformConfig {
@@ -163,6 +169,7 @@ export interface CircuitTo3DOptions {
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }
 
 export interface BoardRenderOptions {
