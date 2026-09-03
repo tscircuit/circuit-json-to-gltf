@@ -5,7 +5,12 @@ import path from "node:path"
 import { pathToFileURL } from "node:url"
 import { fetchWithTimeout } from "../../lib/loaders/fetch-with-timeout"
 import { loadGLTF } from "../../lib/loaders/gltf"
-import { loadOBJ } from "../../lib/loaders/obj"
+import { clearOBJCache, loadOBJ } from "../../lib/loaders/obj"
+import type { FilesystemInterface } from "../../lib/types"
+
+const fs: FilesystemInterface = {
+  readFile: async (fileUrl) => new Uint8Array(await readFile(fileUrl)),
+}
 
 async function withDirectory(run: (dir: string) => Promise<void>) {
   const dir = await mkdtemp(path.join(tmpdir(), "local-cad-"))
@@ -21,7 +26,7 @@ test("file URLs preserve binary bytes and URL-escaped filenames", async () => {
     const file = path.join(dir, "model #1%.bin")
     const bytes = Buffer.from([0, 127, 128, 255])
     await writeFile(file, bytes)
-    const response = await fetchWithTimeout(pathToFileURL(file).href)
+    const response = await fetchWithTimeout(pathToFileURL(file).href, { fs })
     expect(response.ok).toBe(true)
     expect(Buffer.from(await response.arrayBuffer())).toEqual(bytes)
   })
@@ -34,6 +39,7 @@ test("OBJ file references load geometry with a registry base URL configured", as
     const mesh = await loadOBJ({
       url: pathToFileURL(file).href,
       projectBaseUrl: "https://registry.example/api/",
+      fs,
     })
     expect(mesh.triangles).toHaveLength(1)
   })
@@ -72,7 +78,7 @@ test("local GLTF loads its relative external binary buffer", async () => {
     const file = path.join(dir, "part.gltf")
     await writeFile(file, JSON.stringify(gltf))
     await writeFile(path.join(dir, "geometry.bin"), binary)
-    const mesh = await loadGLTF({ url: pathToFileURL(file).href })
+    const mesh = await loadGLTF({ url: pathToFileURL(file).href, fs })
     expect(mesh.triangles).toHaveLength(1)
     expect(JSON.parse(await readFile(file, "utf8")).buffers[0].uri).toBe(
       "geometry.bin",
@@ -83,12 +89,32 @@ test("local GLTF loads its relative external binary buffer", async () => {
 test("missing model files reject with the filesystem error", async () => {
   await withDirectory(async (dir) => {
     await expect(
-      fetchWithTimeout(pathToFileURL(path.join(dir, "missing.obj")).href),
+      fetchWithTimeout(pathToFileURL(path.join(dir, "missing.obj")).href, {
+        fs,
+      }),
     ).rejects.toMatchObject({ code: "ENOENT" })
   })
 })
 
-test("file loading works under Node without fetch file support", async () => {
+test("file URLs give a clear error when no filesystem is provided", async () => {
+  await expect(fetchWithTimeout("file:///part.obj")).rejects.toThrow(
+    "provide a FilesystemInterface as options.fs",
+  )
+})
+
+test("model caches distinguish filesystem instances", async () => {
+  clearOBJCache()
+  const makeFs = (width: number): FilesystemInterface => ({
+    readFile: async () =>
+      new TextEncoder().encode(`v 0 0 0\nv ${width} 0 0\nv 0 1 0\nf 1 2 3\n`),
+  })
+  const first = await loadOBJ({ url: "file:///part.obj", fs: makeFs(1) })
+  const second = await loadOBJ({ url: "file:///part.obj", fs: makeFs(5) })
+  expect(first.boundingBox.max.x).toBe(1)
+  expect(second.boundingBox.max.x).toBe(5)
+})
+
+test("a user-provided filesystem works under Node", async () => {
   await withDirectory(async (dir) => {
     const file = path.join(dir, "part.obj")
     await writeFile(file, "v 1 2 3")
@@ -100,8 +126,10 @@ test("file loading works under Node without fetch file support", async () => {
     })
     expect(build.success).toBe(true)
     const script = `
+      import { readFile } from "node:fs/promises";
       import { fetchWithTimeout } from ${JSON.stringify(pathToFileURL(path.join(dir, "loader.mjs")).href)};
-      const response = await fetchWithTimeout(${JSON.stringify(pathToFileURL(file).href)});
+      const fs = { readFile: async (fileUrl) => new Uint8Array(await readFile(fileUrl)) };
+      const response = await fetchWithTimeout(${JSON.stringify(pathToFileURL(file).href)}, { fs });
       console.log(await response.text());
     `
     const child = Bun.spawn(["node", "--input-type=module", "-e", script], {
