@@ -21,6 +21,17 @@ export async function fetchWithTimeout(
   }, timeoutMs)
 
   try {
+    // Node's fetch does not support file URLs. Load these on demand, keeping
+    // the URL intact so GLTF buffers can still resolve relative to the model.
+    if (
+      url.startsWith("file:") &&
+      typeof process !== "undefined" &&
+      process.versions?.node
+    ) {
+      const { readFile } = await import("node:fs/promises")
+      const bytes = await readFile(new URL(url), { signal: controller.signal })
+      return new Response(new Uint8Array(bytes))
+    }
     return await fetch(url, {
       headers: authHeaders,
       signal: controller.signal,
