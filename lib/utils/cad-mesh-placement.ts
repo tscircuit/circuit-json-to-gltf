@@ -87,6 +87,11 @@ function getInferredMeshOrigin(
   const alignment = cad.model_origin_alignment ?? cad.anchor_alignment
 
   if (alignment === "center_of_component_on_board_surface") {
+    // Match 3d-viewer's getCadModelTransform: OBJ models keep their supplied
+    // origin unless model_origin_position explicitly overrides it. Centering
+    // their lowest vertices shifts connectors away from their solder pads.
+    if (cad.model_obj_url) return { x: 0, y: 0, z: 0 }
+
     const contactBounds = getBoardContactBounds(mesh)
     const center = getBoundingBoxCenter(contactBounds ?? meshBounds)
 
