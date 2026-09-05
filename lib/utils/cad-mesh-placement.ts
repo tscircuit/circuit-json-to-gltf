@@ -15,6 +15,10 @@ import {
   scaleMeshByAxis,
 } from "./mesh-scale"
 
+type BoardSurfaceOriginStrategy =
+  | "infer_from_contact_bounds"
+  | "preserve_model_origin"
+
 function getOrientationRotationForBoardNormal(
   modelBoardNormalDirection?: CadComponent["model_board_normal_direction"],
 ): Point3 {
@@ -82,11 +86,16 @@ function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
 function getInferredMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,
+  boardSurfaceOriginStrategy: BoardSurfaceOriginStrategy,
 ): Point3 {
   const meshBounds = mesh.boundingBox
   const alignment = cad.model_origin_alignment ?? cad.anchor_alignment
 
   if (alignment === "center_of_component_on_board_surface") {
+    if (boardSurfaceOriginStrategy === "preserve_model_origin") {
+      return { x: 0, y: 0, z: 0 }
+    }
+
     const contactBounds = getBoardContactBounds(mesh)
     const center = getBoundingBoxCenter(contactBounds ?? meshBounds)
 
@@ -110,6 +119,7 @@ export function getMeshOrigin(
   options?: {
     loaderTransform?: CoordinateTransformConfig
     modelBoardNormalDirection?: CadComponent["model_board_normal_direction"]
+    boardSurfaceOriginStrategy?: BoardSurfaceOriginStrategy
   },
 ): Point3 | null {
   if (cad.model_origin_position) {
@@ -133,7 +143,11 @@ export function getMeshOrigin(
     return origin
   }
 
-  return getInferredMeshOrigin(cad, mesh)
+  return getInferredMeshOrigin(
+    cad,
+    mesh,
+    options?.boardSurfaceOriginStrategy ?? "infer_from_contact_bounds",
+  )
 }
 
 export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(

@@ -550,6 +550,10 @@ export async function convertCircuitJsonTo3D(
       const meshOrigin = getMeshOrigin(cad, box.mesh, {
         loaderTransform: defaultTransform,
         modelBoardNormalDirection: cad.model_board_normal_direction,
+        boardSurfaceOriginStrategy:
+          meshType === "obj"
+            ? "preserve_model_origin"
+            : "infer_from_contact_bounds",
       })
       if (meshOrigin) {
         box.mesh = translateMesh(box.mesh, {
