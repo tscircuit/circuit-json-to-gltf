@@ -113,12 +113,6 @@ function getInferredMeshOrigin(
   return { x: 0, y: 0, z: 0 }
 }
 
-/**
- * Returns an origin point in the mesh's intermediate Scene3D frame (mm):
- * +X follows Circuit X, +Y is up, and +Z follows Circuit Y, before placement.
- * Explicit model origins pass through the same loader and board-normal
- * transforms as the mesh. Subtract this point before fitting and placement.
- */
 export function getMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,
