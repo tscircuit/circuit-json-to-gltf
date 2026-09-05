@@ -84,19 +84,6 @@ When a `pcb_board` supplies `solder_mask_color`, the renderer uses it for the
 board surface and derives contrasting covered-copper, substrate-edge, and
 silkscreen colors. Explicit conversion options take precedence.
 
-### OBJ model origins
-
-For `center_of_component_on_board_surface`, OBJ coordinates retain their
-authored origin, matching the interactive 3D viewer's `MixedStlModel` and
-`getModelOriginOffset` in `src/utils/cad-model-transform.ts`. This is a
-tscircuit placement convention, not a guarantee of the OBJ file format:
-asymmetric mounting tabs or pins must not move the model's footprint anchor.
-
-Use `model_origin_position` when the intended anchor is at a nonzero point in
-the model, or `model_origin_alignment: "center"` to use its bounding-box center.
-An explicit origin takes precedence over alignment. Other model formats keep
-their existing contact-bounds inference for board-surface alignment.
-
 ## Architecture
 
 The converter uses a modular architecture:
