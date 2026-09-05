@@ -550,9 +550,6 @@ export async function convertCircuitJsonTo3D(
       const meshOrigin = getMeshOrigin(cad, box.mesh, {
         loaderTransform: defaultTransform,
         modelBoardNormalDirection: cad.model_board_normal_direction,
-        // Match 3d-viewer's MixedStlModel and cad-model-transform.ts
-        // getModelOriginOffset: OBJ coordinates retain their authored origin;
-        // model_origin_position supplies an explicit offset when needed.
         boardSurfaceOriginStrategy:
           meshType === "obj"
             ? "preserve_model_origin"
