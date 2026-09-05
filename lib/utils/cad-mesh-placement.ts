@@ -92,11 +92,12 @@ function getInferredMeshOrigin(
   const alignment = cad.model_origin_alignment ?? cad.anchor_alignment
 
   if (alignment === "center_of_component_on_board_surface") {
+    if (boardSurfaceOriginStrategy === "preserve_model_origin") {
+      return { x: 0, y: 0, z: 0 }
+    }
+
     const contactBounds = getBoardContactBounds(mesh)
-    const center =
-      boardSurfaceOriginStrategy === "preserve_model_origin"
-        ? { x: 0, y: 0, z: 0 }
-        : getBoundingBoxCenter(contactBounds ?? meshBounds)
+    const center = getBoundingBoxCenter(contactBounds ?? meshBounds)
 
     return {
       x: center.x,
@@ -112,6 +113,12 @@ function getInferredMeshOrigin(
   return { x: 0, y: 0, z: 0 }
 }
 
+/**
+ * Returns an origin point in the mesh's intermediate Scene3D frame (mm):
+ * +X follows Circuit X, +Y is up, and +Z follows Circuit Y, before placement.
+ * Explicit model origins pass through the same loader and board-normal
+ * transforms as the mesh. Subtract this point before fitting and placement.
+ */
 export function getMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,

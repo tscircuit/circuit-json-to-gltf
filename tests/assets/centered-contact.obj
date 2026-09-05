@@ -1,0 +1,9 @@
+# Z-up, mm. The first vertex is an off-axis marker; the base is centered at zero.
+v 2 3 1
+v -2 -3 0
+v -2 3 0
+v 2 -3 0
+f 1 2 3
+f 1 4 2
+f 1 3 4
+f 2 4 3

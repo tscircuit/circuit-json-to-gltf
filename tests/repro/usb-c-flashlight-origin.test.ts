@@ -13,12 +13,16 @@ test("USB connector reaches its solder pads in the exported flashlight", async (
     (element): element is CadComponent =>
       element.type === "cad_component" && Boolean(element.model_obj_url),
   )!
+  const source = circuitJson
+    .filter((element) => element.type === "source_component")
+    .find((element) => element.source_component_id === cad.source_component_id)!
   const scene = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: false,
   })
   const connector = scene.boxes.find(
-    (box) => box.mesh && box.center.z === cad.position.y,
+    (box) => box.label === source.name && box.meshUrl === cad.model_obj_url,
   )!
+  expect(connector?.mesh).toBeDefined()
   const pads = circuitJson.filter(
     (element): element is PcbSmtPad =>
       element.type === "pcb_smtpad" &&
