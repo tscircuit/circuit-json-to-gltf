@@ -17,16 +17,21 @@ const rotatedPillHole = (rotation: number): PcbPlatedHole =>
     pcb_plated_hole_id: "pcb_plated_hole_0",
     pcb_component_id: "pcb_component_0",
     shape: "rotated_pill_hole_with_rect_pad",
+    hole_shape: "pill",
+    pad_shape: "rect",
     hole_width: 1,
     hole_height: 3,
     hole_diameter: 1,
+    hole_ccw_rotation: 0,
+    hole_offset_x: 0,
+    hole_offset_y: 0,
     rect_pad_width: 2,
     rect_pad_height: 4,
     rect_ccw_rotation: rotation,
     x: 0,
     y: 0,
     layers: ["top", "bottom"],
-  }) as PcbPlatedHole
+  }) as unknown as PcbPlatedHole
 
 test("rotated_pill_hole_with_rect_pad drills a pill, not a circle from hole_diameter", () => {
   const loops = createHoleLoops({
