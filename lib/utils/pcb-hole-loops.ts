@@ -152,7 +152,11 @@ export const createHoleLoops = ({
       continue
     }
 
-    if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
+    if (
+      plated.shape === "pill" ||
+      plated.shape === "pill_hole_with_rect_pad" ||
+      plated.shape === "rotated_pill_hole_with_rect_pad"
+    ) {
       const holeWidth =
         getNumberProperty(platedRecord, "hole_width") ??
         getNumberProperty(platedRecord, "outer_diameter") ??
@@ -163,7 +167,10 @@ export const createHoleLoops = ({
         0
       if (!holeWidth || !holeHeight) continue
 
-      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotation =
+        getNumberProperty(platedRecord, "rect_ccw_rotation") ??
+        getNumberProperty(platedRecord, "ccw_rotation") ??
+        0
       const rotationRad = -(rotation * Math.PI) / 180
       let loop = createRoundedRectLoop({
         width: holeWidth,
