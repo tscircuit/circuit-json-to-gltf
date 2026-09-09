@@ -808,6 +808,14 @@ export class GLTFBuilder {
     componentType: number,
     target: number,
   ): number {
+    // glTF reserves 65535 for primitive restart; larger indices also wrap in uint16.
+    if (
+      target === TARGET.ELEMENT_ARRAY_BUFFER &&
+      componentType === COMPONENT_TYPE.UNSIGNED_SHORT &&
+      data.some((index) => index >= 65535)
+    ) {
+      componentType = COMPONENT_TYPE.UNSIGNED_INT
+    }
     const accessorIndex = this.accessors.length
 
     // Create buffer view
