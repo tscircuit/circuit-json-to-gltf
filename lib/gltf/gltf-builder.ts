@@ -808,6 +808,8 @@ export class GLTFBuilder {
     componentType: number,
     target: number,
   ): number {
+    // An odd count of uint16 indices leaves the next vertex buffer unaligned.
+    this.bufferBuilder.align(4)
     const accessorIndex = this.accessors.length
 
     // Create buffer view
