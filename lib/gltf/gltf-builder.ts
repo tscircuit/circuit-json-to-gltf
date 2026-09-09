@@ -808,6 +808,13 @@ export class GLTFBuilder {
     componentType: number,
     target: number,
   ): number {
+    const accessorIndex = this.accessors.length
+
+    // Create buffer view
+    const bufferViewIndex = this.bufferViews.length
+    let byteOffset: number
+    let byteLength: number
+
     // glTF reserves 65535 for primitive restart; larger indices also wrap in uint16.
     if (
       target === TARGET.ELEMENT_ARRAY_BUFFER &&
@@ -816,13 +823,6 @@ export class GLTFBuilder {
     ) {
       componentType = COMPONENT_TYPE.UNSIGNED_INT
     }
-    const accessorIndex = this.accessors.length
-
-    // Create buffer view
-    const bufferViewIndex = this.bufferViews.length
-    let byteOffset: number
-    let byteLength: number
-
     if (componentType === COMPONENT_TYPE.FLOAT) {
       byteOffset = this.bufferBuilder.addFloat32Array(data)
       byteLength = data.length * 4
