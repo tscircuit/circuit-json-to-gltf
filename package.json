@@ -17,7 +17,8 @@
     "build": "tsup-node"
   },
   "files": [
-    "dist"
+    "dist",
+    "LIBERATION-FONTS-LICENSE.txt"
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",

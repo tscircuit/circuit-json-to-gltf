@@ -1,5 +1,6 @@
 import type { ResvgRenderOptions } from "@resvg/resvg-js"
 import tscircuitFont from "@tscircuit/alphabet/base64font"
+import liberationSansFont from "../assets/liberation-sans-font"
 
 let wasmInitialized = false
 let Resvg: typeof import("@resvg/resvg-wasm").Resvg
@@ -113,10 +114,11 @@ export async function svgToPng(
     background: options.background,
     font: {
       loadSystemFonts: false,
-      fontBuffers: [fontBuffer],
-      defaultFontFamily: "TscircuitAlphabet",
+      fontBuffers: [fontBuffer, base64ToUint8Array(liberationSansFont)],
+      defaultFontFamily: "Liberation Sans",
       monospaceFamily: "TscircuitAlphabet",
-      sansSerifFamily: "TscircuitAlphabet",
+      // Match the native renderer and the Arial metrics used by PCB SVGs.
+      sansSerifFamily: "Liberation Sans",
     },
     fitTo: options.width
       ? {

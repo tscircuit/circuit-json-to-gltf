@@ -1,5 +1,6 @@
 import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
 import tscircuitFont from "@tscircuit/alphabet/base64font"
+import liberationSansFont from "../assets/liberation-sans-font"
 
 export interface SvgToPngOptions {
   width?: number
@@ -19,6 +20,7 @@ export async function svgToPng(
   const fontBuffer = Buffer.from(tscircuitFont, "base64")
 
   let tempFontPath: string | undefined
+  let sansFontPath: string | undefined
   let cleanupFn: (() => void) | undefined
 
   // In Node.js, write font to a temporary file
@@ -33,10 +35,14 @@ export async function svgToPng(
       const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "resvg-font-"))
       tempFontPath = path.join(tempDir, "tscircuit-font.ttf")
       fs.writeFileSync(tempFontPath, fontBuffer)
+      sansFontPath = path.join(tempDir, "LiberationSans-Regular.ttf")
+      fs.writeFileSync(sansFontPath, Buffer.from(liberationSansFont, "base64"))
 
       cleanupFn = () => {
         try {
           fs.unlinkSync(tempFontPath!)
+          fs.unlinkSync(sansFontPath!)
+          fs.rmdirSync(tempDir)
         } catch {
           // Ignore errors during cleanup
         }
@@ -65,12 +71,13 @@ export async function svgToPng(
           : undefined,
       font: {
         fontFiles: tempFontPath
-          ? [tempFontPath, ...(options.fonts || [])]
+          ? [tempFontPath, sansFontPath!, ...(options.fonts || [])]
           : options.fonts || [],
         loadSystemFonts: false,
-        defaultFontFamily: "TscircuitAlphabet",
+        defaultFontFamily: "Liberation Sans",
         monospaceFamily: "TscircuitAlphabet",
-        sansSerifFamily: "TscircuitAlphabet",
+        // PCB SVGs request Arial, sans-serif. Use compatible metrics.
+        sansSerifFamily: "Liberation Sans",
       },
     }
 
