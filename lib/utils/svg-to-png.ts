@@ -1,5 +1,5 @@
 import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
-import tscircuitFont from "../assets/tscircuit-font"
+import tscircuitFont from "@tscircuit/alphabet/base64font"
 
 export interface SvgToPngOptions {
   width?: number
