@@ -1,5 +1,5 @@
 import type { ResvgRenderOptions } from "@resvg/resvg-js"
-import tscircuitFont from "../assets/tscircuit-font"
+import tscircuitFont from "@tscircuit/alphabet/base64font"
 
 let wasmInitialized = false
 let Resvg: typeof import("@resvg/resvg-wasm").Resvg

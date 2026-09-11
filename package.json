@@ -13,7 +13,6 @@
     "format": "biome format --write .",
     "format:check": "biome format .",
     "build:site": "cosmos-export",
-    "build:font": "bun scripts/encode-font.ts",
     "start": "cosmos",
     "build": "tsup-node"
   },
@@ -22,6 +21,7 @@
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
+    "@tscircuit/alphabet": "^0.0.25",
     "earcut": "^3.0.2",
     "jscad-electronics": "^0.0.159",
     "jscad-planner": "^0.0.14",
@@ -31,10 +31,10 @@
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
     "@google/model-viewer": "^4.1.0",
+    "@napi-rs/canvas": "^1.0.9",
     "@playwright/test": "^1.58.2",
     "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
-    "@tscircuit/alphabet": "^0.0.25",
     "@tscircuit/circuit-json-util": "^0.0.102",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
