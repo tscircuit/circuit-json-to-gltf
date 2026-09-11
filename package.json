@@ -31,6 +31,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
     "@google/model-viewer": "^4.1.0",
+    "@napi-rs/canvas": "^1.0.9",
     "@playwright/test": "^1.58.2",
     "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
