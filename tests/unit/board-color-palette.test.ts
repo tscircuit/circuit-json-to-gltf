@@ -51,3 +51,22 @@ test("uses pcb_board colors and supports the soldermask_color alias", () => {
   )
   expect(getBoardColorPalette(canonicalCircuit).silkscreenColor).toBe("#ffffff")
 })
+
+for (const solder_mask_color of [undefined, "green", "not_specified"]) {
+  test(`default FR4 mask matches the interactive viewer (${solder_mask_color})`, () => {
+    const circuit = [
+      { type: "pcb_board", material: "fr4", solder_mask_color },
+    ] as CircuitJson
+    const palette = getBoardColorPalette(circuit)
+    expect(palette.backgroundColor).toBe("#0f4f30")
+    expect(palette.solderMaskWithCopperColor).toBe("#17613b")
+  })
+}
+
+test("default FR1 retains its material-specific palette", () => {
+  const circuit = [{ type: "pcb_board", material: "fr1" }] as CircuitJson
+  expect(getBoardColorPalette(circuit)).toMatchObject({
+    backgroundColor: "#051a0a",
+    solderMaskWithCopperColor: "#e69933",
+  })
+})

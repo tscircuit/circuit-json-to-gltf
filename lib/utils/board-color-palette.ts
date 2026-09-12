@@ -155,8 +155,18 @@ export function getBoardColorPalette(
     legacyBoard?.soldermask_color
   const silkscreenColor = overrides.silkscreenColor ?? board?.silkscreen_color
 
-  if (!solderMaskColor) {
-    return { silkscreenColor: normalizeColor(silkscreenColor) }
+  if (
+    !solderMaskColor ||
+    ["green", "not_specified"].includes(solderMaskColor.trim().toLowerCase())
+  ) {
+    // Match 3d-viewer's getSoldermaskPalette and geoms/constants (sRGB).
+    // Covered copper is only slightly lighter than the surrounding mask.
+    const isFr1 = board?.material === "fr1"
+    return {
+      backgroundColor: isFr1 ? "#051a0a" : "#0f4f30",
+      solderMaskWithCopperColor: isFr1 ? "#e69933" : "#17613b",
+      silkscreenColor: normalizeColor(silkscreenColor) ?? "#ffffff",
+    }
   }
   return deriveBoardColorPalette(solderMaskColor, silkscreenColor)
 }
