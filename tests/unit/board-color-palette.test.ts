@@ -16,9 +16,9 @@ test("derives a complete palette from a light solder mask", () => {
 
 test("derives contrasting colors for named dark solder masks", () => {
   expect(deriveBoardColorPalette("green")).toEqual({
-    backgroundColor: "#0f3812",
-    boardSideColor: "#0b2b0e",
-    solderMaskWithCopperColor: "#5c785e",
+    backgroundColor: "#0f4f30",
+    boardSideColor: "#0b3c24",
+    solderMaskWithCopperColor: "#17613b",
     silkscreenColor: "#ffffff",
   })
 })

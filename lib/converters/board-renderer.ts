@@ -1,7 +1,10 @@
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import type { BoardRenderOptions } from "../types"
-import { getBoardColorPalette } from "../utils/board-color-palette"
+import {
+  DEFAULT_GREEN_SOLDER_MASK,
+  getBoardColorPalette,
+} from "../utils/board-color-palette"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
@@ -19,13 +22,15 @@ export async function renderBoardLayer(
     showPcbNotes = false,
   } = options
   const backgroundColor =
-    options.backgroundColor ?? palette.backgroundColor ?? "transparent"
+    options.backgroundColor ??
+    palette.backgroundColor ??
+    DEFAULT_GREEN_SOLDER_MASK.backgroundColor
   const silkscreenColor =
     options.silkscreenColor ?? palette.silkscreenColor ?? "#ffffff"
   const solderMaskWithCopperColor =
     options.solderMaskWithCopperColor ??
     palette.solderMaskWithCopperColor ??
-    "#69e778ff"
+    DEFAULT_GREEN_SOLDER_MASK.solderMaskWithCopperColor
 
   const svg = convertCircuitJsonToPcbSvg(circuitJson, {
     layer,
@@ -156,13 +161,15 @@ export async function renderBoardTextures(
     silkscreenColor,
   })
   const resolvedBackgroundColor =
-    backgroundColor ?? palette.backgroundColor ?? "#0F3812"
+    backgroundColor ??
+    palette.backgroundColor ??
+    DEFAULT_GREEN_SOLDER_MASK.backgroundColor
   const resolvedSilkscreenColor =
     silkscreenColor ?? palette.silkscreenColor ?? "#ffffff"
   const resolvedSolderMaskWithCopperColor =
     solderMaskWithCopperColor ??
     palette.solderMaskWithCopperColor ??
-    "#69e778ff"
+    DEFAULT_GREEN_SOLDER_MASK.solderMaskWithCopperColor
 
   // Render sequentially to avoid concurrent Resvg WASM usage
   // which causes "recursive use of an object" Rust aliasing errors
