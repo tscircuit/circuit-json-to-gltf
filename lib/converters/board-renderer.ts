@@ -3,6 +3,18 @@ import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import type { BoardRenderOptions } from "../types"
 import { getBoardColorPalette } from "../utils/board-color-palette"
 
+const filterFabricationNotesForBoardTexture = (
+  circuitJson: CircuitJson,
+  layer: "top" | "bottom",
+  showPcbNotes: boolean,
+): CircuitJson =>
+  circuitJson.filter((element) => {
+    if (!element.type.startsWith("pcb_fabrication_note_")) return true
+    if (!showPcbNotes) return false
+
+    return !("layer" in element) || element.layer === layer
+  })
+
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
   options: BoardRenderOptions,
@@ -27,7 +39,16 @@ export async function renderBoardLayer(
     palette.solderMaskWithCopperColor ??
     "#69e778ff"
 
-  const svg = convertCircuitJsonToPcbSvg(circuitJson, {
+  // Fabrication annotations are engineering overlays, not physical markings.
+  // Filter them here so board textures remain correct even when the SVG
+  // renderer does not apply showPcbNotes or layer filtering consistently.
+  const boardTextureCircuitJson = filterFabricationNotesForBoardTexture(
+    circuitJson,
+    layer,
+    showPcbNotes,
+  )
+
+  const svg = convertCircuitJsonToPcbSvg(boardTextureCircuitJson, {
     layer,
     matchBoardAspectRatio: true,
     backgroundColor,
