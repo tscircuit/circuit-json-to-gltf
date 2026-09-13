@@ -28,7 +28,7 @@ jobs:
         run: bunx playwright install --with-deps chromium
 
       - name: Run Playwright tests
-        run: bun run test:playwright -- playwright/step-model-to-gltf.pw.ts
+        run: bun run test:playwright
 
       - name: Upload Playwright artifacts
         if: failure()
