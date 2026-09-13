@@ -54,9 +54,25 @@ export default function CircuitToGltfDemo({
   const [gltfUrl, setGltfUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string>("")
-  const [circuitJson, setCircuitJson] = useState(
+  const [circuitJson, setCircuitJson] = useState(() =>
     JSON.stringify(initialCircuitJson ?? usbCFlashlightCircuit, null, 2),
   )
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null)
+  const [isDragging, setIsDragging] = useState(false)
+  const dragDepth = useRef(0)
+
+  const selectFile = (files: FileList) => {
+    if (loading) return
+    const file = files.item(0)
+    if (files.length !== 1 || !file?.name.toLowerCase().endsWith(".json")) {
+      setError("Choose a single .json file containing Circuit JSON.")
+      return
+    }
+    setUploadedFile(file)
+    setGltfUrl("")
+    setError("")
+  }
+
   const [format, setFormat] = useState<"gltf" | "glb">(initialFormat)
 
   const convertToGltf = async () => {
@@ -64,7 +80,12 @@ export default function CircuitToGltfDemo({
     setError("")
 
     try {
-      const circuit = JSON.parse(circuitJson)
+      const circuit = JSON.parse(
+        uploadedFile ? await uploadedFile.text() : circuitJson,
+      )
+      if (!Array.isArray(circuit)) {
+        throw new Error("Circuit JSON must be an array of circuit elements.")
+      }
 
       // Now we can use texture rendering with WASM!
       const result = await convertCircuitJsonToGltf(circuit, {
@@ -108,25 +129,104 @@ export default function CircuitToGltfDemo({
   }, [gltfUrl])
 
   return (
-    <div style={{ padding: "20px", fontFamily: "monospace" }}>
+    <div
+      onDragEnter={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return
+        event.preventDefault()
+        dragDepth.current += 1
+        setIsDragging(true)
+      }}
+      onDragOver={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return
+        event.preventDefault()
+        event.dataTransfer.dropEffect = loading ? "none" : "copy"
+      }}
+      onDragLeave={(event) => {
+        event.preventDefault()
+        dragDepth.current = Math.max(0, dragDepth.current - 1)
+        if (dragDepth.current === 0) setIsDragging(false)
+      }}
+      onDrop={(event) => {
+        if (!event.dataTransfer.types.includes("Files")) return
+        event.preventDefault()
+        dragDepth.current = 0
+        setIsDragging(false)
+        selectFile(event.dataTransfer.files)
+      }}
+      style={{
+        padding: "20px",
+        fontFamily: "monospace",
+        backgroundColor: isDragging ? "#eaf4ff" : undefined,
+      }}
+    >
       <h1>Circuit JSON to GLTF Converter</h1>
 
       <div style={{ display: "flex", gap: "20px", marginBottom: "20px" }}>
         <div style={{ flex: 1 }}>
           <h2>Circuit JSON Input</h2>
-          <textarea
-            value={circuitJson}
-            onChange={(e) => setCircuitJson(e.target.value)}
+          <div
             style={{
-              width: "100%",
-              height: "400px",
-              fontFamily: "monospace",
-              fontSize: "12px",
-              padding: "10px",
-              border: "1px solid #ccc",
+              padding: "16px",
+              marginBottom: "10px",
+              border: "2px dashed #aaa",
               borderRadius: "4px",
             }}
-          />
+          >
+            <label>
+              Drop a Circuit JSON file anywhere on this page or choose a file:
+              <input
+                type="file"
+                accept=".json,application/json"
+                disabled={loading}
+                onChange={(event) => {
+                  if (event.target.files?.length) selectFile(event.target.files)
+                  event.target.value = ""
+                }}
+                style={{ display: "block", marginTop: "10px" }}
+              />
+            </label>
+          </div>
+          {uploadedFile ? (
+            <div
+              role="status"
+              aria-label="Selected circuit file"
+              style={{ overflowWrap: "anywhere" }}
+            >
+              <p>
+                Selected: {uploadedFile.name} (
+                {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB)
+              </p>
+              <p>
+                File contents are kept out of the text editor. Click Convert to
+                GLTF to load the model.
+              </p>
+              <button
+                disabled={loading}
+                onClick={() => {
+                  setUploadedFile(null)
+                  setGltfUrl("")
+                  setError("")
+                }}
+              >
+                Use text input
+              </button>
+            </div>
+          ) : (
+            <textarea
+              aria-label="Circuit JSON"
+              value={circuitJson}
+              onChange={(e) => setCircuitJson(e.target.value)}
+              style={{
+                width: "100%",
+                height: "400px",
+                fontFamily: "monospace",
+                fontSize: "12px",
+                padding: "10px",
+                border: "1px solid #ccc",
+                borderRadius: "4px",
+              }}
+            />
+          )}
 
           <div style={{ marginTop: "10px" }}>
             <label>
@@ -160,6 +260,7 @@ export default function CircuitToGltfDemo({
 
           {error && (
             <div
+              role="alert"
               style={{
                 marginTop: "10px",
                 padding: "10px",
@@ -246,8 +347,9 @@ export default function CircuitToGltfDemo({
           <li>STL/OBJ model loading for components (if URLs provided)</li>
         </ul>
         <p>
-          Edit the Circuit JSON on the left and click "Convert to GLTF" to see
-          the 3D model. Use your mouse to rotate and zoom the view.
+          Drop or choose a Circuit JSON file, or edit the JSON on the left, and
+          click "Convert to GLTF" to see the 3D model. Use your mouse to rotate
+          and zoom the view.
         </p>
       </div>
     </div>
