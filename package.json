@@ -21,7 +21,6 @@
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
-    "@tscircuit/alphabet": "^0.0.27",
     "earcut": "^3.0.2",
     "jscad-electronics": "^0.0.159",
     "jscad-planner": "^0.0.14",
@@ -35,6 +34,7 @@
     "@playwright/test": "^1.58.2",
     "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
+    "@tscircuit/alphabet": "^0.0.27",
     "@tscircuit/circuit-json-util": "^0.0.102",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
@@ -59,6 +59,7 @@
     "typescript": "^5",
     "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
+    "@tscircuit/alphabet": "^0.0.27",
     "circuit-to-svg": ">=0.0.417",
     "@tscircuit/circuit-json-util": "*",
     "circuit-json": "*"
