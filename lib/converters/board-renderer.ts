@@ -32,18 +32,14 @@ export async function renderBoardLayer(
     palette.solderMaskWithCopperColor ??
     DEFAULT_GREEN_SOLDER_MASK.solderMaskWithCopperColor
 
-  // Fabrication notes are drawing annotations, not physical board markings.
-  // circuit-to-svg's showPcbNotes only controls pcb_note_* records.
-  const boardTextureCircuitJson = circuitJson.filter(
-    (element) => !element.type.startsWith("pcb_fabrication_note_"),
-  )
-  const svg = convertCircuitJsonToPcbSvg(boardTextureCircuitJson, {
+  const svg = convertCircuitJsonToPcbSvg(circuitJson, {
     layer,
     matchBoardAspectRatio: true,
     backgroundColor,
     drawPaddingOutsideBoard: false,
     showSolderMask: true,
     showPcbNotes,
+    showFabricationNotes: false,
     colorOverrides: {
       soldermask: {
         top: backgroundColor,

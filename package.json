@@ -43,7 +43,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
     "circuit-json": "^0.0.456",
-    "circuit-to-svg": "^0.0.393",
+    "circuit-to-svg": "^0.0.422",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
     "poppygl": "^0.0.29",
@@ -59,7 +59,7 @@
     "typescript": "^5",
     "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
-    "circuit-to-svg": "*",
+    "circuit-to-svg": ">=0.0.422",
     "@tscircuit/circuit-json-util": "*",
     "circuit-json": "*"
   },
