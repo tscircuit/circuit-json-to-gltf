@@ -39,6 +39,7 @@ export async function renderBoardLayer(
     drawPaddingOutsideBoard: false,
     showSolderMask: true,
     showPcbNotes,
+    showFabricationNotes: false,
     colorOverrides: {
       soldermask: {
         top: backgroundColor,
