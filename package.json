@@ -2,7 +2,7 @@
   "name": "circuit-json-to-gltf",
   "main": "dist/index.js",
   "type": "module",
-  "version": "0.0.125",
+  "version": "0.0.128",
   "repository": {
     "type": "git",
     "url": "https://github.com/tscircuit/circuit-json-to-gltf.git"
@@ -43,7 +43,7 @@
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
     "circuit-json": "^0.0.456",
-    "circuit-to-svg": "^0.0.417",
+    "circuit-to-svg": "^0.0.422",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
     "poppygl": "^0.0.29",
@@ -56,11 +56,11 @@
     "vite": "^7.1.1"
   },
   "peerDependencies": {
+    "@tscircuit/alphabet": "^0.0.27",
     "typescript": "^5",
     "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
-    "@tscircuit/alphabet": "^0.0.27",
-    "circuit-to-svg": ">=0.0.417",
+    "circuit-to-svg": ">=0.0.422",
     "@tscircuit/circuit-json-util": "*",
     "circuit-json": "*"
   },
