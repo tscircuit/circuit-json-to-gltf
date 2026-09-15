@@ -10,8 +10,15 @@ export interface BoardColorPalette {
   silkscreenColor?: string
 }
 
+// Match 3d-viewer's geoms/constants.ts FR4 solder mask colors (PR #960).
+// These are sRGB texture colors, including the darker mask over copper.
+export const DEFAULT_GREEN_SOLDER_MASK = {
+  backgroundColor: "#0f4f30",
+  solderMaskWithCopperColor: "#17613b",
+} as const
+
 const BOARD_COLOR_PRESETS: Record<string, string> = {
-  green: "#0f3812",
+  green: DEFAULT_GREEN_SOLDER_MASK.backgroundColor,
   red: "#8b1e1e",
   blue: "#173f68",
   purple: "#562b7c",
@@ -130,7 +137,10 @@ export function deriveBoardColorPalette(
   return {
     backgroundColor: toHex(maskRgb),
     boardSideColor: toHex(boardSide),
-    solderMaskWithCopperColor: toHex(coveredCopper),
+    solderMaskWithCopperColor:
+      backgroundColor === DEFAULT_GREEN_SOLDER_MASK.backgroundColor
+        ? DEFAULT_GREEN_SOLDER_MASK.solderMaskWithCopperColor
+        : toHex(coveredCopper),
     silkscreenColor:
       normalizeColor(silkscreenColor) ?? (isLight ? "#111827" : "#ffffff"),
   }
