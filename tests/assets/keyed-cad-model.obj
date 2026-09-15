@@ -1,0 +1,40 @@
+# Z-up, mm: blue 6x4x1 base; red key in the +X/+Y quadrant, reaching Z=3.
+# Inline material records use the OBJ loader's combined OBJ/MTL format.
+newmtl body
+Kd 0.1 0.25 0.75
+endmtl
+newmtl key
+Kd 1 0.15 0.05
+endmtl
+o keyed_body
+v -3 -2 0
+v 3 -2 0
+v 3 2 0
+v -3 2 0
+v -3 -2 1
+v 3 -2 1
+v 3 2 1
+v -3 2 1
+usemtl body
+f 1 4 3 2
+f 5 6 7 8
+f 1 2 6 5
+f 2 3 7 6
+f 3 4 8 7
+f 4 1 5 8
+o off_axis_key
+v 0 0 1
+v 3 0 1
+v 3 2 1
+v 0 2 1
+v 0 0 3
+v 3 0 3
+v 3 2 3
+v 0 2 3
+usemtl key
+f 9 12 11 10
+f 13 14 15 16
+f 9 10 14 13
+f 10 11 15 14
+f 11 12 16 15
+f 12 9 13 16

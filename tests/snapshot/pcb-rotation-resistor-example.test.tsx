@@ -57,11 +57,11 @@ test("pcb rotation top-bottom resistor example with dual 3d views", async () => 
 
   const cameraOptions = getBestCameraPosition(circuitJson as CircuitJson)
 
-  expect(
+  await expect(
     renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, cameraOptions),
   ).toMatchPngSnapshot(import.meta.path, "pcb-rotation-resistor-example-top")
 
-  expect(
+  await expect(
     renderGLTFToPNGFromGLB(glbResult as ArrayBuffer, {
       camPos: [8, -8, 8],
     }),
