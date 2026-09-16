@@ -149,6 +149,9 @@ accepted; ambiguous multi-board records and panel/carrier preparation are
 rejected. `do_not_place` components are excluded; an owned component permitted
 to extend off-board remains included. Board bounds describe the generated
 outline rather than an unrelated authored rectangle.
+`resolveGeometryBoardId(circuitJson, element)` exposes the same ownership
+resolution for consumers associating apertures or PCB owners without CAD.
+It returns the board ID, or `undefined` for unresolved multi-board ownership.
 
 `supplementalModelMetadata.byCadComponentId` can supply missing origin,
 normal, fit and unit fields. Defined Circuit JSON fields win (including zero);
