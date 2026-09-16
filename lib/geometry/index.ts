@@ -13,7 +13,7 @@ import { prepareCad } from "./prepare-cad"
 import { resolveGeometryBoardId } from "./board-ownership"
 import { getBoundingBoxSize } from "../utils/mesh-scale"
 
-export { resolveGeometryBoardId } from "./board-ownership"
+export { resolveGeometryBoardId }
 export type {
   AuthHeaders,
   BoundingBox,
