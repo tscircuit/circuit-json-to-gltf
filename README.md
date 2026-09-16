@@ -151,7 +151,9 @@ to extend off-board remains included. Board bounds describe the generated
 outline rather than an unrelated authored rectangle.
 `resolveGeometryBoardId(circuitJson, element)` exposes the same ownership
 resolution for consumers associating apertures or PCB owners without CAD.
-It returns the board ID, or `undefined` for unresolved multi-board ownership.
+It returns the board ID, or `undefined` for unresolved ownership. Single-board
+fallback applies only when no subcircuit ancestry was supplied, never when an
+explicit ancestry chain fails to reach a board.
 
 `supplementalModelMetadata.byCadComponentId` can supply missing origin,
 normal, fit and unit fields. Defined Circuit JSON fields win (including zero);

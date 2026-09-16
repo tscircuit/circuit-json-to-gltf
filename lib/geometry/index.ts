@@ -233,6 +233,7 @@ export async function prepareBoardGeometry({
   const mesh = prepareBoardMesh(circuitJson, board, {
     thickness: board.thickness ?? 1.6,
     drillQuality: "fast",
+    strictOwnership: true,
   })
   const preparedBoard = occurrence(
     { pcbBoardId, source: "board" },

@@ -10,12 +10,17 @@ import { resolveGeometryBoardId } from "./board-ownership"
 export function prepareBoardMesh(
   circuitJson: CircuitJson,
   board: PcbBoard,
-  options: Pick<BoardGeometryOptions, "thickness" | "drillQuality">,
+  options: Pick<BoardGeometryOptions, "thickness" | "drillQuality"> & {
+    strictOwnership?: boolean
+  },
 ) {
   const belongsToBoard = (item: {
     pcb_board_id?: string
     pcb_component_id?: string
   }) => {
+    // The scene exporter historically renders unassociated drilling records.
+    // Mechanical preparation opts into strict serialized board ownership.
+    if (!options.strictOwnership) return true
     const ownerId = resolveGeometryBoardId(circuitJson, item)
     if (ownerId === undefined)
       throw new Error("Ambiguous board ownership for drilled geometry")
