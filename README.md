@@ -128,7 +128,13 @@ The transform chain is intentionally the current exporter contract:
 These are loader-normalized vertices, **not native asset coordinates**. The
 matrix is column-major, double precision, and authoritative; there are no
 competing public Euler/position/size fields. Its Y/Z swap is a reflection:
-consumers baking it must account for winding and transform normals. The
+consumers baking it reverse triangle indices when
+`(det(boardFromMesh) < 0) !== !!triangle.windingReversed`. The optional flag
+records reflection parity already baked by loaders without reordering vertices
+(including glTF node scales), so simply reversing for the final matrix alone
+would turn an outward JSCAD body inside-out. This tracks introduced transforms,
+not source mesh validity. Derive solid normals from the final winding; legacy
+render normals and rendering order are retained unchanged. The
 exporter's final glTF X mirror is a separate presentation conversion. The
 native-vertex placement utility is deliberately not applied to already
 normalized loader output.

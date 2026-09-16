@@ -78,6 +78,11 @@ export interface Triangle {
   ]
   vertices: [Point3, Point3, Point3]
   normal: Point3
+  /** Odd reflection parity baked into vertices without reordering them.
+   * Compose with the final placement determinant before producing solid indices.
+   * This tracks introduced transforms, not source topology or outwardness.
+   */
+  windingReversed?: boolean
   color?: Color
   materialIndex?: number
 }

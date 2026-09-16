@@ -83,7 +83,11 @@ interface GeometryIdentity {
  * boardFromMesh maps these actual vertices to right-handed board-local XYZ,
  * Z-up mm, centered on the selected board, with Z=0 at its midplane. It includes
  * remaining CAD rotation and the scene Y/Z swap (a reflection). Consumers baking
- * it must transform normals and account for winding; topology is NOT validated.
+ * it must compose that reflection with each triangle's windingReversed flag:
+ * reverse indices when (det(boardFromMesh) < 0) !== !!triangle.windingReversed.
+ * This undoes only introduced reflection parity, never repairs source topology.
+ * Consumers generating solid normals should derive them from the final winding.
+ * Legacy supplied render normals remain unchanged. Topology is NOT validated.
  * Bounds are measured on transformed vertices, not transformed AABB corners.
  */
 export type PreparedGeometryOccurrence = GeometryIdentity &

@@ -196,6 +196,15 @@ function extractTrianglesFromGLTF(
   for (let meshIndex = 0; meshIndex < gltf.meshes.length; meshIndex++) {
     const mesh = gltf.meshes[meshIndex]
     const transforms = meshTransforms.get(meshIndex) || []
+    const reflected =
+      transforms.reduce(
+        (parity, transform) =>
+          parity *
+          (transform.scale?.[0] ?? 1) *
+          (transform.scale?.[1] ?? 1) *
+          (transform.scale?.[2] ?? 1),
+        1,
+      ) < 0
     for (const primitive of mesh.primitives) {
       // Only support TRIANGLES mode
       const mode = primitive.mode ?? 4 // Default to TRIANGLES (4)
@@ -395,6 +404,7 @@ function extractTrianglesFromGLTF(
 
           triangles.push({
             vertices: [v0, v1, v2],
+            ...(reflected ? { windingReversed: true } : {}),
             normal,
             color: triangleColor,
           })
@@ -525,6 +535,7 @@ function extractTrianglesFromGLTF(
 
           triangles.push({
             vertices: [v0, v1, v2],
+            ...(reflected ? { windingReversed: true } : {}),
             normal,
             color: triangleColor,
           })
