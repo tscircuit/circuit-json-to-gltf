@@ -30,13 +30,17 @@ export async function loadOBJ({
 }): Promise<OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (objCache.has(cacheKey)) {
+  if (!authHeaders && objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
   const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  if (!response.ok)
+    throw new Error(
+      `Failed to fetch OBJ: ${response.status} ${response.statusText}`,
+    )
   const text = await response.text()
   const mesh = parseOBJ(text, transform)
-  objCache.set(cacheKey, mesh)
+  if (!authHeaders) objCache.set(cacheKey, mesh)
   return mesh
 }
 

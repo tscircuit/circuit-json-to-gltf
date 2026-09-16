@@ -43,11 +43,7 @@ export function loadFootprinterModel(
       cacheKey,
       generateFootprinterMesh(footprinterString, transform).catch((error) => {
         footprinterCache.delete(cacheKey)
-        console.warn(
-          `Failed to generate footprinter model for ${footprinterString}:`,
-          error,
-        )
-        return undefined
+        throw error
       }),
     )
   }

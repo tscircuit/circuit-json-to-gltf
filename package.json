@@ -1,6 +1,18 @@
 {
   "name": "circuit-json-to-gltf",
   "main": "dist/index.js",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./geometry": {
+      "types": "./dist/geometry.d.ts",
+      "import": "./dist/geometry.js",
+      "default": "./dist/geometry.js"
+    }
+  },
   "type": "module",
   "version": "0.0.136",
   "repository": {

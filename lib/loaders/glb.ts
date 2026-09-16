@@ -32,7 +32,7 @@ export async function loadGLB({
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (glbCache.has(cacheKey)) {
+  if (!authHeaders && glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
 
@@ -44,7 +44,7 @@ export async function loadGLB({
   }
   const buffer = await response.arrayBuffer()
   const mesh = parseGLB(buffer, transform)
-  glbCache.set(cacheKey, mesh)
+  if (!authHeaders) glbCache.set(cacheKey, mesh)
   return mesh
 }
 

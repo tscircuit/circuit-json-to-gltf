@@ -28,14 +28,18 @@ export async function loadSTL({
 }): Promise<STLMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (stlCache.has(cacheKey)) {
+  if (!authHeaders && stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
   const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  if (!response.ok)
+    throw new Error(
+      `Failed to fetch STL: ${response.status} ${response.statusText}`,
+    )
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
-  stlCache.set(cacheKey, mesh)
+  if (!authHeaders) stlCache.set(cacheKey, mesh)
   return mesh
 }
 
