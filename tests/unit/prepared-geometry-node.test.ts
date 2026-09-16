@@ -9,6 +9,9 @@ test("built geometry subpath runs in Node ESM and Bun without DOM or import-time
       globalThis.fetch = () => { throw new Error("Unexpected import-time fetch") };
       const {prepareBoardGeometry, resolveGeometryBoardId} = await import("circuit-json-to-gltf/geometry");
       if (typeof resolveGeometryBoardId !== "function") throw new Error("Missing public board ownership export");
+      const {createRequire} = await import("node:module");
+      const packageJson = createRequire(import.meta.url)("circuit-json-to-gltf/package.json");
+      if (packageJson.name !== "circuit-json-to-gltf") throw new Error("Package metadata subpath unavailable");
       const result = await prepareBoardGeometry({circuitJson:${JSON.stringify(geometryCircuit({ model_obj_url: undefined, model_jscad: { type: "cuboid", size: [2, 3, 4] } }))},pcbBoardId:"board"});
       const owner = resolveGeometryBoardId([{type:"pcb_board",pcb_board_id:"board",subcircuit_id:"board-sub"}],{subcircuit_id:"board-sub"});
       console.log(JSON.stringify({status:result.board.status,triangles:result.components[0].mesh.triangles.length,owner}));

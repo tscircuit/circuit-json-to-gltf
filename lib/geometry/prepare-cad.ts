@@ -1,7 +1,7 @@
 import type { CadComponent, CircuitJson } from "circuit-json"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
-import { loadOBJ } from "../loaders/obj"
+import { loadOBJ, ObjHttpError } from "../loaders/obj"
 import { loadSTL } from "../loaders/stl"
 import type { Box3D, CircuitTo3DOptions } from "../types"
 import {
@@ -23,7 +23,10 @@ import {
 export async function prepareCad(
   cad: CadComponent,
   circuitJson: CircuitJson,
-  options: CircuitTo3DOptions & { stepWasmUrl?: string },
+  options: CircuitTo3DOptions & {
+    stepWasmUrl?: string
+    strictGeometry?: boolean
+  },
   effectiveBoardThickness: number,
   onLegacyLoadError?: (error: unknown, source: string) => void,
 ): Promise<{
@@ -157,6 +160,7 @@ export async function prepareCad(
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
     fetch: options.fetch,
+    strictGeometry: options.strictGeometry,
   }
   try {
     if (model_stl_url)
@@ -183,13 +187,17 @@ export async function prepareCad(
       box.mesh = await loadFootprinterModel(
         cad.footprinter_string,
         defaultTransform,
+        options.strictGeometry,
       )
     }
   } catch (error) {
     // Only the scene adapter opts into its existing visual-placeholder policy.
     if (
       !onLegacyLoadError ||
-      !["glb", "step", "footprinter"].includes(source)
+      !(
+        ["glb", "step", "footprinter"].includes(source) ||
+        (source === "obj" && error instanceof ObjHttpError)
+      )
     ) {
       throw new Error(
         `Failed to prepare ${source} geometry for CAD ${cad.cad_component_id}`,

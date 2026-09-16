@@ -334,7 +334,7 @@ export async function prepareBoardGeometry({
     const { box, source } = await prepareCad(
       cad,
       circuitJson,
-      assetContext ?? {},
+      { ...assetContext, strictGeometry: true },
       board.thickness ?? 1.6,
     )
     components.push(

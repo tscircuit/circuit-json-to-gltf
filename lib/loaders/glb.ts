@@ -26,15 +26,17 @@ export async function loadGLB({
   projectBaseUrl,
   authHeaders,
   fetch: fetchAsset,
+  strictGeometry = false,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
   fetch?: AssetFetch
+  strictGeometry?: boolean
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}:${strictGeometry}`
   if (!authHeaders && !fetchAsset && glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
@@ -49,7 +51,7 @@ export async function loadGLB({
     )
   }
   const buffer = await response.arrayBuffer()
-  const mesh = parseGLB(buffer, transform)
+  const mesh = parseGLB(buffer, transform, strictGeometry)
   if (!authHeaders && !fetchAsset) glbCache.set(cacheKey, mesh)
   return mesh
 }
@@ -57,6 +59,7 @@ export async function loadGLB({
 export function parseGLB(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
+  strictGeometry = false,
 ): STLMesh | OBJMesh {
   const view = new DataView(buffer)
   let offset = 0
@@ -106,7 +109,7 @@ export function parseGLB(
     }
   }
   // Extract geometry from GLTF
-  const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
+  const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer, strictGeometry)
 
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
@@ -188,6 +191,7 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
 function extractTrianglesFromGLTF(
   gltf: any,
   binaryBuffer?: ArrayBuffer,
+  strictGeometry = false,
 ): Triangle[] {
   const triangles: Triangle[] = []
 
@@ -196,7 +200,7 @@ function extractTrianglesFromGLTF(
   }
 
   // Build mesh transforms from node hierarchy
-  const meshTransforms = buildMeshTransforms(gltf)
+  const meshTransforms = buildMeshTransforms(gltf, strictGeometry)
 
   // Process each mesh
   for (let meshIndex = 0; meshIndex < gltf.meshes.length; meshIndex++) {

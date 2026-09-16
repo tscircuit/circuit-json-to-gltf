@@ -137,12 +137,14 @@ export async function loadGLTF({
   projectBaseUrl,
   authHeaders,
   fetch: fetchAsset,
+  strictGeometry = false,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
   fetch?: AssetFetch
+  strictGeometry?: boolean
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const glb_buffer = await fetchGltfAndConvertToGlb(
@@ -150,5 +152,5 @@ export async function loadGLTF({
     authHeaders,
     fetchAsset,
   )
-  return parseGLB(glb_buffer, transform)
+  return parseGLB(glb_buffer, transform, strictGeometry)
 }

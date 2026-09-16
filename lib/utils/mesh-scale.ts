@@ -77,15 +77,10 @@ export function scaleMesh<T extends STLMesh | OBJMesh>(
     scaleTriangle(triangle, scale),
   )
 
-  const scaledBoundingBox = {
-    min: scalePoint(mesh.boundingBox.min, scale),
-    max: scalePoint(mesh.boundingBox.max, scale),
-  }
-
   return {
     ...mesh,
     triangles: scaledTriangles,
-    boundingBox: scaledBoundingBox,
+    boundingBox: boundsOfTriangles(scaledTriangles),
   } as T
 }
 

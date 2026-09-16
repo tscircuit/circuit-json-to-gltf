@@ -70,15 +70,40 @@ export function applyNodeTransform(p: Point3, node: NodeTransform): Point3 {
  * Build a map of mesh index to accumulated node transforms.
  * Traverses the GLTF scene graph to collect transforms for each mesh.
  */
-export function buildMeshTransforms(gltf: any): Map<number, NodeTransform[]> {
+export function buildMeshTransforms(
+  gltf: any,
+  strictGeometry = false,
+): Map<number, NodeTransform[]> {
   const meshTransforms = new Map<number, NodeTransform[]>()
 
   if (!gltf.nodes) return meshTransforms
+  if (strictGeometry) {
+    const meshIds = new Set<number>()
+    for (const node of gltf.nodes) {
+      if (node.matrix !== undefined)
+        throw new Error(
+          "glTF node.matrix is unsupported by strict geometry preparation",
+        )
+      if (node.mesh !== undefined) {
+        if (meshIds.has(node.mesh))
+          throw new Error(
+            "Repeated glTF mesh instances are unsupported by strict geometry preparation",
+          )
+        meshIds.add(node.mesh)
+      }
+    }
+  }
+  const visitedNodes = new Set<number>()
 
   // Process all nodes and collect transforms for meshes
   function processNode(nodeIndex: number, parentTransforms: NodeTransform[]) {
     const node = gltf.nodes[nodeIndex]
     if (!node) return
+    if (strictGeometry && visitedNodes.has(nodeIndex))
+      throw new Error(
+        "Repeated glTF node references are unsupported by strict geometry preparation",
+      )
+    visitedNodes.add(nodeIndex)
 
     const currentTransforms = [...parentTransforms]
     if (node.translation || node.rotation || node.scale) {

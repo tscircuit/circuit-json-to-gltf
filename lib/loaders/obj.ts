@@ -18,6 +18,8 @@ import { resolveModelUrl } from "./resolve-model-url"
 
 const objCache = new Map<string, OBJMesh>()
 
+export class ObjHttpError extends Error {}
+
 export async function loadOBJ({
   url,
   transform,
@@ -41,7 +43,7 @@ export async function loadOBJ({
     fetch: fetchAsset,
   })
   if (!response.ok)
-    throw new Error(
+    throw new ObjHttpError(
       `Failed to fetch OBJ: ${response.status} ${response.statusText}`,
     )
   const text = await response.text()

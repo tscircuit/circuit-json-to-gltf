@@ -12,6 +12,7 @@ const footprinterCache = new Map<
 async function generateFootprinterMesh(
   footprinterString: string,
   transform?: CoordinateTransformConfig,
+  strictGeometry = false,
 ): Promise<STLMesh | OBJMesh | undefined> {
   const renderedModel = getJscadModelForFootprint(
     footprinterString,
@@ -30,18 +31,23 @@ async function generateFootprinterMesh(
     throw new Error("Expected GLB data to be an ArrayBuffer")
   }
 
-  return parseGLB(glbResult.data, transform)
+  return parseGLB(glbResult.data, transform, strictGeometry)
 }
 
 export function loadFootprinterModel(
   footprinterString: string,
   transform?: CoordinateTransformConfig,
+  strictGeometry = false,
 ): Promise<STLMesh | OBJMesh | undefined> {
-  const cacheKey = `${footprinterString}:${JSON.stringify(transform ?? {})}`
+  const cacheKey = `${footprinterString}:${JSON.stringify(transform ?? {})}:${strictGeometry}`
   if (!footprinterCache.has(cacheKey)) {
     footprinterCache.set(
       cacheKey,
-      generateFootprinterMesh(footprinterString, transform).catch((error) => {
+      generateFootprinterMesh(
+        footprinterString,
+        transform,
+        strictGeometry,
+      ).catch((error) => {
         footprinterCache.delete(cacheKey)
         throw error
       }),

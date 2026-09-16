@@ -144,7 +144,8 @@ Supported sources are OBJ, STL, GLB, glTF, STEP, JSCAD plans and footprinter
 models, with the same priority and normalization as export. Unrecognized or
 empty sources return `status: "unavailable"` without placeholder geometry.
 Fetch/parse failures reject preparation. Only the scene exporter retains its
-existing logged GLB/STEP visual-placeholder policy. Authenticated loads bypass
+logged visual-placeholder policy for OBJ HTTP errors and GLB/STEP load errors.
+OBJ transport/parse errors and STL errors still reject. Authenticated loads bypass
 the shared URL-only caches; unauthenticated caches contain unplaced geometry.
 `assetContext.fetch` forwards an existing platform fetch without exposing its
 owning application. It handles all model requests, including glTF external
@@ -155,6 +156,11 @@ the explicit runtime asset URL described above.
 Render availability does **not** certify a closed Boolean solid or analytic CAD
 precision. Mechanical consumers must validate the tessellation and visibly
 handle unsuitable/open geometry.
+Strict geometry preparation rejects glTF/GLB `node.matrix` and repeated mesh
+instances because the current shared loader does not place those reliably.
+The scene exporter retains its legacy behavior for these inputs; a rendered
+result is not evidence that those unsupported physical transforms were applied.
+Strict and legacy loader caches are separate.
 
 Board selection follows explicit IDs and serialized subcircuit ancestry, never
 names or spatial proximity. Single-board legacy records without ownership are
