@@ -162,6 +162,9 @@ accepted; ambiguous multi-board records and panel/carrier preparation are
 rejected. `do_not_place` components are excluded; an owned component permitted
 to extend off-board remains included. Board bounds describe the generated
 outline rather than an unrelated authored rectangle.
+Boards emitted by core also resolve through
+`pcb_board.source_board_id -> source_board.source_group_id -> source_group.subcircuit_id`;
+they do not need a redundant `pcb_board.subcircuit_id`. Conflicting links fail.
 `resolveGeometryBoardId(circuitJson, element)` exposes the same ownership
 resolution for consumers associating apertures or PCB owners without CAD.
 It returns the board ID, or `undefined` for unresolved ownership. Single-board
