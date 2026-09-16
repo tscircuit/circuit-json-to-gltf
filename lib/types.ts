@@ -13,6 +13,8 @@ export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
+export type AssetFetch = (url: string, init?: RequestInit) => Promise<Response>
+
 export interface ConversionOptions {
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
@@ -33,6 +35,7 @@ export interface ConversionOptions {
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }
 
 export interface CoordinateTransformConfig {
@@ -191,6 +194,7 @@ export interface CircuitTo3DOptions {
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }
 
 export interface BoardRenderOptions {

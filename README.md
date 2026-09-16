@@ -78,6 +78,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `drillColor`: Drill opening color in board textures
 - `showBoundingBoxes`: Show bounding boxes for debugging (default: `false`)
 - `projectBaseUrl`: Optional base URL used to resolve `node_modules` model assets via `/package_files/download`
+- `fetch`: Optional scoped model-file fetch, for authenticated or in-memory assets
 - `authHeaders`: Optional auth headers for model downloads, e.g. `{ Authorization: "Bearer ..." }`
 
 When a `pcb_board` supplies `solder_mask_color`, the renderer uses it for the
@@ -145,6 +146,12 @@ empty sources return `status: "unavailable"` without placeholder geometry.
 Fetch/parse failures reject preparation. Only the scene exporter retains its
 existing logged GLB/STEP visual-placeholder policy. Authenticated loads bypass
 the shared URL-only caches; unauthenticated caches contain unplaced geometry.
+`assetContext.fetch` forwards an existing platform fetch without exposing its
+owning application. It handles all model requests, including glTF external
+buffers, and also bypasses shared caches. Its timeout signal and optional auth
+headers are forwarded. The callback is never copied into prepared output.
+This hook does not initialize or configure STEP WASM; browser STEP still needs
+the explicit runtime asset URL described above.
 Render availability does **not** certify a closed Boolean solid or analytic CAD
 precision. Mechanical consumers must validate the tessellation and visibly
 handle unsuitable/open geometry.

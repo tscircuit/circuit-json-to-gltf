@@ -1,6 +1,7 @@
 import type { CadComponent, CircuitJson, PcbBoard } from "circuit-json"
 import type {
   AuthHeaders,
+  AssetFetch,
   BoundingBox,
   Box3D,
   OBJMesh,
@@ -16,6 +17,7 @@ import { getBoundingBoxSize } from "../utils/mesh-scale"
 export { resolveGeometryBoardId }
 export type {
   AuthHeaders,
+  AssetFetch,
   BoundingBox,
   OBJMaterial,
   OBJMesh,
@@ -46,6 +48,8 @@ export type BoardFromMesh = readonly [
 export interface GeometryAssetContext {
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  /** Scoped model-file fetch (including external glTF buffers), not WASM setup. */
+  fetch?: AssetFetch
   /** Absolute URL for the packaged OCCT WASM asset in browser/worker builds. */
   stepWasmUrl?: string
 }

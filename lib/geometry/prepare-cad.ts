@@ -156,6 +156,7 @@ export async function prepareCad(
     transform: defaultTransform,
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
+    fetch: options.fetch,
   }
   try {
     if (model_stl_url)

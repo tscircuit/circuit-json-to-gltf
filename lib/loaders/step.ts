@@ -1,5 +1,6 @@
 import type {
   AuthHeaders,
+  AssetFetch,
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
@@ -62,21 +63,26 @@ export async function loadSTEP({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchAsset,
   stepWasmUrl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
   stepWasmUrl?: string
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (!authHeaders && stepCache.has(cacheKey)) {
+  if (!authHeaders && !fetchAsset && stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchAsset,
+  })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,
@@ -95,7 +101,7 @@ export async function loadSTEP({
   }
 
   const mesh = convertOcctResultToMesh(result, transform)
-  if (!authHeaders) stepCache.set(cacheKey, mesh)
+  if (!authHeaders && !fetchAsset) stepCache.set(cacheKey, mesh)
   return mesh
 }
 

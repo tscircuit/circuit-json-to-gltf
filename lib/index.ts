@@ -42,6 +42,7 @@ export async function convertCircuitJsonToGltf(
     showBoundingBoxes,
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
+    fetch: options.fetch,
   })
 
   // Convert 3D scene to GLTF
