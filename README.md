@@ -17,6 +17,31 @@ Converts circuit JSON to 3D GLTF files. Used for exporting circuits as 3D models
 - Automatic component positioning and generic 3D representations
 - Customizable camera, lighting, and material settings
 
+## Footprinter rotation compatibility
+
+For models using the default footprinter loader frame, `cad_component.rotation`
+is interpreted as right-handed intrinsic XYZ angles in degrees in Circuit JSON's
+Z-up coordinates, matching the existing Three.js viewer interpretation. With
+column vectors this means `Rx(x) * Ry(y) * Rz(z)`. The loader changes the model
+frame; placement changes basis as a matrix instead of merely swapping Euler
+angle fields.
+
+Earlier exports effectively applied `Ry(-y) * Rx(-x) * Rz(z)` in those same
+coordinates. X/Y tilts and mixed-axis rotations can therefore change appearance.
+Unrotated models, Z-only rotations, and standard bottom-side placements
+(`x = 0`, `y = 180`) retain their geometry apart from roundoff.
+
+Projects may have compensated by negating X/Y offsets or pre-rotating assets.
+For a pure-axis workaround, replace the compensating angle with the intended
+right-handed angle. For combined rotations, negating two fields is not a general
+migration: to preserve an intentionally chosen old appearance, convert the old
+effective rotation matrix to intrinsic XYZ angles. Compare against the intended
+physical orientation, rather than automatically preserving a wrong export.
+
+This correction does not change model generation, origin selection, fitting,
+units, translation, non-footprinter formats, or custom loader paths outside the
+default footprinter mapping. It does not distinguish hardware from electronics.
+
 ## Installation
 
 ```bash

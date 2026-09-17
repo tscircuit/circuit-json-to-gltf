@@ -1,11 +1,14 @@
 import type { CadComponent } from "circuit-json"
+import { maths } from "@jscad/modeling"
 import type {
   CoordinateTransformConfig,
   OBJMesh,
   Point3,
   STLMesh,
+  Triangle,
 } from "../types"
 import { applyCoordinateTransform } from "./coordinate-transform"
+import { boundsOfTriangles } from "./bounding-box"
 import {
   getBoundingBoxCenter,
   getBoundingBoxSize,
@@ -14,6 +17,47 @@ import {
   scaleMesh,
   scaleMeshByAxis,
 } from "./mesh-scale"
+
+/**
+ * Bake a Circuit JSON intrinsic XYZ rotation (degrees, Z-up) into a default
+ * footprinter mesh after origin/fit. Input/output points are Scene3D Y-up mm;
+ * normals are directions. No translation or scale is applied here.
+ */
+export function rotateDefaultFootprinterMesh<T extends STLMesh | OBJMesh>(
+  mesh: T,
+  rotation: Point3,
+): T {
+  const { mat4, vec3 } = maths
+  // The legacy FOOTPRINTER_MODEL_TRANSFORM has effective basis S(x,y,z)=(x,z,y).
+  // Match 3d-viewer/src/three-components/FootprinterModel.tsx's Three.Group
+  // default XYZ Euler: R_cad = Rx * Ry * Rz, not the shared legacy scene Euler.
+  const swapYZ = mat4.fromValues(1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1)
+  const radians = Math.PI / 180
+  const matrix = mat4.clone(swapYZ)
+  mat4.rotateX(matrix, matrix, rotation.x * radians)
+  mat4.rotateY(matrix, matrix, rotation.y * radians)
+  mat4.rotateZ(matrix, matrix, rotation.z * radians)
+  mat4.multiply(matrix, matrix, swapYZ) // S * R_cad * inverse(S); S^-1 = S.
+
+  const rotate = (point: Point3): Point3 => {
+    const [x, y, z] = vec3.transform(
+      vec3.create(),
+      [point.x, point.y, point.z],
+      matrix,
+    )
+    return { x, y, z }
+  }
+  const triangles: Triangle[] = mesh.triangles.map((triangle) => ({
+    ...triangle,
+    vertices: [
+      rotate(triangle.vertices[0]),
+      rotate(triangle.vertices[1]),
+      rotate(triangle.vertices[2]),
+    ],
+    normal: rotate(triangle.normal),
+  }))
+  return { ...mesh, triangles, boundingBox: boundsOfTriangles(triangles) }
+}
 
 function getOrientationRotationForBoardNormal(
   modelBoardNormalDirection?: CadComponent["model_board_normal_direction"],
