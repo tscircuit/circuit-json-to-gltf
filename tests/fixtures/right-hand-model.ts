@@ -13,6 +13,8 @@ export const rightHandCases = [
 
 export const handColors = {
   skin: "#dfa77e",
+  palm: "#dba079",
+  wrist: "#d39c77",
   thumb: "#eabd95",
   cap: "#f5cfb0",
   marker: "#147da5",
@@ -21,29 +23,32 @@ export const handColors = {
 
 /**
  * Native right-handed XYZ, mm. Thumb points +Z on the rotation axis.
- * All four fingers curl positively around +Z, from the palm's +X edge,
- * through +Y, back toward -X. The palm and wrist lie on the -Y side.
+ * The wrist extends along -X, perpendicular to the thumb. Short fingers
+ * leave the palm along +X, bend toward +Y, then return along -X.
  */
 export const handThumbSegment = {
   start: [0, 0, 2.4],
   end: [0, 0, 4.5],
 } satisfies { start: Vec3; end: Vec3 }
-export const handMarkerCenter: Vec3 = [0, -1.1, -3.7]
+export const handPalm = {
+  center: [-1.3, -0.9, -0.55],
+  size: [2.8, 1.1, 4.4],
+} satisfies { center: Vec3; size: Vec3 }
+export const handMarkerCenter: Vec3 = [-4.1, -0.9, -0.55]
 
 export const gripFingerPaths = [
-  { name: "index", radius: 1.75, z: 1.15, thickness: 0.47 },
-  { name: "middle", radius: 1.95, z: 0, thickness: 0.49 },
-  { name: "ring", radius: 1.85, z: -1.15, thickness: 0.44 },
-  { name: "pinky", radius: 1.55, z: -2.15, thickness: 0.36 },
+  { name: "index", reach: 1.2, z: 1.15, thickness: 0.47 },
+  { name: "middle", reach: 1.4, z: 0, thickness: 0.49 },
+  { name: "ring", reach: 1.3, z: -1.15, thickness: 0.44 },
+  { name: "pinky", reach: 1, z: -2.15, thickness: 0.36 },
 ].map((finger) => ({
   ...finger,
-  points: [-30, 10, 50, 90, 130, 170, 200].map(
-    (degrees): Vec3 => [
-      finger.radius * Math.cos((degrees * Math.PI) / 180),
-      finger.radius * Math.sin((degrees * Math.PI) / 180),
-      finger.z,
-    ],
-  ),
+  points: [
+    [0, -0.9, finger.z],
+    [finger.reach, -0.9, finger.z],
+    [finger.reach, 0.75, finger.z],
+    [0.25, 0.75, finger.z],
+  ] satisfies Vec3[],
 }))
 
 export const gripArrowPath = Array.from({ length: 25 }, (_, i): Vec3 => {
@@ -105,24 +110,25 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
   ) => geometries.push({ geom: orientGeometry(geom, axis), color })
   add(
     primitives.roundedCuboid({
-      center: [0, -1.15, -0.55],
-      size: [3.2, 1.1, 4.4],
+      ...handPalm,
       roundRadius: 0.5,
       segments: 24,
     }),
-  )
-  add(
-    primitives.roundedCuboid({
-      center: [0, -1.1, -3.7],
-      size: [2.2, 1.3, 2.6],
-      roundRadius: 0.5,
-      segments: 24,
-    }),
+    handColors.palm,
   )
   add(
     primitives.roundedCuboid({
       center: handMarkerCenter,
-      size: [2.35, 1.45, 0.42],
+      size: [3, 1.3, 2.4],
+      roundRadius: 0.5,
+      segments: 24,
+    }),
+    handColors.wrist,
+  )
+  add(
+    primitives.roundedCuboid({
+      center: handMarkerCenter,
+      size: [0.42, 1.45, 2.55],
       roundRadius: 0.18,
       segments: 24,
     }),
@@ -152,7 +158,7 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
     // fingers without reintroducing the three-colored-vector mnemonic.
     add(
       primitives.ellipsoid({
-        center: [0, finger.radius + finger.thickness - 0.03, finger.z],
+        center: [finger.reach, 0.75 + finger.thickness - 0.03, finger.z],
         radius: [0.36, 0.09, 0.24],
         segments: 20,
       }),
@@ -162,8 +168,8 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
       add(
         primitives.sphere({
           center: [
-            (pip - fingerIndex / 2) * 0.15,
-            finger.radius + finger.thickness + 0.065,
+            finger.reach + (pip - fingerIndex / 2) * 0.15,
+            0.75 + finger.thickness + 0.065,
             finger.z,
           ],
           radius: 0.045,
