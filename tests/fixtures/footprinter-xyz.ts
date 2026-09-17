@@ -1,4 +1,3 @@
-import { Resvg } from "@resvg/resvg-js"
 import type { CadComponent, CircuitJson } from "circuit-json"
 import type { RenderOptionsInput } from "poppygl"
 import {
@@ -9,6 +8,7 @@ import {
 import { parseGLB } from "../../lib/loaders/glb"
 import type { Box3D, ConversionOptions, Point3 } from "../../lib/types"
 import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
+import { svgToPng } from "../../lib/utils/svg-to-png"
 import { renderGlbToPng } from "../renderGlbToPng"
 
 export const footprinterRotationCases = [
@@ -143,22 +143,21 @@ export async function renderFootprinterRotation(rotation: Point3) {
     ],
   } satisfies RenderOptionsInput)
   const image = Buffer.from(png).toString("base64")
-  return new Resvg(
+  // Use the bundled font, not platform-dependent system sans-serif fonts.
+  return svgToPng(
     `<svg xmlns="http://www.w3.org/2000/svg" width="960" height="890">
       <rect width="960" height="890" fill="white"/>
       <image x="0" y="115" width="960" height="680" href="data:image/png;base64,${image}"/>
       <g font-family="sans-serif" fill="#17212e">
         <text x="24" y="34" font-size="26" font-weight="bold">SOIC8 native-origin rotation</text>
-        <text x="24" y="68" font-size="24">rotation.x = ${rotation.x} deg</text>
-        <text x="330" y="68" font-size="24">rotation.y = ${rotation.y} deg</text>
-        <text x="636" y="68" font-size="24">rotation.z = ${rotation.z} deg</text>
-        <text x="24" y="100" font-size="19">Input angles in DEGREES, about Circuit JSON axes (Z-up; lengths in mm).</text>
-        <text x="24" y="812" font-size="19">Fixed XY reference: world Z = 3 mm; 1 mm grid. NOT a board or seating surface.</text>
-        <text x="24" y="840" font-size="19">Axes meet at CAD rotation datum (7, -4, 3) mm; native model origin = (0, 0, 0).</text>
-        <text x="24" y="868" font-size="19">Circuit JSON axes: +X red, +Y green, +Z blue. Same camera and datum in every image.</text>
+        <text x="24" y="68" font-size="18">rotation.x = ${rotation.x} deg</text>
+        <text x="330" y="68" font-size="18">rotation.y = ${rotation.y} deg</text>
+        <text x="636" y="68" font-size="18">rotation.z = ${rotation.z} deg</text>
+        <text x="24" y="100" font-size="18">Degrees about Circuit JSON axes (Z-up); lengths in mm.</text>
+        <text x="24" y="812" font-size="18">Fixed XY plane at world Z = 3 mm; 1 mm grid. NOT a PCB.</text>
+        <text x="24" y="840" font-size="18">CAD datum = (7, -4, 3) mm; native origin = (0, 0, 0).</text>
+        <text x="24" y="868" font-size="18">Circuit axes: +X red, +Y green, +Z blue; fixed camera.</text>
       </g>
     </svg>`,
   )
-    .render()
-    .asPng()
 }
