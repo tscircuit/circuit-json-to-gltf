@@ -1,12 +1,9 @@
 import { expect, test } from "bun:test"
-import { createHash } from "node:crypto"
 import type { CadComponent } from "circuit-json"
+import { convertCircuitJsonTo3D } from "../../lib/converters/circuit-to-3d"
 import type { CoordinateTransformConfig } from "../../lib/types"
 import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
-import {
-  exportFootprinter,
-  footprinterCircuit,
-} from "../fixtures/footprinter-xyz"
+import { footprinterCircuit } from "../fixtures/footprinter-xyz"
 
 const cases: {
   name: string
@@ -33,28 +30,43 @@ const cases: {
 ]
 
 test.each(cases)(
-  "nondefault footprinter mapping stays unchanged: $name",
+  "nondefault footprinter mapping defers CAD rotation to the scene: $name",
   async ({ transform, normal }) => {
-    const { mesh } = await exportFootprinter(
-      footprinterCircuit(
-        { x: 23, y: 31, z: 47 },
-        {
-          model_board_normal_direction: normal,
-          model_origin_position: { x: 0.3, y: -0.7, z: 0.2 },
-          size: { x: 9, y: 8, z: 4 },
-          model_object_fit: "fill_bounds",
-        },
-      ),
-      { coordinateTransform: transform },
+    const overrides: Partial<CadComponent> = {
+      model_board_normal_direction: normal,
+      model_origin_position: { x: 0.3, y: -0.7, z: 0.2 },
+      size: { x: 9, y: 8, z: 4 },
+      model_object_fit: "fill_bounds",
+    }
+    const options = {
+      coordinateTransform: transform,
+      renderBoardTextures: false,
+    }
+    const unrotated = await convertCircuitJsonTo3D(
+      footprinterCircuit({ x: 0, y: 0, z: 0 }, overrides),
+      options,
     )
-    // Recorded from origin/main, including every exported vertex and normal.
-    // These paths intentionally retain their legacy behavior, not XYZ semantics.
-    const geometry = JSON.stringify(mesh.triangles, (_key, value) =>
-      typeof value === "number" ? Math.round(value * 1e5) / 1e5 : value,
+    const rotated = await convertCircuitJsonTo3D(
+      footprinterCircuit({ x: 23, y: 31, z: 47 }, overrides),
+      options,
     )
-    expect({
-      bounds: mesh.boundingBox,
-      geometrySha256: createHash("sha256").update(geometry).digest("hex"),
-    }).toMatchSnapshot()
+    expect(unrotated.boxes).toHaveLength(1)
+    expect(rotated.boxes).toHaveLength(1)
+    const reference = unrotated.boxes[0]!
+    const box = rotated.boxes[0]!
+
+    // Only the default loader frame opts into baked XYZ placement. These
+    // compatibility paths keep the legacy scene Euler fields, in radians.
+    expect(box.rotation).toEqual({
+      x: (23 * Math.PI) / 180,
+      y: (47 * Math.PI) / 180,
+      z: (31 * Math.PI) / 180,
+    })
+    expect(box.center).toEqual({ x: 7, y: 3, z: -4 })
+    expect(box.mesh).toBeDefined()
+    expect(box.mesh).toEqual(reference.mesh)
+    expect(box.size.x).toBeCloseTo(9, 5)
+    expect(box.size.y).toBeCloseTo(4, 5)
+    expect(box.size.z).toBeCloseTo(8, 5)
   },
 )
