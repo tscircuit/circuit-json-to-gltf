@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { maths, measurements } from "@jscad/modeling"
+import { maths, measurements, transforms } from "@jscad/modeling"
 import {
   handColors,
   handFingerSegments,
@@ -34,6 +34,30 @@ test("native hand distal directions form a right-handed basis under every cyclic
     const thumb = direction("thumb")
     const index = direction("index")
     const middle = direction("middle")
+    const rotationAxis = { x: 0, y: 1, z: 2 }[axis]
+    const thumbGeometry = native.geometries.find(
+      (entry) => entry.color === handColors.thumb,
+    )!.geom
+    // Construction only: rotating the native model around its thumb axis
+    // keeps the thumb centerline in place, for either sign of quarter-turn.
+    for (const endpoint of Object.values(handFingerSegments.thumb)) {
+      const point = orientHandPoint(endpoint, axis)
+      for (let coordinate = 0; coordinate < 3; coordinate++) {
+        if (coordinate !== rotationAxis) expect(point[coordinate]).toBe(0)
+      }
+    }
+    for (const angle of [-Math.PI / 2, Math.PI / 2]) {
+      const rotation: [number, number, number] = [0, 0, 0]
+      rotation[rotationAxis] = angle
+      const [min, max] = measurements.measureBoundingBox(
+        transforms.rotate(rotation, thumbGeometry),
+      )
+      for (let coordinate = 0; coordinate < 3; coordinate++) {
+        if (coordinate !== rotationAxis) {
+          expect((min[coordinate]! + max[coordinate]!) / 2).toBeCloseTo(0, 8)
+        }
+      }
+    }
     for (const finger of ["thumb", "index", "middle"] as const) {
       expect(direction(finger)).toEqual(expected[axis][finger])
       const { start, end } = handFingerSegments[finger]

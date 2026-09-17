@@ -16,16 +16,16 @@ import { handColors, rightHandCases, type HandAxis } from "./right-hand-model"
  */
 function handReference(): Box3D[] {
   const boxes: Box3D[] = []
-  for (let i = -7; i <= 7; i++) {
+  for (let i = -8; i <= 8; i++) {
     boxes.push(
       {
-        center: { x: i, y: -6.6, z: 0 },
-        size: { x: 0.025, y: 0.025, z: 14 },
+        center: { x: i, y: -8, z: 0 },
+        size: { x: 0.025, y: 0.025, z: 16 },
         color: "#dbe1e7",
       },
       {
-        center: { x: 0, y: -6.6, z: i },
-        size: { x: 14, y: 0.025, z: 0.025 },
+        center: { x: 0, y: -8, z: i },
+        size: { x: 16, y: 0.025, z: 0.025 },
         color: "#dbe1e7",
       },
     )
@@ -55,8 +55,8 @@ const camera = {
   width: 780,
   height: 760,
   fov: 34,
-  camPos: [-22, 19, 26],
-  lookAt: [0, -0.7, 0],
+  camPos: [-24, 21, 28],
+  lookAt: [0, -1.3, 0],
   up: "y+",
   grid: false,
   backgroundColor: "#ffffff",
@@ -138,7 +138,7 @@ export async function renderRightHandPair(axis: HandAxis) {
       <path d="M780 150 V930" stroke="#dbe1e7"/>
       <g font-family="sans-serif" fill="#17212e">
         <text x="24" y="40" font-size="30" font-weight="bold">RIGHT HAND: positive rotation about +${axis.toUpperCase()}</text>
-        <text x="24" y="78" font-size="23">Expected rule: ${fixture.index} goes to ${fixture.middle}; thumb stays +${axis.toUpperCase()}.</text>
+        <text x="24" y="78" font-size="23">Expected rule: ${fixture.index} goes to ${fixture.middle}; thumb centerline stays on +${axis.toUpperCase()}.</text>
         <text x="24" y="112" font-size="20">Index = first vector; middle = second; thumb = index cross middle.</text>
         <text x="24" y="154" font-size="23">INITIAL: rotation (x, y, z) = (0, 0, 0) deg</text>
         <text x="804" y="154" font-size="23">EXPORTED: (${rotation}) deg</text>
@@ -149,9 +149,10 @@ export async function renderRightHandPair(axis: HandAxis) {
         <text x="24" y="960" font-size="21" fill="${handColors.thumb}">THUMB</text>
         <text x="230" y="960" font-size="21" fill="${handColors.index}">INDEX</text>
         <text x="420" y="960" font-size="21" fill="${handColors.middle}">MIDDLE</text>
-        <text x="650" y="960" font-size="20">Ring + pinky curled; palm + wrist in tan.</text>
+        <text x="650" y="960" font-size="21" fill="${handColors.ring}">RING (curled)</text>
+        <text x="970" y="960" font-size="21" fill="${handColors.pinky}">PINKY (curled)</text>
         <text x="24" y="996" font-size="20">World: Circuit JSON XYZ, right-handed, Z-up, mm. +X red; +Y green; +Z blue.</text>
-        <text x="24" y="1028" font-size="20">Fixed XY datum plane: Z = -6.6 mm, 1 mm grid. CAD origin (0, 0, 0). Same camera.</text>
+        <text x="24" y="1028" font-size="20">Fixed XY grid: Z = -8 mm, 1 mm spacing. Origin (0, 0, 0) on thumb centerline. Same camera.</text>
         <text x="24" y="1060" font-size="20">Positive right-hand rotation, not a change of handedness. Mixed Euler order is a separate issue.</text>
         <text x="24" y="1088" font-size="16">Test-only native generator; real footprinter loader, GLB round-trip and occurrence placement.</text>
       </g>

@@ -8,12 +8,16 @@ even a wrong-sign rotation is proper. Mixed-axis Euler order is a separate issue
 The test-only model has a rounded palm and wrist, extended thumb and index,
 middle bent out of the palm, and individually curled ring and pinky fingers.
 Gold, cyan, and purple identify the distal thumb, index, and middle respectively.
+Orange and teal caps distinguish the curled ring and pinky.
 The native hand has index +X, middle +Y, thumb +Z; its palm faces +Y.
+Its native datum is on the thumb centerline (X = Y = 0), so rotation about
+the selected axis preserves the thumb's position as well as its direction.
 `handFingerSegments` exports the colored distal centerline endpoints in native
 right-handed XYZ millimeters. `orientHandPoint` applies only proper cyclic
 reorientations: `(x,y,z) -> (z,x,y)` for X, `(y,z,x)` for Y, identity for Z.
 The construction test checks directions, orthogonality, index cross middle =
-thumb, determinant +1, and the actual colored geometry's center.
+thumb, determinant +1, the actual colored geometry's center, and a stationary
+thumb centerline under both signs of native quarter-turn.
 
 ## Synthetic boundary
 
@@ -31,7 +35,7 @@ analytical tests continue to use the unmocked `footprinterCircuit`,
 `exportFootprinter`, and `footprinterRotationCases` helpers.
 
 Each image pairs zero and +90 degrees with identical cameras and stationary
-Circuit JSON world axes. The grid is the XY datum plane at Z = -6.6 mm, not a
+Circuit JSON world axes. The grid is the XY datum plane at Z = -8 mm, not a
 PCB. Only the documented Scene/glTF frame mapping is applied to the reference.
 Captions use `svgToPng` and its bundled TscircuitAlphabet font.
 

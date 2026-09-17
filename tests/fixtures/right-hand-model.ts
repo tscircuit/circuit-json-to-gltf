@@ -17,18 +17,21 @@ export const handColors = {
   thumb: "#edac16",
   index: "#168dc4",
   middle: "#b847ad",
+  ring: "#df7140",
+  pinky: "#30a28d",
 }
 
 /**
  * Native generator frame: right-handed XYZ, mm (the same as ordinary SOIC
  * geometry). Palm faces +Y, wrist runs -X, thumb is on the +Z side.
  * Index points +X; middle bends out of the palm toward +Y; thumb points +Z.
+ * The native rotation datum lies on the thumb centerline (x = y = 0).
  * These are distal centerline endpoints, not positions inferred from a render.
  */
 export const handFingerSegments = {
-  thumb: { start: [-2.4, 0, 2.4], end: [-2.4, 0, 4.5] },
-  index: { start: [2.4, 0, 1], end: [4.8, 0, 1] },
-  middle: { start: [0.55, 1.6, -0.25], end: [0.55, 4, -0.25] },
+  thumb: { start: [0, 0, 2.4], end: [0, 0, 4.5] },
+  index: { start: [4.8, 0, 1], end: [7.2, 0, 1] },
+  middle: { start: [2.95, 1.6, -0.25], end: [2.95, 4, -0.25] },
 } satisfies Record<string, { start: Vec3; end: Vec3 }>
 
 /** Proper cyclic reorientation, never a reflection or occurrence rotation. */
@@ -86,7 +89,7 @@ export function makeRightHandModel(
   }
   add(
     primitives.roundedCuboid({
-      center: [-2, 0, -0.5],
+      center: [0.4, 0, -0.5],
       size: [4.2, 1.25, 4.3],
       roundRadius: 0.55,
       segments: 24,
@@ -94,46 +97,53 @@ export function makeRightHandModel(
   )
   add(
     primitives.roundedCuboid({
-      center: [-4.9, 0, -0.6],
+      center: [-2.5, 0, -0.6],
       size: [2.6, 1.1, 2.5],
       roundRadius: 0.48,
       segments: 24,
     }),
   )
   // Thumb web and three extended fingers, with colored distal phalanges.
-  capsule([-2.5, 0, 1], [-2.4, 0, 2.4], 0.65)
-  capsule([0, 0, 1], [2.4, 0, 1], 0.49)
-  capsule([0, 0, -0.25], [0.55, 0.65, -0.25], 0.52)
-  capsule([0.55, 0.65, -0.25], [0.55, 1.6, -0.25], 0.49)
+  capsule([0, 0, 1], [0, 0, 2.4], 0.65)
+  capsule([2.4, 0, 1], [4.8, 0, 1], 0.49)
+  capsule([2.4, 0, -0.25], [2.95, 0.65, -0.25], 0.52)
+  capsule([2.95, 0.65, -0.25], [2.95, 1.6, -0.25], 0.49)
   for (const finger of ["thumb", "index", "middle"] as const) {
     const { start, end } = handFingerSegments[finger]
     capsule(start, end, finger === "thumb" ? 0.55 : 0.45, handColors[finger])
   }
   // Ring and pinky each have a knuckle and two bends back into the palm.
-  for (const { points, radius } of [
+  for (const { finger, points, radius } of [
     {
+      finger: "ring",
       points: [
-        [0, 0, -1.4],
-        [0.95, 0.35, -1.4],
-        [0.95, 1.35, -1.4],
-        [-0.4, 1.55, -1.4],
-        [-1.15, 0.85, -1.4],
+        [2.4, 0, -1.4],
+        [3.35, 0.35, -1.4],
+        [3.35, 1.35, -1.4],
+        [2, 1.55, -1.4],
+        [1.25, 0.85, -1.4],
       ],
       radius: 0.43,
     },
     {
+      finger: "pinky",
       points: [
-        [-0.45, 0, -2.45],
-        [0.35, 0.3, -2.45],
-        [0.35, 1.2, -2.45],
-        [-0.65, 1.4, -2.45],
-        [-1.3, 0.8, -2.45],
+        [1.95, 0, -2.45],
+        [2.75, 0.3, -2.45],
+        [2.75, 1.2, -2.45],
+        [1.75, 1.4, -2.45],
+        [1.1, 0.8, -2.45],
       ],
       radius: 0.36,
     },
-  ] satisfies { points: Vec3[]; radius: number }[]) {
+  ] satisfies { finger: "ring" | "pinky"; points: Vec3[]; radius: number }[]) {
     for (let i = 1; i < points.length; i++) {
-      capsule(points[i - 1]!, points[i]!, radius)
+      capsule(
+        points[i - 1]!,
+        points[i]!,
+        radius,
+        i >= 2 ? handColors[finger] : handColors.skin,
+      )
     }
     // Small nails on the curled fingertips make the two folded digits legible.
     add(
@@ -146,7 +156,7 @@ export function makeRightHandModel(
     )
   }
   // Two palm creases, on the palm surface rather than through the solid.
-  capsule([-2.7, 0.635, -1.9], [-1.4, 0.635, -0.4], 0.045, handColors.crease)
-  capsule([-1.4, 0.635, -0.4], [-1.1, 0.635, 0.9], 0.045, handColors.crease)
+  capsule([-0.3, 0.635, -1.9], [1, 0.635, -0.4], 0.045, handColors.crease)
+  capsule([1, 0.635, -0.4], [1.3, 0.635, 0.9], 0.045, handColors.crease)
   return { geometries }
 }
