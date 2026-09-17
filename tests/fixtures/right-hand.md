@@ -73,3 +73,22 @@ bun --preload ./tests/fixtures/right-hand-preload.ts ./tests/fixtures/render-rig
 Case/snapshot names: `right-hand-x90`, `right-hand-y90`, `right-hand-z90`.
 The same helper must run against each revision's own `lib`; never substitute a
 manually rotated image for an export.
+
+## Real TSX reproduction through the OBJ loader
+
+`tests/snapshot/cadmodel-rotation-offset-{x,y,z}.test.tsx` authors an actual
+`<cadmodel rotationOffset={...} />` inside a chip. It uses the existing
+`keyed-cad-model.obj`, with a blue body and an off-axis red key, rather than the
+synthetic hand. Neither core, model loading, nor Circuit JSON is mocked or
+modified. The footprint's `pcbRotation` stays zero.
+
+The tests confirm that core emits the requested positive CAD angle, then measure
+the signed turn from the final GLB key centers. X/Y requests of +90 degrees
+currently produce -90 degrees; Z produces +90. The fixed PCB is the reference
+plane. The model is raised 6 mm above it so either tilt remains visible.
+
+These are passing characterizations of an existing bug, not positive-rotation
+correctness assertions. They remain identical in the second PR because its
+footprinter-only correction does not touch the OBJ path. This is a real TSX
+reproduction of the broader exporter sign problem, not evidence that that
+footprinter-only correction fixes `<cadmodel modelUrl="...obj">`.
