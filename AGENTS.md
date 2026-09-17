@@ -37,10 +37,11 @@ conversion is the single largest source of defects in tscircuit's 3D output.
 
 Consequences that are easy to get wrong:
 
-- A rotation cannot be copied across the boundary. `circuit-to-3d.ts` remaps a
-  component's rotation (`y ← cad.rotation.z`, `z ← cad.rotation.y`) precisely
-  because of the swap. Any new rotation path needs the same remap, not a
-  hand-written variant of it.
+- A rotation cannot be copied across the boundary or converted merely by
+  swapping Euler fields. For the default footprinter loader frame, interpret
+  CAD angles as right-handed intrinsic XYZ degrees and change basis:
+  `R_loaded = S * R_cad * inverse(S)`. Other model-source paths retain their
+  existing behavior; do not copy their legacy Euler remapping as a new rule.
 - **A layer flip is a rotation, not an inversion.** Flipping a part to the
   bottom layer is a 180° rotation about the vertical axis: exactly two
   components invert. Negating all three would be an improper transform
