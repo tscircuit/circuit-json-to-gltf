@@ -26,7 +26,9 @@ import {
   fitMeshToCadBounds,
   getMeshOrigin,
   getMeshWithBoardNormalTransform,
+  rotateDefaultFootprinterMesh,
 } from "../utils/cad-mesh-placement"
+import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import { getDefaultModelTransform } from "../utils/get-default-model-transform"
 import {
   getBoundingBoxSize,
@@ -565,6 +567,15 @@ export async function convertCircuitJsonTo3D(
           size,
           cad.model_object_fit ?? "contain_within_bounds",
         )
+      }
+
+      if (
+        hasFootprinterModel &&
+        cad.rotation &&
+        defaultTransform === COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
+      ) {
+        box.mesh = rotateDefaultFootprinterMesh(box.mesh, cad.rotation)
+        box.rotation = undefined
       }
 
       box.size = getBoundingBoxSize(box.mesh.boundingBox)

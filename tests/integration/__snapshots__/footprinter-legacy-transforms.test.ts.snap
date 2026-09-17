@@ -1,0 +1,109 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`nondefault footprinter mapping stays unchanged: explicit-identity 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -0.5641207695007324,
+      "y": 6.169422388076782,
+      "z": 2.3203234672546387,
+    },
+    "min": {
+      "x": -11.151315689086914,
+      "y": -2.3491411209106445,
+      "z": -8.667391777038574,
+    },
+  },
+  "geometrySha256": "e515ac01283f4f98b0bcf92d9d38aa0afd84acf2039060531679c289090b5d8e",
+}
+`;
+
+exports[`nondefault footprinter mapping stays unchanged: explicit-custom 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -1.5651812553405762,
+      "y": 6.733066082000732,
+      "z": 0.43370628356933594,
+    },
+    "min": {
+      "x": -11.16313886642456,
+      "y": -1.0375394821166992,
+      "z": -11.07686185836792,
+    },
+  },
+  "geometrySha256": "17476fa3472aea311a6616f225aa01bb2b16d2488ae3eec78d8dd9f0929b3fe9",
+}
+`;
+
+exports[`nondefault footprinter mapping stays unchanged: explicit-default-copy 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -0.6875734329223633,
+      "y": 7.342024326324463,
+      "z": 1.9123468399047852,
+    },
+    "min": {
+      "x": -11.495282649993896,
+      "y": -1.076082706451416,
+      "z": -9.256219863891602,
+    },
+  },
+  "geometrySha256": "dde35bf0c06a056027162619b7fa801addd9647047e0e7a310d969fabcd9b88f",
+}
+`;
+
+exports[`nondefault footprinter mapping stays unchanged: normal-x-negative 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -1.0855684280395508,
+      "y": 6.115980625152588,
+      "z": 4.423834800720215,
+    },
+    "min": {
+      "x": -12.603014945983887,
+      "y": -1.9663047790527344,
+      "z": -7.455747604370117,
+    },
+  },
+  "geometrySha256": "76e7dcb0bd8510c87c2070e4eecfa798116a865b6bb3cf90386c240200d66606",
+}
+`;
+
+exports[`nondefault footprinter mapping stays unchanged: normal-y-positive 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -0.5641207695007324,
+      "y": 6.169422388076782,
+      "z": 2.3203234672546387,
+    },
+    "min": {
+      "x": -11.151315689086914,
+      "y": -2.3491411209106445,
+      "z": -8.667391777038574,
+    },
+  },
+  "geometrySha256": "e515ac01283f4f98b0bcf92d9d38aa0afd84acf2039060531679c289090b5d8e",
+}
+`;
+
+exports[`nondefault footprinter mapping stays unchanged: normal-y-negative 1`] = `
+{
+  "bounds": {
+    "max": {
+      "x": -1.8856005668640137,
+      "y": 5.319266319274902,
+      "z": 2.531599521636963,
+    },
+    "min": {
+      "x": -12.472795486450195,
+      "y": -3.1992969512939453,
+      "z": -8.45611572265625,
+    },
+  },
+  "geometrySha256": "f62ddba9cfea136b3958708ea9a7e63e3c72557b30a23e529008ba904cb64ff5",
+}
+`;
