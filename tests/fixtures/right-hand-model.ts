@@ -16,7 +16,6 @@ export const handColors = {
   palm: "#dba079",
   wrist: "#d39c77",
   thumb: "#eabd95",
-  cap: "#f5cfb0",
   marker: "#147da5",
   arrow: "#394957",
 }
@@ -32,10 +31,10 @@ export const handThumbSegment = {
 } satisfies { start: Vec3; end: Vec3 }
 export const handPalm = {
   // Keep the thumb on the datum while moving its attachment toward the heel.
-  center: [0.3, -0.9, -0.55],
+  center: [0.3, 0, -0.55],
   size: [2.8, 1.1, 4.4],
 } satisfies { center: Vec3; size: Vec3 }
-export const handMarkerCenter: Vec3 = [-2.5, -0.9, -0.55]
+export const handMarkerCenter: Vec3 = [-2.5, 0, -0.55]
 
 const fingerRootX = 1.6
 
@@ -47,10 +46,10 @@ export const gripFingerPaths = [
 ].map((finger) => ({
   ...finger,
   points: [
-    [fingerRootX, -0.9, finger.z],
-    [fingerRootX + finger.reach, -0.9, finger.z],
-    [fingerRootX + finger.reach, 0.75, finger.z],
-    [fingerRootX + 0.25, 0.75, finger.z],
+    [fingerRootX, 0, finger.z],
+    [fingerRootX + finger.reach, 0, finger.z],
+    [fingerRootX + finger.reach, 1.65, finger.z],
+    [fingerRootX + 0.25, 1.65, finger.z],
   ] satisfies Vec3[],
 }))
 
@@ -147,46 +146,10 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
     gripCapsule(handThumbSegment.start, handThumbSegment.end, 0.55),
     handColors.thumb,
   )
-  addThumb(
-    primitives.ellipsoid({
-      center: [0, 0.535, 4],
-      radius: [0.27, 0.08, 0.36],
-      segments: 20,
-    }),
-    handColors.cap,
-  )
-  for (const [fingerIndex, finger] of gripFingerPaths.entries()) {
+  for (const finger of gripFingerPaths) {
     for (let i = 1; i < finger.points.length; i++) {
       add(
         gripCapsule(finger.points[i - 1]!, finger.points[i]!, finger.thickness),
-      )
-    }
-    // Neutral knuckle caps with 1/2/3/4 small pips identify the four curled
-    // fingers without reintroducing the three-colored-vector mnemonic.
-    add(
-      primitives.ellipsoid({
-        center: [
-          fingerRootX + finger.reach,
-          0.75 + finger.thickness - 0.03,
-          finger.z,
-        ],
-        radius: [0.36, 0.09, 0.24],
-        segments: 20,
-      }),
-      handColors.cap,
-    )
-    for (let pip = 0; pip <= fingerIndex; pip++) {
-      add(
-        primitives.sphere({
-          center: [
-            fingerRootX + finger.reach + (pip - fingerIndex / 2) * 0.15,
-            0.75 + finger.thickness + 0.065,
-            finger.z,
-          ],
-          radius: 0.045,
-          segments: 12,
-        }),
-        "#8d5c3e",
       )
     }
   }

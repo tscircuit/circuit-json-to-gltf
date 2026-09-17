@@ -48,19 +48,29 @@ test("native grip has a palm, perpendicular wrist, and two right-angle finger be
     expect(thumbPosition - palmMin[wristAxisIndex]!).toBeLessThan(
       palmMax[wristAxisIndex]! - thumbPosition,
     )
-    // The first cap is the thumbnail; its center now faces native +X, not +Y.
-    const nail = native.geometries.find(
-      (entry) => entry.color === handColors.cap,
+    const palmNormalIndex = orientHandPoint([0, 1, 0], axis).indexOf(1)
+    // The first skin-colored piece is the thumb's angled connector.
+    const elbow = native.geometries.find(
+      (entry) => entry.color === handColors.skin,
     )!.geom
-    const [nailMin, nailMax] = measurements.measureBoundingBox(nail)
-    const nailCenter = vec3.scale(
+    const [elbowMin, elbowMax] = measurements.measureBoundingBox(elbow)
+    const elbowCenter = vec3.scale(
       vec3.create(),
-      vec3.add(vec3.create(), nailMin, nailMax),
+      vec3.add(vec3.create(), elbowMin, elbowMax),
       0.5,
     )
-    const expectedNail = orientHandPoint([0.535, 0, 4], axis)
+    const expectedElbow = orientHandPoint([-0.5, 0, 1.5], axis)
     for (let i = 0; i < 3; i++) {
-      expect(nailCenter[i]!).toBeCloseTo(expectedNail[i]!, 8)
+      expect(elbowCenter[i]!).toBeCloseTo(expectedElbow[i]!, 8)
+    }
+    for (const [min, max] of [
+      [thumbMin, thumbMax],
+      [elbowMin, elbowMax],
+    ]) {
+      expect((min![palmNormalIndex]! + max![palmNormalIndex]!) / 2).toBeCloseTo(
+        (palmMin[palmNormalIndex]! + palmMax[palmNormalIndex]!) / 2,
+        8,
+      )
     }
     expect((wristMin[axisIndex]! + wristMax[axisIndex]!) / 2).toBeCloseTo(
       (palmMin[axisIndex]! + palmMax[axisIndex]!) / 2,

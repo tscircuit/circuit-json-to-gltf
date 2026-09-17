@@ -11,18 +11,19 @@ The test-only model has a rounded palm and wrist, one extended thumb, and four
 curled fingers. The wrist extends perpendicular to the thumb, from the heel
 of a broad palm. Each short finger leaves the opposite palm edge and has three
 straight segments with exactly two positive 90-degree bends.
-The thumb's elbow and nail turn -90 degrees about native Z; its attachment is
-near the wrist rather than the finger roots. The hand is reanchored on the thumb
-centerline so that this anatomical adjustment does not move the rotation datum.
-Knuckle caps with one through four pips identify index, middle,
-ring, and pinky without a three-finger vector mnemonic. The native thumb points
+The thumb assembly turns -90 degrees about native Z and sits in the palm's
+mid-plane, attached near the wrist rather than the finger roots. The hand is
+reanchored on the thumb centerline so that these anatomical adjustments do not
+move the rotation datum. There are no nail plates or numbered dots.
+The native thumb points
 along +Z and lies on the rotation axis. A blue wrist band provides an off-axis
 motion marker.
 
 `handThumbSegment`, `handMarkerCenter`, and `gripFingerPaths` describe the native
 geometry in right-handed XYZ millimeters. `orientHandPoint` applies proper
 cyclic reorientations: `(x,y,z) -> (z,x,y)` for X, `(y,z,x)` for Y, identity for Z.
-Construction assertions cover wrist/thumb perpendicularity, palm attachment,
+Construction assertions cover wrist/thumb perpendicularity, thumb/palm coplanarity,
+attachment near the wrist,
 short finger segments, both right-angle bends, positive arrow curl, proper cyclic
 frames, marker geometry, and a stationary thumb under either sign of rotation.
 
