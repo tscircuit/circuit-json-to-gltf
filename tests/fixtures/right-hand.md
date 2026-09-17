@@ -1,23 +1,23 @@
 # Right-hand rotation fixture
 
 These snapshots are observations of the exporter, **not correctness assertions**.
-The independent right-hand expectations are +X: +Y to +Z, +Y: +Z to +X, and
-+Z: +X to +Y. Positive rotation does not turn a right hand into a left hand:
-even a wrong-sign rotation is proper. Mixed-axis Euler order is a separate issue.
+The rule is simply: point the right thumb along the positive rotation axis;
+positive rotation follows the four curled fingers. The fixed curved arrow
+illustrates that positive direction, not the measured exporter motion.
+Even a wrong-sign rotation preserves handedness. Mixed-axis Euler order is a
+separate issue.
 
-The test-only model has a rounded palm and wrist, extended thumb and index,
-middle bent out of the palm, and individually curled ring and pinky fingers.
-Gold, cyan, and purple identify the distal thumb, index, and middle respectively.
-Orange and teal caps distinguish the curled ring and pinky.
-The native hand has index +X, middle +Y, thumb +Z; its palm faces +Y.
-Its native datum is on the thumb centerline (X = Y = 0), so rotation about
-the selected axis preserves the thumb's position as well as its direction.
-`handFingerSegments` exports the colored distal centerline endpoints in native
-right-handed XYZ millimeters. `orientHandPoint` applies only proper cyclic
-reorientations: `(x,y,z) -> (z,x,y)` for X, `(y,z,x)` for Y, identity for Z.
-The construction test checks directions, orthogonality, index cross middle =
-thumb, determinant +1, the actual colored geometry's center, and a stationary
-thumb centerline under both signs of native quarter-turn.
+The test-only model has a rounded palm and wrist, one extended thumb, and four
+curled fingers. Knuckle caps with one through four pips identify index, middle,
+ring, and pinky without a three-finger vector mnemonic. The native thumb points
+along +Z and lies on the rotation axis. A blue wrist band provides an off-axis
+motion marker.
+
+`handThumbSegment`, `handMarkerCenter`, and `gripFingerPaths` describe the native
+geometry in right-handed XYZ millimeters. `orientHandPoint` applies proper
+cyclic reorientations: `(x,y,z) -> (z,x,y)` for X, `(y,z,x)` for Y, identity for Z.
+Construction assertions cover the positive finger/arrow curl, proper cyclic
+frames, marker geometry, and a stationary thumb under either sign of rotation.
 
 ## Synthetic boundary
 
@@ -34,17 +34,19 @@ builder, and renderer are real. `model_jscad` is not used. Ordinary SOIC8/SOIC14
 analytical tests continue to use the unmocked `footprinterCircuit`,
 `exportFootprinter`, and `footprinterRotationCases` helpers.
 
-Each image pairs zero and +90 degrees with identical cameras and stationary
-Circuit JSON world axes. The grid is the XY datum plane at Z = -8 mm, not a
-PCB. Only the documented Scene/glTF frame mapping is applied to the reference.
-Captions use `svgToPng` and its bundled TscircuitAlphabet font.
+Each image pairs zero and requested +90 degrees with identical cameras,
+stationary Circuit JSON axes, and a fixed positive-curl arrow. The XY grid is
+at Z = -8 mm, below the rotation datum, and is not a PCB.
+Captions use `svgToPng` with its bundled font rather than system fonts.
 
-The measured captions come from **final GLB vertices**, filtered by finger
-color. Each straight colored distal segment extends away from the datum along
-its longest axis (checked in the construction test). For these cardinal poses,
-its long-axis midpoint sign therefore gives its direction. The measurement
-undoes only the fixed glTF world mapping `(-x,z,y)`, never the occurrence rotation.
-It neither supplies a corrected pose nor asserts that the exporter is correct.
+The measured captions use **final GLB vertices** to locate the blue wrist-band
+center before and after rotation. After undoing only the fixed glTF world
+mapping `(-x,z,y)`, both marker vectors are projected perpendicular to the
+positive axis. Their signed angle is
+`atan2(axis dot cross(initial, final), dot(initial, final))`.
+The outcome is measured, not selected by case name. Baseline X/Y produce -90
+degrees while Z produces +90; the fix produces +90 for all three.
+Only the second PR asserts that the exported turn agrees with the positive rule.
 
 ## Regeneration
 
