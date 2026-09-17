@@ -172,7 +172,7 @@ export async function renderRightHandPair(axis: HandAxis) {
         <text x="804" y="184" font-size="19">Actual exporter result, not a corrected illustration</text>
         <text x="24" y="222" font-size="21">Blue wrist band = off-axis motion fiducial</text>
         <text x="804" y="222" font-size="23">MEASURED: ${measuredLabel} / EXPECTED: +90 deg</text>
-        <text x="24" y="960" font-size="20">Curled finger caps: 1 index, 2 middle, 3 ring, 4 pinky. Only the thumb extends.</text>
+        <text x="24" y="960" font-size="20">Four short fingers, two right-angle bends each. Thumb and wrist are perpendicular.</text>
         <text x="24" y="996" font-size="20">World: Circuit JSON XYZ, right-handed, Z-up, mm. +X red; +Y green; +Z blue.</text>
         <text x="24" y="1028" font-size="20">Fixed XY grid: Z = -8 mm, 1 mm spacing. Origin (0, 0, 0) on thumb centerline. Same camera.</text>
         <text x="24" y="1060" font-size="20">Signed angle from exported wrist-band centers; a wrong-sign rotation still preserves handedness.</text>
