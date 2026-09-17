@@ -31,10 +31,13 @@ export const handThumbSegment = {
   end: [0, 0, 4.5],
 } satisfies { start: Vec3; end: Vec3 }
 export const handPalm = {
-  center: [-1.3, -0.9, -0.55],
+  // Keep the thumb on the datum while moving its attachment toward the heel.
+  center: [0.3, -0.9, -0.55],
   size: [2.8, 1.1, 4.4],
 } satisfies { center: Vec3; size: Vec3 }
-export const handMarkerCenter: Vec3 = [-4.1, -0.9, -0.55]
+export const handMarkerCenter: Vec3 = [-2.5, -0.9, -0.55]
+
+const fingerRootX = 1.6
 
 export const gripFingerPaths = [
   { name: "index", reach: 1.2, z: 1.15, thickness: 0.47 },
@@ -44,10 +47,10 @@ export const gripFingerPaths = [
 ].map((finger) => ({
   ...finger,
   points: [
-    [0, -0.9, finger.z],
-    [finger.reach, -0.9, finger.z],
-    [finger.reach, 0.75, finger.z],
-    [0.25, 0.75, finger.z],
+    [fingerRootX, -0.9, finger.z],
+    [fingerRootX + finger.reach, -0.9, finger.z],
+    [fingerRootX + finger.reach, 0.75, finger.z],
+    [fingerRootX + 0.25, 0.75, finger.z],
   ] satisfies Vec3[],
 }))
 
@@ -108,6 +111,10 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
     geom: ReturnType<typeof primitives.sphere>,
     color = handColors.skin,
   ) => geometries.push({ geom: orientGeometry(geom, axis), color })
+  const addThumb = (
+    geom: ReturnType<typeof primitives.sphere>,
+    color = handColors.skin,
+  ) => add(jscad.transforms.rotateZ(-Math.PI / 2, geom), color)
   add(
     primitives.roundedCuboid({
       ...handPalm,
@@ -134,13 +141,13 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
     }),
     handColors.marker,
   )
-  add(gripCapsule([0, -1, 1.1], [0, 0, 1.9], 0.65))
-  add(gripCapsule([0, 0, 1.9], handThumbSegment.start, 0.57))
-  add(
+  addThumb(gripCapsule([0, -1, 1.1], [0, 0, 1.9], 0.65))
+  addThumb(gripCapsule([0, 0, 1.9], handThumbSegment.start, 0.57))
+  addThumb(
     gripCapsule(handThumbSegment.start, handThumbSegment.end, 0.55),
     handColors.thumb,
   )
-  add(
+  addThumb(
     primitives.ellipsoid({
       center: [0, 0.535, 4],
       radius: [0.27, 0.08, 0.36],
@@ -158,7 +165,11 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
     // fingers without reintroducing the three-colored-vector mnemonic.
     add(
       primitives.ellipsoid({
-        center: [finger.reach, 0.75 + finger.thickness - 0.03, finger.z],
+        center: [
+          fingerRootX + finger.reach,
+          0.75 + finger.thickness - 0.03,
+          finger.z,
+        ],
         radius: [0.36, 0.09, 0.24],
         segments: 20,
       }),
@@ -168,7 +179,7 @@ export function makeRightHandModel(axis: HandAxis): RenderResult {
       add(
         primitives.sphere({
           center: [
-            finger.reach + (pip - fingerIndex / 2) * 0.15,
+            fingerRootX + finger.reach + (pip - fingerIndex / 2) * 0.15,
             0.75 + finger.thickness + 0.065,
             finger.z,
           ],
