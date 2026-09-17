@@ -1,100 +1,98 @@
 import { expect, test } from "bun:test"
 import { maths, measurements, transforms } from "@jscad/modeling"
+import { measureGripRotation } from "../fixtures/grip-measurement"
 import {
+  gripArrowPath,
+  gripFingerPaths,
   handColors,
-  handFingerSegments,
+  handMarkerCenter,
+  handThumbSegment,
   makeRightHandModel,
   orientHandPoint,
   rightHandCases,
 } from "../fixtures/right-hand-model"
 
-test("native hand distal directions form a right-handed basis under every cyclic pose", () => {
+test("native grip has positive finger curl and a stationary axial thumb", () => {
   const { vec3 } = maths
-  const expected = {
-    x: { thumb: [1, 0, 0], index: [0, 1, 0], middle: [0, 0, 1] },
-    y: { thumb: [0, 1, 0], index: [0, 0, 1], middle: [1, 0, 0] },
-    z: { thumb: [0, 0, 1], index: [1, 0, 0], middle: [0, 1, 0] },
-  } satisfies Record<
-    string,
-    Record<keyof typeof handFingerSegments, [number, number, number]>
-  >
+  const point = ([x, y, z]: [number, number, number]) => ({ x, y, z })
+  expect(gripFingerPaths.map(({ name }) => name)).toEqual([
+    "index",
+    "middle",
+    "ring",
+    "pinky",
+  ])
   for (const { axis } of rightHandCases) {
     const native = makeRightHandModel(axis)
-    const direction = (finger: keyof typeof handFingerSegments) => {
-      const { start, end } = handFingerSegments[finger]
-      return vec3.normalize(
-        vec3.create(),
-        vec3.subtract(
-          vec3.create(),
-          orientHandPoint(end, axis),
-          orientHandPoint(start, axis),
-        ),
-      )
-    }
-    const thumb = direction("thumb")
-    const index = direction("index")
-    const middle = direction("middle")
-    const rotationAxis = { x: 0, y: 1, z: 2 }[axis]
-    const thumbGeometry = native.geometries.find(
+    const axisIndex = { x: 0, y: 1, z: 2 }[axis]
+    const thumb = native.geometries.find(
       (entry) => entry.color === handColors.thumb,
     )!.geom
-    // Construction only: rotating the native model around its thumb axis
-    // keeps the thumb centerline in place, for either sign of quarter-turn.
-    for (const endpoint of Object.values(handFingerSegments.thumb)) {
-      const point = orientHandPoint(endpoint, axis)
-      for (let coordinate = 0; coordinate < 3; coordinate++) {
-        if (coordinate !== rotationAxis) expect(point[coordinate]).toBe(0)
+    const marker = native.geometries.find(
+      (entry) => entry.color === handColors.marker,
+    )!.geom
+    for (const endpoint of Object.values(handThumbSegment)) {
+      const position = orientHandPoint(endpoint, axis)
+      expect(position[axisIndex]!).toBeGreaterThan(0)
+      for (let i = 0; i < 3; i++) {
+        if (i !== axisIndex) expect(position[i]).toBe(0)
       }
     }
-    for (const angle of [-Math.PI / 2, Math.PI / 2]) {
+    for (const { points, expectedCurl } of [
+      ...gripFingerPaths.map(({ points }) => ({ points, expectedCurl: 230 })),
+      { points: gripArrowPath, expectedCurl: 180 },
+    ]) {
+      let totalCurl = 0
+      for (let i = 1; i < points.length; i++) {
+        const angle = measureGripRotation(
+          axis,
+          point(orientHandPoint(points[i - 1]!, axis)),
+          point(orientHandPoint(points[i]!, axis)),
+        )
+        expect(angle).toBeGreaterThan(0)
+        totalCurl += angle
+      }
+      expect(totalCurl).toBeCloseTo(expectedCurl, 8)
+    }
+    const [markerMin, markerMax] = measurements.measureBoundingBox(marker)
+    const markerCenter = vec3.scale(
+      vec3.create(),
+      vec3.add(vec3.create(), markerMin, markerMax),
+      0.5,
+    )
+    const expectedMarker = orientHandPoint(handMarkerCenter, axis)
+    for (let i = 0; i < 3; i++) {
+      expect(markerCenter[i]!).toBeCloseTo(expectedMarker[i]!, 8)
+    }
+    // These are construction/measurement checks, not exporter assertions.
+    for (const angle of [-90, -30, 0, 30, 90]) {
       const rotation: [number, number, number] = [0, 0, 0]
-      rotation[rotationAxis] = angle
+      rotation[axisIndex] = (angle * Math.PI) / 180
       const [min, max] = measurements.measureBoundingBox(
-        transforms.rotate(rotation, thumbGeometry),
+        transforms.rotate(rotation, marker),
       )
-      for (let coordinate = 0; coordinate < 3; coordinate++) {
-        if (coordinate !== rotationAxis) {
-          expect((min[coordinate]! + max[coordinate]!) / 2).toBeCloseTo(0, 8)
-        }
-      }
-    }
-    for (const finger of ["thumb", "index", "middle"] as const) {
-      expect(direction(finger)).toEqual(expected[axis][finger])
-      const { start, end } = handFingerSegments[finger]
-      const distal = native.geometries.find(
-        (entry) => entry.color === handColors[finger],
-      )!
-      const [min, max] = measurements.measureBoundingBox(distal.geom)
-      const center = vec3.scale(
+      const rotatedCenter = vec3.scale(
         vec3.create(),
         vec3.add(vec3.create(), min, max),
         0.5,
       )
-      const midpoint = orientHandPoint(
-        vec3.scale(vec3.create(), vec3.add(vec3.create(), start, end), 0.5),
-        axis,
+      expect(
+        measureGripRotation(axis, point(markerCenter), point(rotatedCenter)),
+      ).toBeCloseTo(angle, 8)
+      const [thumbMin, thumbMax] = measurements.measureBoundingBox(
+        transforms.rotate(rotation, thumb),
       )
-      for (let coordinate = 0; coordinate < 3; coordinate++) {
-        expect(center[coordinate]!).toBeCloseTo(midpoint[coordinate]!, 8)
-      }
-      const spans = vec3.subtract(vec3.create(), max, min)
-      const longAxis = direction(finger).indexOf(1)
-      for (let coordinate = 0; coordinate < 3; coordinate++) {
-        if (coordinate !== longAxis) {
-          expect(spans[longAxis]!).toBeGreaterThan(spans[coordinate]!)
+      for (let i = 0; i < 3; i++) {
+        if (i !== axisIndex) {
+          expect((thumbMin[i]! + thumbMax[i]!) / 2).toBeCloseTo(0, 8)
         }
       }
-      // Each distal segment extends away from the datum along its long axis.
-      // Thus its exported long-axis midpoint sign identifies finger direction.
-      expect(vec3.dot(center, direction(finger))).toBeGreaterThan(0)
     }
-    expect(vec3.cross(vec3.create(), index, middle)).toEqual(thumb)
-    expect(vec3.dot(index, middle)).toBe(0)
-    expect(vec3.dot(thumb, index)).toBe(0)
-    expect(vec3.dot(thumb, middle)).toBe(0)
     const x = orientHandPoint([1, 0, 0], axis)
     const y = orientHandPoint([0, 1, 0], axis)
     const z = orientHandPoint([0, 0, 1], axis)
     expect(vec3.dot(vec3.cross(vec3.create(), x, y), z)).toBe(1)
+    expect(() =>
+      measureGripRotation(axis, { x: 0, y: 0, z: 0 }, point(markerCenter)),
+    ).toThrow("off the rotation axis")
   }
 })

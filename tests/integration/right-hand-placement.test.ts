@@ -3,7 +3,7 @@ import { join } from "node:path"
 import { rightHandCases } from "../fixtures/right-hand-model"
 
 test.each([...rightHandCases])(
-  "exported positive $axis rotation follows the right hand",
+  "exported +90 $axis rotation has positive signed right-grip displacement",
   async ({ axis }) => {
     const child = Bun.spawn(
       [
@@ -21,7 +21,9 @@ test.each([...rightHandCases])(
       child.exited,
     ])
     if (exitCode !== 0)
-      throw new Error(`Right-hand placement disagrees:\n${stdout}\n${stderr}`)
+      throw new Error(
+        `Right-grip displacement disagrees:\n${stdout}\n${stderr}`,
+      )
     expect(exitCode).toBe(0)
   },
   120_000,

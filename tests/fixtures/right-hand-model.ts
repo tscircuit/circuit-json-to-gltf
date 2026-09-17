@@ -6,33 +6,50 @@ type Vec3 = [number, number, number]
 export type HandAxis = "x" | "y" | "z"
 
 export const rightHandCases = [
-  { axis: "x", name: "right-hand-x90", index: "+Y", middle: "+Z" },
-  { axis: "y", name: "right-hand-y90", index: "+Z", middle: "+X" },
-  { axis: "z", name: "right-hand-z90", index: "+X", middle: "+Y" },
+  { axis: "x", name: "right-hand-x90" },
+  { axis: "y", name: "right-hand-y90" },
+  { axis: "z", name: "right-hand-z90" },
 ] as const
 
 export const handColors = {
-  skin: "#e4ad80",
-  crease: "#b87850",
-  thumb: "#edac16",
-  index: "#168dc4",
-  middle: "#b847ad",
-  ring: "#df7140",
-  pinky: "#30a28d",
+  skin: "#dfa77e",
+  thumb: "#eabd95",
+  cap: "#f5cfb0",
+  marker: "#147da5",
+  arrow: "#394957",
 }
 
 /**
- * Native generator frame: right-handed XYZ, mm (the same as ordinary SOIC
- * geometry). Palm faces +Y, wrist runs -X, thumb is on the +Z side.
- * Index points +X; middle bends out of the palm toward +Y; thumb points +Z.
- * The native rotation datum lies on the thumb centerline (x = y = 0).
- * These are distal centerline endpoints, not positions inferred from a render.
+ * Native right-handed XYZ, mm. Thumb points +Z on the rotation axis.
+ * All four fingers curl positively around +Z, from the palm's +X edge,
+ * through +Y, back toward -X. The palm and wrist lie on the -Y side.
  */
-export const handFingerSegments = {
-  thumb: { start: [0, 0, 2.4], end: [0, 0, 4.5] },
-  index: { start: [4.8, 0, 1], end: [7.2, 0, 1] },
-  middle: { start: [2.95, 1.6, -0.25], end: [2.95, 4, -0.25] },
-} satisfies Record<string, { start: Vec3; end: Vec3 }>
+export const handThumbSegment = {
+  start: [0, 0, 2.4],
+  end: [0, 0, 4.5],
+} satisfies { start: Vec3; end: Vec3 }
+export const handMarkerCenter: Vec3 = [0, -1.1, -3.7]
+
+export const gripFingerPaths = [
+  { name: "index", radius: 1.75, z: 1.15, thickness: 0.47 },
+  { name: "middle", radius: 1.95, z: 0, thickness: 0.49 },
+  { name: "ring", radius: 1.85, z: -1.15, thickness: 0.44 },
+  { name: "pinky", radius: 1.55, z: -2.15, thickness: 0.36 },
+].map((finger) => ({
+  ...finger,
+  points: [-30, 10, 50, 90, 130, 170, 200].map(
+    (degrees): Vec3 => [
+      finger.radius * Math.cos((degrees * Math.PI) / 180),
+      finger.radius * Math.sin((degrees * Math.PI) / 180),
+      finger.z,
+    ],
+  ),
+}))
+
+export const gripArrowPath = Array.from({ length: 25 }, (_, i): Vec3 => {
+  const angle = ((-35 + (180 * i) / 24) * Math.PI) / 180
+  return [3.25 * Math.cos(angle), 3.25 * Math.sin(angle), 0.6]
+})
 
 /** Proper cyclic reorientation, never a reflection or occurrence rotation. */
 export function orientHandPoint([x, y, z]: Vec3, axis: HandAxis): Vec3 {
@@ -41,33 +58,29 @@ export function orientHandPoint([x, y, z]: Vec3, axis: HandAxis): Vec3 {
   return [x, y, z]
 }
 
-export function makeRightHandModel(
+function orientGeometry(
+  geom: ReturnType<typeof jscad.primitives.sphere>,
   axis: HandAxis,
-  modeling: typeof jscad = jscad,
-): RenderResult {
-  const { primitives, transforms, maths, booleans } = modeling
-  const geometries: RenderResult["geometries"] = []
-  const add = (
-    geom: ReturnType<typeof primitives.sphere>,
-    color = handColors.skin,
-  ) => {
-    // Construct one hand; the cyclic basis columns carry it to each axis.
-    const x = orientHandPoint([1, 0, 0], axis)
-    const y = orientHandPoint([0, 1, 0], axis)
-    const z = orientHandPoint([0, 0, 1], axis)
-    geometries.push({
-      geom: transforms.transform([...x, 0, ...y, 0, ...z, 0, 0, 0, 0, 1], geom),
-      color,
-    })
-  }
-  const capsule = (start: Vec3, end: Vec3, radius: number, color?: string) => {
-    const delta = maths.vec3.subtract(maths.vec3.create(), end, start)
-    const center = maths.vec3.scale(
-      maths.vec3.create(),
-      maths.vec3.add(maths.vec3.create(), start, end),
-      0.5,
-    )
-    const cylinder = transforms.translate(
+) {
+  const x = orientHandPoint([1, 0, 0], axis)
+  const y = orientHandPoint([0, 1, 0], axis)
+  const z = orientHandPoint([0, 0, 1], axis)
+  return jscad.transforms.transform(
+    [...x, 0, ...y, 0, ...z, 0, 0, 0, 0, 1],
+    geom,
+  )
+}
+
+function gripCapsule(start: Vec3, end: Vec3, radius: number) {
+  const { maths, primitives, transforms, booleans } = jscad
+  const delta = maths.vec3.subtract(maths.vec3.create(), end, start)
+  const center = maths.vec3.scale(
+    maths.vec3.create(),
+    maths.vec3.add(maths.vec3.create(), start, end),
+    0.5,
+  )
+  return booleans.union(
+    transforms.translate(
       center,
       transforms.transform(
         fromVectorRotation(maths.mat4.create(), [0, 0, 1], delta),
@@ -77,86 +90,127 @@ export function makeRightHandModel(
           segments: 20,
         }),
       ),
-    )
-    add(
-      booleans.union(
-        cylinder,
-        primitives.sphere({ center: start, radius, segments: 20 }),
-        primitives.sphere({ center: end, radius, segments: 20 }),
-      ),
-      color,
-    )
-  }
+    ),
+    primitives.sphere({ center: start, radius, segments: 20 }),
+    primitives.sphere({ center: end, radius, segments: 20 }),
+  )
+}
+
+export function makeRightHandModel(axis: HandAxis): RenderResult {
+  const { primitives } = jscad
+  const geometries: RenderResult["geometries"] = []
+  const add = (
+    geom: ReturnType<typeof primitives.sphere>,
+    color = handColors.skin,
+  ) => geometries.push({ geom: orientGeometry(geom, axis), color })
   add(
     primitives.roundedCuboid({
-      center: [0.4, 0, -0.5],
-      size: [4.2, 1.25, 4.3],
-      roundRadius: 0.55,
+      center: [0, -1.15, -0.55],
+      size: [3.2, 1.1, 4.4],
+      roundRadius: 0.5,
       segments: 24,
     }),
   )
   add(
     primitives.roundedCuboid({
-      center: [-2.5, 0, -0.6],
-      size: [2.6, 1.1, 2.5],
-      roundRadius: 0.48,
+      center: [0, -1.1, -3.7],
+      size: [2.2, 1.3, 2.6],
+      roundRadius: 0.5,
       segments: 24,
     }),
   )
-  // Thumb web and three extended fingers, with colored distal phalanges.
-  capsule([0, 0, 1], [0, 0, 2.4], 0.65)
-  capsule([2.4, 0, 1], [4.8, 0, 1], 0.49)
-  capsule([2.4, 0, -0.25], [2.95, 0.65, -0.25], 0.52)
-  capsule([2.95, 0.65, -0.25], [2.95, 1.6, -0.25], 0.49)
-  for (const finger of ["thumb", "index", "middle"] as const) {
-    const { start, end } = handFingerSegments[finger]
-    capsule(start, end, finger === "thumb" ? 0.55 : 0.45, handColors[finger])
-  }
-  // Ring and pinky each have a knuckle and two bends back into the palm.
-  for (const { finger, points, radius } of [
-    {
-      finger: "ring",
-      points: [
-        [2.4, 0, -1.4],
-        [3.35, 0.35, -1.4],
-        [3.35, 1.35, -1.4],
-        [2, 1.55, -1.4],
-        [1.25, 0.85, -1.4],
-      ],
-      radius: 0.43,
-    },
-    {
-      finger: "pinky",
-      points: [
-        [1.95, 0, -2.45],
-        [2.75, 0.3, -2.45],
-        [2.75, 1.2, -2.45],
-        [1.75, 1.4, -2.45],
-        [1.1, 0.8, -2.45],
-      ],
-      radius: 0.36,
-    },
-  ] satisfies { finger: "ring" | "pinky"; points: Vec3[]; radius: number }[]) {
-    for (let i = 1; i < points.length; i++) {
-      capsule(
-        points[i - 1]!,
-        points[i]!,
-        radius,
-        i >= 2 ? handColors[finger] : handColors.skin,
+  add(
+    primitives.roundedCuboid({
+      center: handMarkerCenter,
+      size: [2.35, 1.45, 0.42],
+      roundRadius: 0.18,
+      segments: 24,
+    }),
+    handColors.marker,
+  )
+  add(gripCapsule([0, -1, 1.1], [0, 0, 1.9], 0.65))
+  add(gripCapsule([0, 0, 1.9], handThumbSegment.start, 0.57))
+  add(
+    gripCapsule(handThumbSegment.start, handThumbSegment.end, 0.55),
+    handColors.thumb,
+  )
+  add(
+    primitives.ellipsoid({
+      center: [0, 0.535, 4],
+      radius: [0.27, 0.08, 0.36],
+      segments: 20,
+    }),
+    handColors.cap,
+  )
+  for (const [fingerIndex, finger] of gripFingerPaths.entries()) {
+    for (let i = 1; i < finger.points.length; i++) {
+      add(
+        gripCapsule(finger.points[i - 1]!, finger.points[i]!, finger.thickness),
       )
     }
-    // Small nails on the curled fingertips make the two folded digits legible.
+    // Neutral knuckle caps with 1/2/3/4 small pips identify the four curled
+    // fingers without reintroducing the three-colored-vector mnemonic.
     add(
       primitives.ellipsoid({
-        center: points.at(-1)!,
-        radius: [0.26, radius + 0.035, 0.25],
-        segments: 16,
+        center: [0, finger.radius + finger.thickness - 0.03, finger.z],
+        radius: [0.36, 0.09, 0.24],
+        segments: 20,
       }),
-      "#f8d9be",
+      handColors.cap,
     )
+    for (let pip = 0; pip <= fingerIndex; pip++) {
+      add(
+        primitives.sphere({
+          center: [
+            (pip - fingerIndex / 2) * 0.15,
+            finger.radius + finger.thickness + 0.065,
+            finger.z,
+          ],
+          radius: 0.045,
+          segments: 12,
+        }),
+        "#8d5c3e",
+      )
+    }
   }
-  // Two palm creases, on the palm surface rather than through the solid.
-  capsule([-0.3, 0.635, -1.9], [1, 0.635, -0.4], 0.045, handColors.crease)
-  capsule([1, 0.635, -0.4], [1.3, 0.635, 0.9], 0.045, handColors.crease)
   return { geometries }
+}
+
+/** Stationary positive-curl reference, not part of the CAD occurrence. */
+export function makeGripReferenceArrow(axis: HandAxis): RenderResult {
+  const { primitives, transforms, maths, booleans } = jscad
+  const points = gripArrowPath
+  const pieces = points
+    .slice(1)
+    .map((point, i) => gripCapsule(points[i]!, point, 0.07))
+  const tip = points.at(-1)!
+  const tangent: Vec3 = [-tip[1], tip[0], 0]
+  const unit = maths.vec3.normalize(maths.vec3.create(), tangent)
+  const center = maths.vec3.add(
+    maths.vec3.create(),
+    tip,
+    maths.vec3.scale(maths.vec3.create(), unit, 0.33),
+  )
+  pieces.push(
+    transforms.translate(
+      center,
+      transforms.transform(
+        fromVectorRotation(maths.mat4.create(), [0, 0, 1], tangent),
+        primitives.cylinderElliptic({
+          height: 0.8,
+          startRadius: [0.3, 0.3],
+          endRadius: [0, 0],
+          segments: 20,
+        }),
+      ),
+    ),
+  )
+  return {
+    geometries: [
+      {
+        geom: orientGeometry(booleans.union(...pieces), axis),
+        color: handColors.arrow,
+      },
+    ],
+  }
 }

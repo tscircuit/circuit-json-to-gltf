@@ -1,13 +1,21 @@
 import type { RenderOptionsInput } from "poppygl"
+import { convertJscadModelToGltf } from "jscad-to-gltf"
 import { convertCircuitJsonTo3D, convertSceneToGLTF } from "../../lib"
 import { parseGLB } from "../../lib/loaders/glb"
 import type { Box3D, Point3 } from "../../lib/types"
 import { boundsOfTriangles } from "../../lib/utils/bounding-box"
+import { getBoundingBoxSize } from "../../lib/utils/mesh-scale"
 import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
 import { svgToPng } from "../../lib/utils/svg-to-png"
 import { renderGlbToPng } from "../renderGlbToPng"
 import { footprinterCircuit } from "./footprinter-xyz"
-import { handColors, rightHandCases, type HandAxis } from "./right-hand-model"
+import { measureGripRotation } from "./grip-measurement"
+import {
+  handColors,
+  makeGripReferenceArrow,
+  rightHandCases,
+  type HandAxis,
+} from "./right-hand-model"
 
 /**
  * Fixed world reference, independent of the CAD occurrence.
@@ -87,46 +95,64 @@ export async function renderHandPose(axis: HandAxis, degrees: number) {
     throw new Error("Synthetic footprinter model did not traverse the loader")
   }
   scene.boxes.push(...handReference())
+  // The arrow is an independent world reference, never a CAD child. Its only
+  // transform is the same native XYZ -> Scene (x,z,y) mapping as the grid.
+  const reference = await convertJscadModelToGltf(
+    makeGripReferenceArrow(axis),
+    {
+      format: "glb",
+    },
+  )
+  if (!(reference.data instanceof ArrayBuffer))
+    throw new Error("Expected arrow GLB")
+  const arrow = parseGLB(
+    reference.data,
+    COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP,
+  )
+  scene.boxes.push({
+    center: { x: 0, y: 0, z: 0 },
+    size: getBoundingBoxSize(arrow.boundingBox),
+    mesh: arrow,
+  })
   const glb = await convertSceneToGLTF(scene, { binary: true })
   if (!(glb instanceof ArrayBuffer)) throw new Error("Expected binary GLB")
   const mesh = parseGLB(glb, COORDINATE_TRANSFORMS.IDENTITY)
-  const direction = (finger: "thumb" | "index" | "middle") => {
+  const measuredCenter = (part: "thumb" | "marker"): Point3 => {
     const rgb = [1, 3, 5].map((offset) =>
-      Number.parseInt(handColors[finger].slice(offset, offset + 2), 16),
+      Number.parseInt(handColors[part].slice(offset, offset + 2), 16),
     )
     const triangles = mesh.triangles.filter(
       ({ color }) =>
         Array.isArray(color) &&
         rgb.every((channel, i) => Math.abs(channel - color[i]!) < 1),
     )
-    if (!triangles.length)
-      throw new Error(`Missing exported ${finger} geometry`)
+    if (!triangles.length) throw new Error(`Missing exported ${part} geometry`)
     const bounds = boundsOfTriangles(triangles)
-    const longAxis = (["x", "y", "z"] as const).reduce((a, b) =>
-      bounds.max[a] - bounds.min[a] > bounds.max[b] - bounds.min[b] ? a : b,
-    )
-    // Construction checks pin that colored distal segments point away from
-    // the datum along their long axis. Read that axis from actual GLB vertices,
-    // then undo ONLY the world frame mapping (-x,z,y), not any CAD rotation.
-    const midpoint = (bounds.min[longAxis] + bounds.max[longAxis]) / 2
-    const circuitAxis = { x: "X", y: "Z", z: "Y" }[longAxis]
-    const sign = midpoint * (longAxis === "x" ? -1 : 1) > 0 ? "+" : "-"
-    return `${sign}${circuitAxis}`
+    // Undo ONLY glTF world (-x,z,y); these are actual exported positions.
+    return {
+      x: -(bounds.min.x + bounds.max.x) / 2,
+      y: (bounds.min.z + bounds.max.z) / 2,
+      z: (bounds.min.y + bounds.max.y) / 2,
+    }
   }
   return {
     image: Buffer.from(await renderGlbToPng(glb, circuit, camera)).toString(
       "base64",
     ),
-    thumb: direction("thumb"),
-    index: direction("index"),
-    middle: direction("middle"),
+    thumbCenter: measuredCenter("thumb"),
+    markerCenter: measuredCenter("marker"),
   }
 }
 
 export async function renderRightHandPair(axis: HandAxis) {
-  const fixture = rightHandCases.find((entry) => entry.axis === axis)!
   const initial = await renderHandPose(axis, 0)
   const rotated = await renderHandPose(axis, 90)
+  const measured = measureGripRotation(
+    axis,
+    initial.markerCenter,
+    rotated.markerCenter,
+  )
+  const measuredLabel = `${measured >= 0 ? "+" : ""}${measured.toFixed(1)} deg`
   const rotation = ["x", "y", "z"]
     .map((component) => (component === axis ? "+90" : "0"))
     .join(", ")
@@ -137,24 +163,20 @@ export async function renderRightHandPair(axis: HandAxis) {
       <image x="780" y="180" width="780" height="760" href="data:image/png;base64,${rotated.image}"/>
       <path d="M780 150 V930" stroke="#dbe1e7"/>
       <g font-family="sans-serif" fill="#17212e">
-        <text x="24" y="40" font-size="30" font-weight="bold">RIGHT HAND: positive rotation about +${axis.toUpperCase()}</text>
-        <text x="24" y="78" font-size="23">Expected rule: ${fixture.index} goes to ${fixture.middle}; thumb centerline stays on +${axis.toUpperCase()}.</text>
-        <text x="24" y="112" font-size="20">Index = first vector; middle = second; thumb = index cross middle.</text>
+        <text x="24" y="40" font-size="30" font-weight="bold">RIGHT-HAND GRIP: positive rotation about +${axis.toUpperCase()}</text>
+        <text x="24" y="78" font-size="23">Thumb along +${axis.toUpperCase()}; positive rotation follows the four curled fingers.</text>
+        <text x="24" y="112" font-size="20">Dark curved arrow = positive curl reference, NOT measured exporter motion.</text>
         <text x="24" y="154" font-size="23">INITIAL: rotation (x, y, z) = (0, 0, 0) deg</text>
         <text x="804" y="154" font-size="23">EXPORTED: (${rotation}) deg</text>
-        <text x="24" y="184" font-size="19">Thumb +${axis.toUpperCase()}, index ${fixture.index}, middle ${fixture.middle}</text>
+        <text x="24" y="184" font-size="19">Thumb centerline lies on the rotation axis</text>
         <text x="804" y="184" font-size="19">Actual exporter result, not a corrected illustration</text>
-        <text x="24" y="222" font-size="21">Measured: index ${initial.index}, thumb ${initial.thumb}</text>
-        <text x="804" y="222" font-size="21">Measured: index ${rotated.index}, thumb ${rotated.thumb}</text>
-        <text x="24" y="960" font-size="21" fill="${handColors.thumb}">THUMB</text>
-        <text x="230" y="960" font-size="21" fill="${handColors.index}">INDEX</text>
-        <text x="420" y="960" font-size="21" fill="${handColors.middle}">MIDDLE</text>
-        <text x="650" y="960" font-size="21" fill="${handColors.ring}">RING (curled)</text>
-        <text x="970" y="960" font-size="21" fill="${handColors.pinky}">PINKY (curled)</text>
+        <text x="24" y="222" font-size="21">Blue wrist band = off-axis motion fiducial</text>
+        <text x="804" y="222" font-size="23">MEASURED: ${measuredLabel} / EXPECTED: +90 deg</text>
+        <text x="24" y="960" font-size="20">Curled finger caps: 1 index, 2 middle, 3 ring, 4 pinky. Only the thumb extends.</text>
         <text x="24" y="996" font-size="20">World: Circuit JSON XYZ, right-handed, Z-up, mm. +X red; +Y green; +Z blue.</text>
         <text x="24" y="1028" font-size="20">Fixed XY grid: Z = -8 mm, 1 mm spacing. Origin (0, 0, 0) on thumb centerline. Same camera.</text>
-        <text x="24" y="1060" font-size="20">Positive right-hand rotation, not a change of handedness. Mixed Euler order is a separate issue.</text>
-        <text x="24" y="1088" font-size="16">Test-only native generator; real footprinter loader, GLB round-trip and occurrence placement.</text>
+        <text x="24" y="1060" font-size="20">Signed angle from exported wrist-band centers; a wrong-sign rotation still preserves handedness.</text>
+        <text x="24" y="1088" font-size="16">Real footprinter loader / GLB / placement. Synthetic native model only. Mixed Euler order is separate.</text>
       </g>
     </svg>`,
   )

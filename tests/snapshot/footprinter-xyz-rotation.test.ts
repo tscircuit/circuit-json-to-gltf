@@ -5,7 +5,7 @@ import { join } from "node:path"
 import { rightHandCases } from "../fixtures/right-hand-model"
 
 test.each([...rightHandCases])(
-  "right-hand native footprinter rotation: $name",
+  "right-hand grip native footprinter rotation: $name",
   async ({ name, axis }) => {
     const directory = await mkdtemp(join(tmpdir(), "footprinter-hand-"))
     const output = join(directory, `${name}.png`)

@@ -13,8 +13,6 @@ mock.module("jscad-electronics/vanilla", () => ({
     const fixture = rightHandCases.find(
       ({ axis }) => args[0] === `test-only-right-hand-${axis}`,
     )
-    return fixture
-      ? makeRightHandModel(fixture.axis, args[1])
-      : realGenerator(...args)
+    return fixture ? makeRightHandModel(fixture.axis) : realGenerator(...args)
   },
 }))
