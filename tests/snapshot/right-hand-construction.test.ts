@@ -42,6 +42,26 @@ test("native grip has a palm, perpendicular wrist, and two right-angle finger be
     const wristSize = vec3.subtract(vec3.create(), wristMax, wristMin)
     const wristAxisIndex = wristSize.indexOf(Math.max(...wristSize))
     expect(wristAxisIndex).not.toBe(axisIndex)
+    const [thumbMin, thumbMax] = measurements.measureBoundingBox(thumb)
+    const thumbPosition =
+      (thumbMin[wristAxisIndex]! + thumbMax[wristAxisIndex]!) / 2
+    expect(thumbPosition - palmMin[wristAxisIndex]!).toBeLessThan(
+      palmMax[wristAxisIndex]! - thumbPosition,
+    )
+    // The first cap is the thumbnail; its center now faces native +X, not +Y.
+    const nail = native.geometries.find(
+      (entry) => entry.color === handColors.cap,
+    )!.geom
+    const [nailMin, nailMax] = measurements.measureBoundingBox(nail)
+    const nailCenter = vec3.scale(
+      vec3.create(),
+      vec3.add(vec3.create(), nailMin, nailMax),
+      0.5,
+    )
+    const expectedNail = orientHandPoint([0.535, 0, 4], axis)
+    for (let i = 0; i < 3; i++) {
+      expect(nailCenter[i]!).toBeCloseTo(expectedNail[i]!, 8)
+    }
     expect((wristMin[axisIndex]! + wristMax[axisIndex]!) / 2).toBeCloseTo(
       (palmMin[axisIndex]! + palmMax[axisIndex]!) / 2,
       8,
