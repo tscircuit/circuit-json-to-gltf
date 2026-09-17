@@ -8,7 +8,10 @@ Even a wrong-sign rotation preserves handedness. Mixed-axis Euler order is a
 separate issue.
 
 The test-only model has a rounded palm and wrist, one extended thumb, and four
-curled fingers. Knuckle caps with one through four pips identify index, middle,
+curled fingers. The wrist extends perpendicular to the thumb, from the heel
+of a broad palm. Each short finger leaves the opposite palm edge and has three
+straight segments with exactly two positive 90-degree bends.
+Knuckle caps with one through four pips identify index, middle,
 ring, and pinky without a three-finger vector mnemonic. The native thumb points
 along +Z and lies on the rotation axis. A blue wrist band provides an off-axis
 motion marker.
@@ -16,7 +19,8 @@ motion marker.
 `handThumbSegment`, `handMarkerCenter`, and `gripFingerPaths` describe the native
 geometry in right-handed XYZ millimeters. `orientHandPoint` applies proper
 cyclic reorientations: `(x,y,z) -> (z,x,y)` for X, `(y,z,x)` for Y, identity for Z.
-Construction assertions cover the positive finger/arrow curl, proper cyclic
+Construction assertions cover wrist/thumb perpendicularity, palm attachment,
+short finger segments, both right-angle bends, positive arrow curl, proper cyclic
 frames, marker geometry, and a stationary thumb under either sign of rotation.
 
 ## Synthetic boundary
