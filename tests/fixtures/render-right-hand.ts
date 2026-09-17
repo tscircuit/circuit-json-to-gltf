@@ -70,7 +70,7 @@ const camera = {
   ],
 } satisfies RenderOptionsInput
 
-async function renderPose(axis: HandAxis, degrees: number) {
+export async function renderHandPose(axis: HandAxis, degrees: number) {
   const rotation: Point3 = { x: 0, y: 0, z: 0 }
   rotation[axis] = degrees
   const circuit = footprinterCircuit(rotation, {
@@ -125,8 +125,8 @@ async function renderPose(axis: HandAxis, degrees: number) {
 
 export async function renderRightHandPair(axis: HandAxis) {
   const fixture = rightHandCases.find((entry) => entry.axis === axis)!
-  const initial = await renderPose(axis, 0)
-  const rotated = await renderPose(axis, 90)
+  const initial = await renderHandPose(axis, 0)
+  const rotated = await renderHandPose(axis, 90)
   const rotation = ["x", "y", "z"]
     .map((component) => (component === axis ? "+90" : "0"))
     .join(", ")
