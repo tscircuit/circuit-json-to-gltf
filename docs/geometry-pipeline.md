@@ -235,6 +235,12 @@ are already in the final exported frame and need no second conversion.
 
 ## Regression coverage
 
+The test-only upstream baseline is
+[tscircuit/circuit-json-to-gltf#212](https://github.com/tscircuit/circuit-json-to-gltf/pull/212).
+Its native-normal, explicit-origin, nonzero-Y board, sceneless-asset and binary
+URL tests run byte-identically here. They observe asset-root or final glTF
+coordinates, so no intermediate-axis or expected-value rewrites are needed.
+
 `tests/unit/canonical-*.test.ts` covers actual local and exported world
 geometry, board/panel drilling, all board-normal directions, and the retained
 unit/datum/fit and footprinter policies.

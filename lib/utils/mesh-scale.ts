@@ -12,7 +12,11 @@ function scalePointByAxis(point: Point3, scale: Point3): Point3 {
   }
 }
 
-/** Intrinsic XYZ angles in degrees, or a precomputed pure-rotation matrix. */
+/**
+ * Existing 3D helper: intrinsic XYZ degrees or a pure-rotation matrix.
+ * Unlike circuit-json-util/shape-distances:rotatePoint (2D, one radian angle),
+ * this rotates Point3; retain the existing name for callers of this module.
+ */
 export function rotatePoint(
   point: Point3,
   rotation: Point3 | mat4.Mat4,
