@@ -6,6 +6,7 @@ import type {
   OBJMesh,
   Point3,
   Triangle,
+  FilesystemInterface,
 } from "../types"
 import { boundsOfTriangles } from "../utils/bounding-box"
 import {
@@ -13,6 +14,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { fetchWithTimeout } from "./fetch-with-timeout"
+import { getFilesystemCacheKey } from "./filesystem-cache-key"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const objCache = new Map<string, OBJMesh>()
@@ -22,18 +24,20 @@ export async function loadOBJ({
   transform,
   projectBaseUrl,
   authHeaders,
+  fs,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }): Promise<OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}:fs=${getFilesystemCacheKey(fs)}`
   if (objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders, fs })
   const text = await response.text()
   const mesh = parseOBJ(text, transform)
   objCache.set(cacheKey, mesh)
