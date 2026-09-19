@@ -1,6 +1,7 @@
 import type { BoundingBox, OBJMesh, Point3, STLMesh, Triangle } from "../types"
 import { boundsOfTriangles } from "./bounding-box"
 import * as vec3 from "@jscad/modeling/src/maths/vec3"
+import * as mat4 from "@jscad/modeling/src/maths/mat4"
 import { getCadRotationMatrix } from "./cad-rotation"
 
 function scalePointByAxis(point: Point3, scale: Point3): Point3 {
@@ -11,12 +12,18 @@ function scalePointByAxis(point: Point3, scale: Point3): Point3 {
   }
 }
 
-export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
-  const matrix = getCadRotationMatrix({
-    x: (rotationDeg.x * Math.PI) / 180,
-    y: (rotationDeg.y * Math.PI) / 180,
-    z: (rotationDeg.z * Math.PI) / 180,
-  })
+/** Intrinsic XYZ angles in degrees, or a precomputed pure-rotation matrix. */
+export function rotatePoint(
+  point: Point3,
+  rotation: Point3 | mat4.Mat4,
+): Point3 {
+  const matrix = Array.isArray(rotation)
+    ? rotation
+    : getCadRotationMatrix({
+        x: (rotation.x * Math.PI) / 180,
+        y: (rotation.y * Math.PI) / 180,
+        z: (rotation.z * Math.PI) / 180,
+      })
   const [x, y, z] = vec3.transform(
     vec3.create(),
     [point.x, point.y, point.z],
@@ -118,18 +125,25 @@ export function translateMesh<T extends STLMesh | OBJMesh>(
 
 export function rotateMesh<T extends STLMesh | OBJMesh>(
   mesh: T,
-  rotationDeg: Point3,
+  rotation: Point3 | mat4.Mat4,
 ): T {
-  if (rotationDeg.x === 0 && rotationDeg.y === 0 && rotationDeg.z === 0) {
+  const matrix = Array.isArray(rotation)
+    ? rotation
+    : getCadRotationMatrix({
+        x: (rotation.x * Math.PI) / 180,
+        y: (rotation.y * Math.PI) / 180,
+        z: (rotation.z * Math.PI) / 180,
+      })
+  if (mat4.isIdentity(matrix)) {
     return mesh
   }
 
   const rotatedTriangles = mesh.triangles.map((triangle) => ({
     ...triangle,
     vertices: triangle.vertices.map((vertex) =>
-      rotatePoint(vertex, rotationDeg),
+      rotatePoint(vertex, matrix),
     ) as [Point3, Point3, Point3],
-    normal: rotatePoint(triangle.normal, rotationDeg),
+    normal: rotatePoint(triangle.normal, matrix),
   }))
 
   return {

@@ -53,6 +53,9 @@ Consequences that are easy to get wrong:
 - The canonical vertex order is asset nodes, loader normalization, unit scale,
   board-normal rotation, datum subtraction, fit, authored rotation, position,
   then final export basis.
+- Board-normal declarations name native model axes. Transform that direction
+  through the loader along with the geometry before orienting it toward +Z:
+  `B * L * nativeNormal = +Z`. Apply the same `B * L` to explicit origins.
 - **Preserve upstream exporter policy.** Explicit origins take precedence;
   otherwise alignment tags select contact-patch or full-bounds centering.
   Minimum Z / horizontal XY replaces old minimum Y / horizontal XZ.

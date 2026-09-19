@@ -1,4 +1,6 @@
 import type { CadComponent } from "circuit-json"
+import * as mat4 from "@jscad/modeling/src/maths/mat4"
+import * as vec3 from "@jscad/modeling/src/maths/vec3"
 import type {
   CoordinateTransformConfig,
   OBJMesh,
@@ -17,34 +19,63 @@ import {
 
 function getOrientationRotationForBoardNormal(
   modelBoardNormalDirection?: CadComponent["model_board_normal_direction"],
-): Point3 {
-  if (!modelBoardNormalDirection || modelBoardNormalDirection === "z+") {
-    return { x: 0, y: 0, z: 0 }
+  loaderTransform?: CoordinateTransformConfig,
+): mat4.Mat4 {
+  if (!modelBoardNormalDirection) return mat4.create()
+  const nativeDirections: Record<
+    NonNullable<CadComponent["model_board_normal_direction"]>,
+    Point3
+  > = {
+    "x+": { x: 1, y: 0, z: 0 },
+    "x-": { x: -1, y: 0, z: 0 },
+    "y+": { x: 0, y: 1, z: 0 },
+    "y-": { x: 0, y: -1, z: 0 },
+    "z+": { x: 0, y: 0, z: 1 },
+    "z-": { x: 0, y: 0, z: -1 },
   }
-
-  switch (modelBoardNormalDirection) {
-    case "x+":
-      return { x: 0, y: -90, z: 0 }
-    case "x-":
-      return { x: 0, y: 90, z: 0 }
-    case "y+":
-      return { x: 90, y: 0, z: 0 }
-    case "y-":
-      return { x: -90, y: 0, z: 0 }
-    case "z-":
-      return { x: 180, y: 0, z: 0 }
-    default:
-      return { x: 0, y: 0, z: 0 }
+  // The schema names a native MODEL axis, so geometry and its declared normal
+  // cross the loader boundary together: B * L * nativeNormal = project +Z.
+  const nativeNormal = nativeDirections[modelBoardNormalDirection]
+  if (!nativeNormal) {
+    throw new Error(
+      `Unsupported model board-normal direction: ${modelBoardNormalDirection}`,
+    )
   }
+  const mapped = applyCoordinateTransform(nativeNormal, loaderTransform ?? {})
+  const normal = vec3.fromValues(mapped.x, mapped.y, mapped.z)
+  const length = vec3.length(normal)
+  if (!Number.isFinite(length) || length === 0) {
+    throw new Error(
+      "Loader transform must preserve a finite nonzero board normal",
+    )
+  }
+  vec3.normalize(normal, normal)
+  const axis = vec3.cross(vec3.create(), normal, [0, 0, 1])
+  const sine = vec3.length(axis)
+  // Keep the established X-axis half-turn when the vectors are opposite.
+  if (sine < 1e-12) {
+    return normal[2] < 0
+      ? mat4.fromXRotation(mat4.create(), Math.PI)
+      : mat4.create()
+  }
+  return mat4.fromRotation(
+    mat4.create(),
+    Math.atan2(sine, normal[2]),
+    vec3.normalize(axis, axis),
+  )
 }
 
 export function getMeshWithBoardNormalTransform<T extends STLMesh | OBJMesh>(
   mesh: T,
   modelBoardNormalDirection?: CadComponent["model_board_normal_direction"],
+  loaderTransform?: CoordinateTransformConfig,
 ): T {
   return rotateMesh(
     mesh,
-    getOrientationRotationForBoardNormal(modelBoardNormalDirection),
+    getOrientationRotationForBoardNormal(
+      modelBoardNormalDirection,
+      loaderTransform,
+    ),
   )
 }
 
@@ -127,7 +158,10 @@ export function getMeshOrigin(
     if (options?.modelBoardNormalDirection) {
       origin = rotatePoint(
         origin,
-        getOrientationRotationForBoardNormal(options.modelBoardNormalDirection),
+        getOrientationRotationForBoardNormal(
+          options.modelBoardNormalDirection,
+          options.loaderTransform,
+        ),
       )
     }
 

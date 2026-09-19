@@ -51,7 +51,8 @@ Applied to a vertex, from first to last:
 2. **Loader normalization `L`:** the format-specific local-space transform.
    It is not the final glTF export transform.
 3. **Unit conversion `S`:** `model_unit_to_mm_scale_factor`, default 1.
-4. **Board-normal orientation `B`:** rotate the normalized model in local space.
+4. **Board-normal orientation `B`:** rotate the normalized model so the declared
+   native model axis, transformed through `L`, points toward project +Z.
 5. **Datum policy:** an explicit origin takes precedence; otherwise infer the
    origin using the existing alignment policy described below.
 6. **Fit `F`:** fit in these local axes, including scaling the datum translation.
@@ -78,6 +79,8 @@ point, this is Z, then Y, then X. All positive angles follow the right-hand
 rule. `cad-rotation.ts` composes the existing JSCAD matrix primitives in that
 order; positions and normals share this rotation.
 
+With identity loader normalization, the orientation is:
+
 | `model_board_normal_direction` | Local orientation |
 | --- | --- |
 | absent / `z+` | identity |
@@ -87,8 +90,25 @@ order; positions and normals share this rotation.
 | `y+` | `Rx(90)` |
 | `y-` | `Rx(-90)` |
 
-The direction is interpreted in normalized local axes, just as in the viewer.
-Apply this orientation to both model geometry and the explicit datum.
+The declaration names a direction in the **native model's coordinates**, as
+specified by the Circuit JSON schema. It is not a project-space face selector
+and must not be reinterpreted after an axis remap. Compute the mapped normal
+`L * nativeNormal`, then choose a proper rotation satisfying:
+
+```text
+B * L * nativeNormal = (0,0,1)
+```
+
+Geometry and explicit model-origin points receive the same `B * L`.
+For nonidentity normalization, `B` is the shortest rotation from the mapped
+normal to +Z; exactly opposite vectors retain the established X half-turn.
+The normal constrains the up direction, while the loader's in-plane orientation
+is retained rather than implicitly resetting the complete model basis.
+
+An absent board-normal declaration still leaves the format's default
+normalization unchanged. In particular, STL's legacy normalization changes
+native +Y/+Z signs; an explicit declaration must account for that change rather
+than accidentally treating native `y+` as normalized `y+`.
 
 ### Preserved origin policy
 
