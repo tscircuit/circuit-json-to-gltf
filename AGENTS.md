@@ -27,29 +27,38 @@ test("hello world", () => {
 
 ## Coordinate frames — read before changing any transform
 
-This package converts between two frames with **different up axes**, and that
-conversion is the single largest source of defects in tscircuit's 3D output.
+The authoritative ordering is [docs/geometry-pipeline.md](docs/geometry-pipeline.md),
+using `3d-viewer` as the geometric-order/rotation reference, not a placement-policy
+oracle. Keep local preparation and world placement in the same canonical frame;
+convert only at the export boundary.
 
 | Frame | Up | Units |
 | --- | --- | --- |
 | Circuit JSON (input) | **+Z** | mm |
+| Canonical local meshes / Scene3D world | **+Z** | mm |
 | glTF / GLB scene (output) | **+Y** | mm |
 
 Consequences that are easy to get wrong:
 
-- A rotation cannot be copied across the boundary. `circuit-to-3d.ts` remaps a
-  component's rotation (`y ← cad.rotation.z`, `z ← cad.rotation.y`) precisely
-  because of the swap. Any new rotation path needs the same remap, not a
-  hand-written variant of it.
-- **A layer flip is a rotation, not an inversion.** Flipping a part to the
-  bottom layer is a 180° rotation about the vertical axis: exactly two
+- Authored CAD rotation is right-handed intrinsic XYZ: `Rx * Ry * Rz`.
+  `transformMesh` must not swap axes or negate angles. Loaders normalize assets
+  into canonical local space; `convertMeshToGLTFOrientation` applies the final
+  proper rotation `G=(-P.x,P.z,P.y)` after placement.
+- **A layer flip is a rotation, not an inversion.** The exporter's implicit
+  bottom-layer fallback is 180° about Y for GLTF/GLB/footprinter and X otherwise:
+  exactly two
   components invert. Negating all three would be an improper transform
   (determinant −1) and would render the part as its own mirror image — which
   looks plausible on a symmetric footprint and wrong on every other one.
-- Model formats do not agree with each other: a GLB model and a footprinter
-  model need different flips for the same bottom-layer part (see the
-  `isBottomLayer` branch). Adding a format means deciding this deliberately,
-  not copying whichever branch is nearest.
+- The canonical vertex order is asset nodes, loader normalization, unit scale,
+  board-normal rotation, datum subtraction, fit, authored rotation, position,
+  then final export basis.
+- **Preserve upstream exporter policy.** Explicit origins take precedence;
+  otherwise alignment tags select contact-patch or full-bounds centering.
+  Minimum Z / horizontal XY replaces old minimum Y / horizontal XZ.
+  Unit scaling still applies to both geometry and size targets; fitting uses
+  vertex-tight bounds; footprinter still uses the full preparation path.
+  Renderer disagreement alone is not a reason to change these policies.
 
 ### Rules
 
@@ -72,10 +81,8 @@ Consequences that are easy to get wrong:
 treated front as +Y while `3d-viewer`'s `Front` camera preset is −Y, and that
 disagreement caused most of the defects in this area. Name the axis outright.
 
-The current enclosure/frame contract is documented in the parametric-enclosures
-RFC's **Faces** and **Aperture projection** sections. Read those together with
-this file before adding another format-specific rotation table; the older
-standalone coordinate-frame RFC was retired.
+Read the canonical pipeline document before adding another format-specific
+rotation table; do not compensate for placement errors in a loader.
 
 ### Testing geometry
 

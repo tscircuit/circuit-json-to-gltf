@@ -24,13 +24,13 @@ function getOrientationRotationForBoardNormal(
 
   switch (modelBoardNormalDirection) {
     case "x+":
-      return { x: 0, y: 0, z: 90 }
+      return { x: 0, y: -90, z: 0 }
     case "x-":
-      return { x: 0, y: 0, z: -90 }
+      return { x: 0, y: 90, z: 0 }
     case "y+":
-      return { x: 0, y: 0, z: 0 }
+      return { x: 90, y: 0, z: 0 }
     case "y-":
-      return { x: 0, y: 0, z: 180 }
+      return { x: -90, y: 0, z: 0 }
     case "z-":
       return { x: 180, y: 0, z: 0 }
     default:
@@ -49,25 +49,25 @@ export function getMeshWithBoardNormalTransform<T extends STLMesh | OBJMesh>(
 }
 
 function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
-  const minY = mesh.boundingBox.min.y
-  const height = mesh.boundingBox.max.y - minY
+  const minZ = mesh.boundingBox.min.z
+  const height = mesh.boundingBox.max.z - minZ
   const tolerance = Math.max(1e-6, height * 1e-5)
 
   let minX = Infinity
   let maxX = -Infinity
-  let minZ = Infinity
-  let maxZ = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
   let hasContactVertex = false
 
   for (const triangle of mesh.triangles) {
     for (const vertex of triangle.vertices) {
-      if (Math.abs(vertex.y - minY) > tolerance) continue
+      if (Math.abs(vertex.z - minZ) > tolerance) continue
 
       hasContactVertex = true
       minX = Math.min(minX, vertex.x)
       maxX = Math.max(maxX, vertex.x)
-      minZ = Math.min(minZ, vertex.z)
-      maxZ = Math.max(maxZ, vertex.z)
+      minY = Math.min(minY, vertex.y)
+      maxY = Math.max(maxY, vertex.y)
     }
   }
 
@@ -75,7 +75,7 @@ function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
 
   return {
     min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: minY, z: maxZ },
+    max: { x: maxX, y: maxY, z: minZ },
   }
 }
 
@@ -92,8 +92,8 @@ function getInferredMeshOrigin(
 
     return {
       x: center.x,
-      y: 0,
-      z: center.z,
+      y: center.y,
+      z: 0,
     }
   }
 
@@ -104,6 +104,7 @@ function getInferredMeshOrigin(
   return { x: 0, y: 0, z: 0 }
 }
 
+/** Preserve exporter datum policy, measured in canonical Z-up local space. */
 export function getMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,

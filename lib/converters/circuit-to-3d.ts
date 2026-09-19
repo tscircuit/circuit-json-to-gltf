@@ -60,18 +60,7 @@ function convertRotationFromCadRotation(rot: {
   }
 }
 
-function convertCadSizeToSceneSize(size: { x: number; y: number; z: number }): {
-  x: number
-  y: number
-  z: number
-} {
-  return {
-    x: size.x,
-    y: size.z,
-    z: size.y,
-  }
-}
-
+/** Build canonical local meshes and project-world placements: Z-up, mm. */
 export async function convertCircuitJsonTo3D(
   circuitJson: CircuitJson,
   options: CircuitTo3DOptions = {},
@@ -147,18 +136,18 @@ export async function convertCircuitJsonTo3D(
     })
 
     const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
-    const meshHeight = panelMesh.boundingBox.max.z - panelMesh.boundingBox.min.z
+    const meshHeight = panelMesh.boundingBox.max.y - panelMesh.boundingBox.min.y
 
     const panelBox: Box3D = {
       center: {
         x: pcbPanel.center.x,
-        y: 0,
-        z: pcbPanel.center.y,
+        y: pcbPanel.center.y,
+        z: 0,
       },
       size: {
         x: Number.isFinite(meshWidth) ? meshWidth : pcbPanel.width,
-        y: effectiveBoardThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : pcbPanel.height,
+        y: Number.isFinite(meshHeight) ? meshHeight : pcbPanel.height,
+        z: effectiveBoardThickness,
       },
       mesh: panelMesh,
       color: resolvedPcbColor,
@@ -205,18 +194,18 @@ export async function convertCircuitJsonTo3D(
     })
 
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
-    const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
+    const meshHeight = boardMesh.boundingBox.max.y - boardMesh.boundingBox.min.y
 
     const boardBox: Box3D = {
       center: {
         x: pcbBoard.center.x,
-        y: 0,
-        z: pcbBoard.center.y,
+        y: pcbBoard.center.y,
+        z: 0,
       },
       size: {
         x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
-        y: effectiveBoardThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
+        y: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
+        z: effectiveBoardThickness,
       },
       mesh: boardMesh,
       color: resolvedPcbColor,
@@ -275,8 +264,8 @@ export async function convertCircuitJsonTo3D(
       },
       size: {
         x: fauxWidth,
-        y: effectiveBoardThickness,
-        z: fauxHeight,
+        y: fauxHeight,
+        z: effectiveBoardThickness,
       },
       color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
@@ -364,7 +353,6 @@ export async function convertCircuitJsonTo3D(
 
     pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
-    // Get the associated PCB component
     const pcbComponent = db.pcb_component.get(cad.pcb_component_id)
 
     // Check if component is on bottom layer
@@ -374,45 +362,45 @@ export async function convertCircuitJsonTo3D(
 
     // Determine size
     const size = cad.size
-      ? convertCadSizeToSceneSize({
+      ? {
           x: cad.size.x * modelScaleFactor,
           y: cad.size.y * modelScaleFactor,
           z: cad.size.z * modelScaleFactor,
-        })
+        }
       : {
           x: pcbComponent?.width ?? 2,
-          y: defaultComponentHeight,
-          z: pcbComponent?.height ?? 2,
+          y: pcbComponent?.height ?? 2,
+          z: defaultComponentHeight,
         }
 
     // Determine position
     const center = cad.position
       ? {
           x: cad.position.x,
-          y: cad.position.z,
-          z: cad.position.y,
+          y: cad.position.y,
+          z: cad.position.z,
         }
       : {
           x: pcbComponent?.center.x ?? 0,
-          y: isBottomLayer
-            ? -(effectiveBoardThickness / 2 + size.y / 2)
-            : effectiveBoardThickness / 2 + size.y / 2,
-          z: pcbComponent?.center.y ?? 0,
+          y: pcbComponent?.center.y ?? 0,
+          z: isBottomLayer
+            ? -(effectiveBoardThickness / 2 + size.z / 2)
+            : effectiveBoardThickness / 2 + size.z / 2,
         }
 
-    const meshType = model_stl_url
+    const modelType = model_stl_url
       ? "stl"
       : model_obj_url
         ? "obj"
-        : model_gltf_url
-          ? "gltf"
-          : model_glb_url
-            ? "glb"
+        : model_glb_url
+          ? "glb"
+          : model_gltf_url
+            ? "gltf"
             : model_step_url
               ? "step"
-              : hasFootprinterModel
-                ? "glb"
-                : undefined
+              : model_jscad
+                ? "jscad"
+                : "footprinter"
     const sourceComponent = db.source_component.get(cad.source_component_id)
     const box: Box3D = {
       center,
@@ -423,82 +411,48 @@ export async function convertCircuitJsonTo3D(
       label: sourceComponent?.name,
     }
 
-    if (
-      model_stl_url ||
-      model_obj_url ||
-      model_glb_url ||
-      model_gltf_url ||
-      model_step_url
-    ) {
-      box.meshUrl =
-        model_stl_url ||
-        model_obj_url ||
-        model_glb_url ||
-        model_gltf_url ||
-        model_step_url
-      box.meshType = meshType as any
+    if (modelType !== "jscad" && modelType !== "footprinter") {
+      box.meshUrl = {
+        glb: model_glb_url,
+        gltf: model_gltf_url,
+        stl: model_stl_url,
+        obj: model_obj_url,
+        step: model_step_url,
+      }[modelType]
+      box.meshType = modelType
     }
 
     // Add rotation if specified
     if (cad.rotation) {
-      // For GLB/GLTF models, we need to remap rotation axes because the coordinate
-      // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
-      // model uses Y-up.
-      box.rotation = convertRotationFromCadRotation({
-        x: cad.rotation.x,
-        y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
-        z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
-      })
+      box.rotation = convertRotationFromCadRotation(cad.rotation)
     } else if (isBottomLayer) {
-      // If no rotation specified but component is on bottom, flip it
-      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
-        box.rotation = convertRotationFromCadRotation({
-          x: 0,
-          y: 0,
-          z: 180, // Flip via Z rotation for GLB models (matches circuit JSON convention)
-        })
-      } else {
-        box.rotation = convertRotationFromCadRotation({
-          x: 180,
-          y: 0,
-          z: 0,
-        })
-      }
+      // Preserve the exporter's format-specific fallback, now in project axes.
+      box.rotation =
+        model_glb_url || model_gltf_url || hasFootprinterModel
+          ? { x: 0, y: Math.PI, z: 0 }
+          : { x: Math.PI, y: 0, z: 0 }
     }
 
-    // Try to load the mesh with default coordinate transform if none specified
-    // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
-    // Different model formats use different coordinate conventions:
-    // - OBJ models typically have Z-up with origin at the bottom
-    // - STL models vary widely
-    // - GLB/GLTF have their own conventions
-    const usingGlbCoordinates = Boolean(model_glb_url || model_gltf_url)
-    const usingObjFormat = Boolean(model_obj_url)
-    const usingStepFormat = Boolean(model_step_url)
-
-    const defaultTransform = getDefaultModelTransform(cad, {
+    const defaultTransform = getDefaultModelTransform({
       coordinateTransform,
-      usingGlbCoordinates,
-      usingObjFormat,
-      usingStepFormat,
-      hasFootprinterModel,
+      modelType,
     })
 
-    if (model_stl_url) {
+    if (modelType === "stl" && model_stl_url) {
       box.mesh = await loadSTL({
         url: model_stl_url,
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
       })
-    } else if (model_obj_url) {
+    } else if (modelType === "obj" && model_obj_url) {
       box.mesh = await loadOBJ({
         url: model_obj_url,
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
       })
-    } else if (model_glb_url) {
+    } else if (modelType === "glb" && model_glb_url) {
       try {
         box.mesh = await loadGLB({
           url: model_glb_url,
@@ -509,14 +463,14 @@ export async function convertCircuitJsonTo3D(
       } catch (err) {
         console.error(`Failed to load GLB from ${model_glb_url}:`, err)
       }
-    } else if (model_gltf_url) {
+    } else if (modelType === "gltf" && model_gltf_url) {
       box.mesh = await loadGLTF({
         url: model_gltf_url,
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
       })
-    } else if (model_step_url) {
+    } else if (modelType === "step" && model_step_url) {
       try {
         box.mesh = await loadSTEP({
           url: model_step_url,
@@ -527,10 +481,10 @@ export async function convertCircuitJsonTo3D(
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
       }
-    } else if (model_jscad) {
-      box.mesh = loadJscadPlan(model_jscad)
+    } else if (modelType === "jscad" && model_jscad) {
+      box.mesh = loadJscadPlan(model_jscad, defaultTransform)
       box.color = componentColor
-    } else if (hasFootprinterModel && cad.footprinter_string) {
+    } else if (modelType === "footprinter" && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(
         cad.footprinter_string,
         defaultTransform,
@@ -566,9 +520,8 @@ export async function convertCircuitJsonTo3D(
           cad.model_object_fit ?? "contain_within_bounds",
         )
       }
-
-      box.size = getBoundingBoxSize(box.mesh.boundingBox)
     }
+    if (box.mesh) box.size = getBoundingBoxSize(box.mesh.boundingBox)
 
     // Skip empty generated footprint models unless debug boxes are requested.
     if (!box.mesh) {
@@ -600,15 +553,15 @@ export async function convertCircuitJsonTo3D(
       boxes.push({
         center: {
           x: component.center.x,
-          y: isBottomLayer
+          y: component.center.y,
+          z: isBottomLayer
             ? -(effectiveBoardThickness + compHeight / 2)
             : effectiveBoardThickness / 2 + compHeight / 2,
-          z: component.center.y,
         },
         size: {
           x: component.width,
-          y: compHeight,
-          z: component.height,
+          y: component.height,
+          z: compHeight,
         },
         color: componentColor,
         label: sourceComponent?.name ?? "?",
@@ -629,15 +582,15 @@ export async function convertCircuitJsonTo3D(
     camera = {
       position: {
         x: pcbBoard.center.x + cameraDistance * 0.5,
-        y: cameraDistance * 0.7,
-        z: pcbBoard.center.y + cameraDistance * 0.5,
+        y: pcbBoard.center.y + cameraDistance * 0.5,
+        z: cameraDistance * 0.7,
       },
       target: {
         x: pcbBoard.center.x,
-        y: 0,
-        z: pcbBoard.center.y,
+        y: pcbBoard.center.y,
+        z: 0,
       },
-      up: { x: 0, y: 1, z: 0 },
+      up: { x: 0, y: 0, z: 1 },
       fov: 50,
       near: 0.1,
       far: cameraDistance * 4,
@@ -647,44 +600,44 @@ export async function convertCircuitJsonTo3D(
 
     if (hasBoxes) {
       let minX = Infinity
-      let minZ = Infinity
+      let minY = Infinity
       let maxX = -Infinity
-      let maxZ = -Infinity
+      let maxY = -Infinity
 
       for (const box of boxes) {
         const halfX = (box.size?.x ?? 0) / 2
-        const halfZ = (box.size?.z ?? 0) / 2
+        const halfY = (box.size?.y ?? 0) / 2
 
         minX = Math.min(minX, box.center.x - halfX)
         maxX = Math.max(maxX, box.center.x + halfX)
-        minZ = Math.min(minZ, box.center.z - halfZ)
-        maxZ = Math.max(maxZ, box.center.z + halfZ)
+        minY = Math.min(minY, box.center.y - halfY)
+        maxY = Math.max(maxY, box.center.y + halfY)
       }
 
       const width = Math.max(maxX - minX, 1)
-      const height = Math.max(maxZ - minZ, 1)
+      const height = Math.max(maxY - minY, 1)
       const diagonal = Math.sqrt(width * width + height * height)
       const distance = diagonal * 1.5
       const centerX = (minX + maxX) / 2
-      const centerZ = (minZ + maxZ) / 2
+      const centerY = (minY + maxY) / 2
 
       camera = {
         position: {
           x: centerX + distance * 0.5,
-          y: distance * 0.7,
-          z: centerZ + distance * 0.5,
+          y: centerY + distance * 0.5,
+          z: distance * 0.7,
         },
-        target: { x: centerX, y: 0, z: centerZ },
-        up: { x: 0, y: 1, z: 0 },
+        target: { x: centerX, y: centerY, z: 0 },
+        up: { x: 0, y: 0, z: 1 },
         fov: 50,
         near: 0.1,
         far: distance * 4,
       }
     } else {
       camera = {
-        position: { x: 30, y: 30, z: 25 },
+        position: { x: 30, y: 25, z: 30 },
         target: { x: 0, y: 0, z: 0 },
-        up: { x: 0, y: 1, z: 0 },
+        up: { x: 0, y: 0, z: 1 },
         fov: 50,
         near: 0.1,
         far: 120,

@@ -9,6 +9,7 @@ interface LoopInput {
   isHole: boolean
 }
 
+/** Extrude canonical board-local XY loops along Z in mm, with outward winding. */
 export const buildBoardMeshFromLoops = ({
   outerLoop,
   holeLoops,
@@ -56,38 +57,38 @@ export const buildBoardMeshFromLoops = ({
       ;[ib, ic] = [ic, ib]
     }
 
-    const topA = toScenePoint({
+    const topA = {
       x: flattenedVertices[ia * 2]!,
       y: flattenedVertices[ia * 2 + 1]!,
       z: zTop,
-    })
-    const topB = toScenePoint({
+    }
+    const topB = {
       x: flattenedVertices[ib * 2]!,
       y: flattenedVertices[ib * 2 + 1]!,
       z: zTop,
-    })
-    const topC = toScenePoint({
+    }
+    const topC = {
       x: flattenedVertices[ic * 2]!,
       y: flattenedVertices[ic * 2 + 1]!,
       z: zTop,
-    })
+    }
     triangles.push(makeTriangle({ a: topA, b: topB, c: topC }))
 
-    const bottomA = toScenePoint({
+    const bottomA = {
       x: flattenedVertices[ia * 2]!,
       y: flattenedVertices[ia * 2 + 1]!,
       z: zBottom,
-    })
-    const bottomB = toScenePoint({
+    }
+    const bottomB = {
       x: flattenedVertices[ib * 2]!,
       y: flattenedVertices[ib * 2 + 1]!,
       z: zBottom,
-    })
-    const bottomC = toScenePoint({
+    }
+    const bottomC = {
       x: flattenedVertices[ic * 2]!,
       y: flattenedVertices[ic * 2 + 1]!,
       z: zBottom,
-    })
+    }
     triangles.push(makeTriangle({ a: bottomA, b: bottomC, c: bottomB }))
   }
 
@@ -106,20 +107,6 @@ const pushLoop = (flattenedVertices: number[], loop: Vec2Point[]): void => {
     flattenedVertices.push(p.x, p.y)
   }
 }
-
-const toScenePoint = ({
-  x,
-  y,
-  z,
-}: {
-  x: number
-  y: number
-  z: number
-}): Point3 => ({
-  x,
-  y: z,
-  z: -y,
-})
 
 const makeTriangle = ({
   a,
@@ -170,10 +157,10 @@ const addLoopSideWalls = ({
   for (let i = 0; i < loop.length; i++) {
     const a = loop[i]!
     const b = loop[(i + 1) % loop.length]!
-    const topA = toScenePoint({ x: a.x, y: a.y, z: zTop })
-    const topB = toScenePoint({ x: b.x, y: b.y, z: zTop })
-    const bottomA = toScenePoint({ x: a.x, y: a.y, z: zBottom })
-    const bottomB = toScenePoint({ x: b.x, y: b.y, z: zBottom })
+    const topA = { x: a.x, y: a.y, z: zTop }
+    const topB = { x: b.x, y: b.y, z: zTop }
+    const bottomA = { x: a.x, y: a.y, z: zBottom }
+    const bottomB = { x: b.x, y: b.y, z: zBottom }
 
     if (invert) {
       triangles.push(makeTriangle({ a: topA, b: topB, c: bottomB }))

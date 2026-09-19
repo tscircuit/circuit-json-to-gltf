@@ -69,6 +69,7 @@ const getNumberProperty = (
   return typeof value === "number" ? value : undefined
 }
 
+/** Canonical board-local XYZ in mm, with PCB in XY and thickness along Z. */
 export const createBoardOutlineGeom = (
   board: PcbPanel | PcbBoard,
   center: { x: number; y: number },
@@ -78,7 +79,7 @@ export const createBoardOutlineGeom = (
   if (outline && outline.length >= 3) {
     let outlinePoints: Vec2[] = outline.map((pt: Point) => [
       pt.x - center.x,
-      -(pt.y - center.y),
+      pt.y - center.y,
     ])
 
     if (arePointsClockwise(outlinePoints)) {
@@ -164,6 +165,7 @@ const createEllipseHole = (
   return translate([x, y, 0], hole3d)
 }
 
+/** Canonical board-local drilling solids; Circuit JSON CCW rotations are about +Z. */
 export const createHoleGeoms = (
   boardCenter: { x: number; y: number },
   thickness: number,
@@ -176,7 +178,7 @@ export const createHoleGeoms = (
   for (const hole of holes) {
     const holeRecord = hole as unknown as Record<string, unknown>
     const relX = hole.x - boardCenter.x
-    const relY = -(hole.y - boardCenter.y)
+    const relY = hole.y - boardCenter.y
     const holeShape = holeRecord.hole_shape as string | undefined
 
     if (holeShape === "rect") {
@@ -236,7 +238,7 @@ export const createHoleGeoms = (
       if (!holeWidth || !holeHeight) continue
 
       const rotation = getNumberProperty(holeRecord, "ccw_rotation") ?? 0
-      const rotationRad = -(rotation * Math.PI) / 180
+      const rotationRad = (rotation * Math.PI) / 180
       holeGeoms.push(
         createPillHoleWithSegments(
           relX,
@@ -266,7 +268,7 @@ export const createHoleGeoms = (
     const holeOffsetX = getNumberProperty(platedRecord, "hole_offset_x") ?? 0
     const holeOffsetY = getNumberProperty(platedRecord, "hole_offset_y") ?? 0
     const relX = plated.x - boardCenter.x + holeOffsetX
-    const relY = -(plated.y - boardCenter.y + holeOffsetY)
+    const relY = plated.y - boardCenter.y + holeOffsetY
 
     if (plated.shape === "oval") {
       const holeWidth =
@@ -284,7 +286,7 @@ export const createHoleGeoms = (
       if (!holeWidth || !holeHeight) continue
 
       const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
-      const rotationRad = -(rotation * Math.PI) / 180
+      const rotationRad = (rotation * Math.PI) / 180
       holeGeoms.push(
         createEllipseHole(
           relX,
@@ -311,7 +313,7 @@ export const createHoleGeoms = (
       if (!holeWidth || !holeHeight) continue
 
       const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
-      const rotationRad = -(rotation * Math.PI) / 180
+      const rotationRad = (rotation * Math.PI) / 180
       holeGeoms.push(
         createPillHoleWithSegments(
           relX,
@@ -396,6 +398,7 @@ export const createBoundingBox = (bbox: [number[], number[]]): BoundingBox => {
   }
 }
 
+/** Right-handed Circuit JSON local XYZ in mm; board.center remains separate. */
 export const createBoardMesh = (
   board: PcbPanel | PcbBoard,
   options: BoardGeometryOptions,
@@ -425,7 +428,10 @@ export const createBoardMesh = (
       cutouts,
       segments,
     }),
-  ]
+  ].map((loop) =>
+    // These loop producers still use (local X, -local Y).
+    loop.map(({ x, y }) => ({ x, y: -y })),
+  )
 
   if (hasBoundaryCrossingLoops(outerLoop, holeLoops)) {
     return cutBoardMeshOutsideBoardBoundary({
@@ -450,7 +456,7 @@ const createBoardOuterLoop = (
   if (outline && outline.length >= 3) {
     let points = outline.map((pt: Point) => ({
       x: pt.x - center.x,
-      y: -(pt.y - center.y),
+      y: pt.y - center.y,
     }))
 
     if (signedArea(points) < 0) points = points.slice().reverse()

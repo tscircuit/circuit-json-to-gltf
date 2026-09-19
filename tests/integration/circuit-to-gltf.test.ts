@@ -91,10 +91,10 @@ test("convertCircuitJsonTo3D should create 3D scene", async () => {
   expect(scene.boxes.length).toBeGreaterThan(0)
 
   // Should have the board box
-  const boardBox = scene.boxes.find((box) => box.size.y === 1.6)
+  const boardBox = scene.boxes.find((box) => box.size.z === 1.6)
   expect(boardBox).toBeDefined()
   expect(boardBox?.center.x).toBe(0)
-  expect(boardBox?.center.z).toBe(0)
+  expect(boardBox?.center.y).toBe(0)
 
   // Should have component boxes
   const componentBoxes = scene.boxes.filter((box) => box.label)

@@ -66,6 +66,7 @@ export interface BoundingBox {
   max: Point3
 }
 
+/** Canonical local mesh: right-handed XYZ, Z-up, millimeters after unit scaling. */
 export interface STLMesh {
   triangles: Triangle[]
   boundingBox: BoundingBox
@@ -87,6 +88,10 @@ export interface OBJMaterial {
 
 export type Color = string | [number, number, number, number]
 
+/**
+ * Canonical right-handed Z-up space, mm. Mesh and size are local; center is
+ * world position. Rotation is intrinsic XYZ in radians, applied before center.
+ */
 export interface Box3D {
   center: Point3
   size: Size3
@@ -103,13 +108,14 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj" | "glb" | "step"
+  meshType?: "stl" | "obj" | "glb" | "gltf" | "step"
   label?: string
   labelColor?: Color
   isTranslucent?: boolean
   showHiddenEdges?: boolean
 }
 
+/** Project-world geometry and camera metadata, right-handed Z-up, mm. */
 export interface Scene3D {
   boxes: Box3D[]
   camera?: Camera3D

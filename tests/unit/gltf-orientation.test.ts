@@ -20,12 +20,12 @@ test("transformMesh applies translation without flipping axes", () => {
   expect(translated.indices).toEqual(baseMesh.indices)
 })
 
-test("convertMeshToGLTFOrientation flips X axis and winding", () => {
+test("convertMeshToGLTFOrientation maps Z-up to Y-up without reflecting winding", () => {
   const translated = transformMesh(baseMesh, { x: 1, y: 2, z: 3 })
   const oriented = convertMeshToGLTFOrientation(translated)
 
-  expect(oriented.positions).toEqual([-1, 2, 3, -2, 2, 3, -1, 3, 3])
+  expect(oriented.positions).toEqual([-1, 3, 2, -2, 3, 2, -1, 3, 3])
   expect(oriented.normals).toEqual([-1, 0, 0, -1, 0, 0, -1, 0, 0])
-  expect(oriented.indices).toEqual([0, 2, 1])
+  expect(oriented.indices).toEqual(baseMesh.indices)
   expect(oriented.texcoords).toEqual(baseMesh.texcoords)
 })

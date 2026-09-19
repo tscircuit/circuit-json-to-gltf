@@ -50,12 +50,12 @@ test("drawFauxBoard adds board when no pcb_board exists", async () => {
   expect(withFauxBoard.boxes).toHaveLength(2)
 
   const fauxBoard = withFauxBoard.boxes.find(
-    (box) => box.label === undefined && box.size.y === 1.6,
+    (box) => box.label === undefined && box.size.z === 1.6,
   )
 
   expect(fauxBoard).toBeDefined()
   expect(fauxBoard?.center.x).toBe(15)
   expect(fauxBoard?.center.y).toBe(5)
   expect(fauxBoard?.size.x).toBe(10)
-  expect(fauxBoard?.size.z).toBe(10)
+  expect(fauxBoard?.size.y).toBe(10)
 })
