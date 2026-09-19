@@ -23,7 +23,7 @@
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
     "earcut": "^3.0.2",
-    "jscad-electronics": "^0.0.159",
+    "jscad-electronics": "^0.0.178",
     "jscad-planner": "^0.0.14",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
