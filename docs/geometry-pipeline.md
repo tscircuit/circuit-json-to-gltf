@@ -195,6 +195,26 @@ The exporter's loader precedence is retained: STL, OBJ, GLB, GLTF, STEP,
 JSCAD, then footprinter. This change does not add WRL support or copy the
 viewer's runtime URL-fallback policy.
 
+### Assets without scenes
+
+`scenes` is optional in glTF. When both `scenes` and `scene` are absent, load
+every unparented node under an identity virtual root. Preserve its complete
+node hierarchy and each mesh instance; do not add unreferenced mesh resources
+or translate the aggregate bounds to a new origin. Mesh-only payloads with
+neither nodes nor scenes retain the existing identity-loading fallback.
+
+When scenes exist, retain the explicit scene selection or the first-scene
+default. An explicit scene index without scenes, invalid references, cycles
+(including rootless cycles), or multiple parents still fail. The node graph
+is validated before selecting or inferring roots.
+
+Origin handling remains a separate, later operation. An explicit origin is
+an asset-root datum, not a mesh-local point to run through each node again.
+Inferred centering uses the fully transformed mesh, under the same existing
+alignment rules. Upstream could load a sceneless asset while ignoring its
+node transforms; correcting that can change bounds, but does not change the
+origin-selection policy.
+
 ## Final export frame
 
 The existing exported orientation is preserved with the single mapping:

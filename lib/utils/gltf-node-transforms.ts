@@ -97,11 +97,21 @@ function meshInstance(meshIndex: number, matrix: mat4.Mat4): GLTFMeshInstance {
 }
 
 /**
- * Flatten the active asset scene like GLTFLoader's scene root: each node
- * instance is emitted, with matrixWorld = parent * (T * R * S).
+ * Flatten the active asset scene, or all unparented nodes when scenes are
+ * absent, with an identity virtual root and matrixWorld = parent * (T * R * S).
  * Coordinates remain in asset-root axes and units, with no Y/Z remapping.
  */
 export function buildGLTFMeshInstances(gltf: GLTFGraph): GLTFMeshInstance[] {
+  let roots: number[] | undefined
+  if (gltf.scenes !== undefined || gltf.scene !== undefined) {
+    const sceneIndex = gltf.scene === undefined ? 0 : gltf.scene
+    const scene = gltf.scenes?.[sceneIndex]
+    if (!Number.isInteger(sceneIndex) || sceneIndex < 0 || !scene) {
+      throw new Error(`Missing glTF scene ${sceneIndex}`)
+    }
+    roots = scene.nodes ?? []
+  }
+
   // Legacy standalone mesh payloads have no scene graph at all.
   if (!gltf.nodes && !gltf.scenes) {
     return (gltf.meshes ?? []).map((_, meshIndex) =>
@@ -109,32 +119,66 @@ export function buildGLTFMeshInstances(gltf: GLTFGraph): GLTFMeshInstance[] {
     )
   }
 
-  const instances: GLTFMeshInstance[] = []
+  const nodes = gltf.nodes ?? []
+  const parents = new Set<number>()
+  for (const [index, node] of nodes.entries()) {
+    if (
+      node.mesh !== undefined &&
+      (!Number.isInteger(node.mesh) ||
+        node.mesh < 0 ||
+        !gltf.meshes?.[node.mesh])
+    ) {
+      throw new Error(`Missing glTF mesh ${node.mesh} at node ${index}`)
+    }
+    for (const child of node.children ?? []) {
+      if (!Number.isInteger(child) || child < 0 || !nodes[child]) {
+        throw new Error(`Missing glTF node ${child}`)
+      }
+      if (parents.has(child)) {
+        throw new Error(`Multiple parents for glTF node ${child}`)
+      }
+      parents.add(child)
+    }
+  }
+
+  // Validate every node, including rootless cycles that root traversal misses.
   const ancestors = new Set<number>()
-  const visit = (index: number, parent: mat4.Mat4) => {
-    const node = gltf.nodes?.[index]
-    if (!node) throw new Error(`Missing glTF node ${index}`)
+  const validated = new Set<number>()
+  const validate = (index: number) => {
     if (ancestors.has(index)) {
       throw new Error(`Cycle in glTF node hierarchy at node ${index}`)
     }
+    if (validated.has(index)) return
     ancestors.add(index)
+    for (const child of nodes[index]!.children ?? []) validate(child)
+    ancestors.delete(index)
+    validated.add(index)
+  }
+  for (let index = 0; index < nodes.length; index++) validate(index)
+
+  roots ??= nodes.flatMap((_, index) => (parents.has(index) ? [] : [index]))
+  const sceneRoots = new Set<number>()
+  for (const root of roots) {
+    if (!Number.isInteger(root) || root < 0 || !nodes[root]) {
+      throw new Error(`Missing glTF node ${root}`)
+    }
+    if (parents.has(root) || sceneRoots.has(root)) {
+      throw new Error(`Multiple parents for glTF node ${root}`)
+    }
+    sceneRoots.add(root)
+  }
+
+  const instances: GLTFMeshInstance[] = []
+  const visit = (index: number, parent: mat4.Mat4) => {
+    const node = nodes[index]!
     const matrix = mat4.multiply(mat4.create(), parent, nodeMatrix(node))
     if (node.mesh !== undefined) {
-      if (!gltf.meshes?.[node.mesh]) {
-        throw new Error(`Missing glTF mesh ${node.mesh} at node ${index}`)
-      }
       instances.push(meshInstance(node.mesh, matrix))
     }
     for (const child of node.children ?? []) visit(child, matrix)
-    ancestors.delete(index)
   }
 
-  const sceneIndex = gltf.scene ?? 0
-  const scene = gltf.scenes?.[sceneIndex]
-  if (!scene) {
-    throw new Error(`Missing glTF scene ${sceneIndex}`)
-  }
-  for (const root of scene.nodes ?? []) visit(root, mat4.create())
+  for (const root of roots) visit(root, mat4.create())
   return instances
 }
 
