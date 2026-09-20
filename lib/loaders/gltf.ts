@@ -38,7 +38,14 @@ export async function fetchGltfAndConvertToGlb(
   if (!gltfResponse.ok) {
     throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
   }
-  const gltf = await gltfResponse.json()
+  const assetBuffer = await gltfResponse.arrayBuffer()
+  if (
+    assetBuffer.byteLength >= 4 &&
+    new DataView(assetBuffer).getUint32(0, true) === 0x46546c67
+  ) {
+    return assetBuffer
+  }
+  const gltf = JSON.parse(new TextDecoder().decode(assetBuffer))
 
   const bufferPromises: Promise<ArrayBuffer>[] = []
   if (gltf.buffers) {
