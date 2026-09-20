@@ -13,7 +13,7 @@ export interface GetDefaultModelTransformOptions {
 export function getDefaultModelTransform(
   cad: CadComponent,
   options: GetDefaultModelTransformOptions,
-): CoordinateTransformConfig | undefined {
+): CoordinateTransformConfig {
   if (options.coordinateTransform) {
     return options.coordinateTransform
   }
@@ -29,7 +29,8 @@ export function getDefaultModelTransform(
   }
 
   if (options.usingGlbCoordinates) {
-    return undefined
+    // Match parseGLB's default Y/Z swap for both geometry and explicit origins.
+    return COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
   }
   if (options.hasFootprinterModel) {
     return COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
