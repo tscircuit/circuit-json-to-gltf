@@ -28,6 +28,7 @@ import {
   getMeshWithBoardNormalTransform,
 } from "../utils/cad-mesh-placement"
 import { getDefaultModelTransform } from "../utils/get-default-model-transform"
+import { COORDINATE_TRANSFORMS } from "../utils/coordinate-transform"
 import {
   getBoundingBoxSize,
   scaleMesh,
@@ -467,7 +468,7 @@ export async function convertCircuitJsonTo3D(
     }
 
     // Try to load the mesh with default coordinate transform if none specified
-    // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
+    // Make the loader mapping explicit so native normals and origins share it.
     // Different model formats use different coordinate conventions:
     // - OBJ models typically have Z-up with origin at the bottom
     // - STL models vary widely
@@ -476,7 +477,7 @@ export async function convertCircuitJsonTo3D(
     const usingObjFormat = Boolean(model_obj_url)
     const usingStepFormat = Boolean(model_step_url)
 
-    const defaultTransform = getDefaultModelTransform(cad, {
+    let defaultTransform = getDefaultModelTransform(cad, {
       coordinateTransform,
       usingGlbCoordinates,
       usingObjFormat,
@@ -529,6 +530,8 @@ export async function convertCircuitJsonTo3D(
       }
     } else if (model_jscad) {
       box.mesh = loadJscadPlan(model_jscad)
+      // loadJscadPlan always uses this mapping, regardless of loader overrides.
+      defaultTransform = COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
       box.color = componentColor
     } else if (hasFootprinterModel && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(
@@ -545,6 +548,7 @@ export async function convertCircuitJsonTo3D(
       box.mesh = getMeshWithBoardNormalTransform(
         box.mesh,
         cad.model_board_normal_direction,
+        defaultTransform,
       )
 
       const meshOrigin = getMeshOrigin(cad, box.mesh, {

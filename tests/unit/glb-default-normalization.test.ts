@@ -5,7 +5,7 @@ import { applyCoordinateTransform } from "../../lib/utils/coordinate-transform"
 import { getDefaultModelTransform } from "../../lib/utils/get-default-model-transform"
 import { createGLTFAsset } from "../fixtures/gltf-asset"
 
-test("GLB default Y/Z normalization is explicit for origins without changing direction bypasses", () => {
+test("GLB default normalization is explicit and independent of native board-normal declarations", () => {
   const { glb } = createGLTFAsset()
   const cad: CadComponent = {
     type: "cad_component",
@@ -29,7 +29,15 @@ test("GLB default Y/Z normalization is explicit for origins without changing dir
     { x: 2, y: 3, z: 2 },
     { x: 1, y: 4, z: 3 },
   ])
-  for (const direction of [undefined, "x+", "z+", "z-"] as const) {
+  for (const direction of [
+    undefined,
+    "x+",
+    "x-",
+    "y+",
+    "y-",
+    "z+",
+    "z-",
+  ] as const) {
     const transform = getDefaultModelTransform(
       { ...cad, model_board_normal_direction: direction },
       options,
@@ -38,20 +46,6 @@ test("GLB default Y/Z normalization is explicit for origins without changing dir
     expect(
       applyCoordinateTransform(cad.model_origin_position!, transform),
     ).toEqual({ x: 1, y: 3, z: 2 })
-  }
-  for (const direction of ["x-", "y+", "y-"] as const) {
-    const transform = getDefaultModelTransform(
-      { ...cad, model_board_normal_direction: direction },
-      options,
-    )
-    expect(
-      applyCoordinateTransform(cad.model_origin_position!, transform),
-    ).toEqual({ x: 1, y: 2, z: 3 })
-    expect(parseGLB(glb, transform).triangles[0]!.vertices[0]).toEqual({
-      x: 1,
-      y: 2,
-      z: 3,
-    })
   }
   const coordinateTransform = {
     axisMapping: { x: "-x", y: "y", z: "z" },
