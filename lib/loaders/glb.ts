@@ -10,9 +10,8 @@ import type {
 import { boundsOfTriangles } from "../utils/bounding-box"
 import { transformTriangles } from "../utils/coordinate-transform"
 import {
-  applyNodeTransform,
-  applyQuaternion,
-  buildMeshTransforms,
+  buildGLTFMeshInstances,
+  transformGLTFInstanceTriangle,
 } from "../utils/gltf-node-transforms"
 import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
@@ -102,11 +101,8 @@ export function parseGLB(
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
-  // Apply coordinate transformation
-  // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
-  const finalConfig = transform ?? {
-    axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
-  }
+  // Match the viewer's asset root: preserve its axes unless explicitly mapped.
+  const finalConfig = transform ?? {}
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   // Check if any triangles have colors (materials)
@@ -189,20 +185,11 @@ function extractTrianglesFromGLTF(
     return triangles
   }
 
-  // Build mesh transforms from node hierarchy
-  const meshTransforms = buildMeshTransforms(gltf)
-
-  // Process each mesh
-  for (let meshIndex = 0; meshIndex < gltf.meshes.length; meshIndex++) {
-    const mesh = gltf.meshes[meshIndex]
-    const transforms = meshTransforms.get(meshIndex) || []
+  for (const instance of buildGLTFMeshInstances(gltf)) {
+    const mesh = gltf.meshes[instance.meshIndex]
     for (const primitive of mesh.primitives) {
-      // Only support TRIANGLES mode
-      const mode = primitive.mode ?? 4 // Default to TRIANGLES (4)
-      if (mode !== 4) {
-        continue // Skip non-triangle primitives
-      }
-
+      const mode = primitive.mode ?? 4
+      if (mode !== 4) continue
       // Get position accessor
       const positionAccessorIndex = primitive.attributes.POSITION
       if (positionAccessorIndex === undefined) {
@@ -273,33 +260,26 @@ function extractTrianglesFromGLTF(
           const i1 = indices[i + 1]!
           const i2 = indices[i + 2]!
 
-          let v0: Point3 = {
+          const v0: Point3 = {
             x: positions[i0 * 3]!,
             y: positions[i0 * 3 + 1]!,
             z: positions[i0 * 3 + 2]!,
           }
-          let v1: Point3 = {
+          const v1: Point3 = {
             x: positions[i1 * 3]!,
             y: positions[i1 * 3 + 1]!,
             z: positions[i1 * 3 + 2]!,
           }
-          let v2: Point3 = {
+          const v2: Point3 = {
             x: positions[i2 * 3]!,
             y: positions[i2 * 3 + 1]!,
             z: positions[i2 * 3 + 2]!,
           }
 
-          // Apply node transforms to vertices
-          for (const transform of transforms) {
-            v0 = applyNodeTransform(v0, transform)
-            v1 = applyNodeTransform(v1, transform)
-            v2 = applyNodeTransform(v2, transform)
-          }
-
           let normal: Point3
           if (normals) {
             // Average normals of the three vertices
-            let n: Point3 = {
+            normal = {
               x: (normals[i0 * 3]! + normals[i1 * 3]! + normals[i2 * 3]!) / 3,
               y:
                 (normals[i0 * 3 + 1]! +
@@ -312,18 +292,7 @@ function extractTrianglesFromGLTF(
                   normals[i2 * 3 + 2]!) /
                 3,
             }
-            // Apply rotation transforms to normal (no translation)
-            for (const transform of transforms) {
-              if (transform.rotation) {
-                n = applyQuaternion(
-                  n,
-                  transform.rotation as [number, number, number, number],
-                )
-              }
-            }
-            normal = n
           } else {
-            // Compute normal from transformed vertices
             normal = computeNormal(v0, v1, v2)
           }
 
@@ -393,41 +362,39 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
-          triangles.push({
-            vertices: [v0, v1, v2],
-            normal,
-            color: triangleColor,
-          })
+          triangles.push(
+            transformGLTFInstanceTriangle(
+              {
+                vertices: [v0, v1, v2],
+                normal,
+                color: triangleColor,
+              },
+              instance,
+            ),
+          )
         }
       } else {
         // No indices, vertices are in order
         for (let i = 0; i < vertexCount; i += 3) {
-          let v0: Point3 = {
+          const v0: Point3 = {
             x: positions[i * 3]!,
             y: positions[i * 3 + 1]!,
             z: positions[i * 3 + 2]!,
           }
-          let v1: Point3 = {
+          const v1: Point3 = {
             x: positions[(i + 1) * 3]!,
             y: positions[(i + 1) * 3 + 1]!,
             z: positions[(i + 1) * 3 + 2]!,
           }
-          let v2: Point3 = {
+          const v2: Point3 = {
             x: positions[(i + 2) * 3]!,
             y: positions[(i + 2) * 3 + 1]!,
             z: positions[(i + 2) * 3 + 2]!,
           }
 
-          // Apply node transforms to vertices
-          for (const transform of transforms) {
-            v0 = applyNodeTransform(v0, transform)
-            v1 = applyNodeTransform(v1, transform)
-            v2 = applyNodeTransform(v2, transform)
-          }
-
           let normal: Point3
           if (normals) {
-            let n: Point3 = {
+            normal = {
               x:
                 (normals[i * 3]! +
                   normals[(i + 1) * 3]! +
@@ -444,16 +411,6 @@ function extractTrianglesFromGLTF(
                   normals[(i + 2) * 3 + 2]!) /
                 3,
             }
-            // Apply rotation transforms to normal
-            for (const transform of transforms) {
-              if (transform.rotation) {
-                n = applyQuaternion(
-                  n,
-                  transform.rotation as [number, number, number, number],
-                )
-              }
-            }
-            normal = n
           } else {
             normal = computeNormal(v0, v1, v2)
           }
@@ -523,11 +480,16 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
-          triangles.push({
-            vertices: [v0, v1, v2],
-            normal,
-            color: triangleColor,
-          })
+          triangles.push(
+            transformGLTFInstanceTriangle(
+              {
+                vertices: [v0, v1, v2],
+                normal,
+                color: triangleColor,
+              },
+              instance,
+            ),
+          )
         }
       }
     }

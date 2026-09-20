@@ -115,7 +115,7 @@ function parseASCIISTL(
   }
 
   // Apply coordinate transformation
-  const finalConfig = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.STL_TO_CANONICAL
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {
@@ -173,7 +173,7 @@ function parseBinarySTL(
   }
 
   // Apply coordinate transformation
-  const finalConfig = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.STL_TO_CANONICAL
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   return {

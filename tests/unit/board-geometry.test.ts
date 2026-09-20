@@ -76,11 +76,11 @@ test("createBoardMesh subtracts drilled and plated holes", () => {
   })
 
   expect(mesh.triangles.length).toBeGreaterThan(0)
-  expect(mesh.boundingBox.min.y).toBeCloseTo(-(board.thickness ?? 1.6) / 2, 6)
-  expect(mesh.boundingBox.max.y).toBeCloseTo((board.thickness ?? 1.6) / 2, 6)
+  expect(mesh.boundingBox.min.z).toBeCloseTo(-(board.thickness ?? 1.6) / 2, 6)
+  expect(mesh.boundingBox.max.z).toBeCloseTo((board.thickness ?? 1.6) / 2, 6)
 
   const topArea = mesh.triangles
-    .filter((triangle) => triangle.normal.y > 0.9)
+    .filter((triangle) => triangle.normal.z > 0.9)
     .reduce((sum, triangle) => {
       const [a, b, c] = triangle.vertices
       return sum + triangleArea(a, b, c)
@@ -121,7 +121,7 @@ test("createBoardMesh subtracts rectangular holes", () => {
   })
 
   const topArea = mesh.triangles
-    .filter((triangle) => triangle.normal.y > 0.9)
+    .filter((triangle) => triangle.normal.z > 0.9)
     .reduce((sum, triangle) => {
       const [a, b, c] = triangle.vertices
       return sum + triangleArea(a, b, c)
@@ -131,11 +131,11 @@ test("createBoardMesh subtracts rectangular holes", () => {
 
   const rectangularHoleWallTriangles = mesh.triangles.filter(
     (triangle) =>
-      Math.abs(triangle.normal.y) < 0.1 &&
+      Math.abs(triangle.normal.z) < 0.1 &&
       triangle.vertices.every(
         (vertex) =>
-          (Math.abs(vertex.x) === 2.5 && Math.abs(vertex.z) <= 1) ||
-          (Math.abs(vertex.z) === 1 && Math.abs(vertex.x) <= 2.5),
+          (Math.abs(vertex.x) === 2.5 && Math.abs(vertex.y) <= 1) ||
+          (Math.abs(vertex.y) === 1 && Math.abs(vertex.x) <= 2.5),
       ),
   )
   expect(rectangularHoleWallTriangles).toHaveLength(8)
@@ -168,7 +168,7 @@ test("createBoardMesh subtracts oval holes", () => {
   })
 
   const topArea = mesh.triangles
-    .filter((triangle) => triangle.normal.y > 0.9)
+    .filter((triangle) => triangle.normal.z > 0.9)
     .reduce((sum, triangle) => {
       const [a, b, c] = triangle.vertices
       return sum + triangleArea(a, b, c)
@@ -179,11 +179,11 @@ test("createBoardMesh subtracts oval holes", () => {
 
   const ovalHoleWallTriangles = mesh.triangles.filter(
     (triangle) =>
-      Math.abs(triangle.normal.y) < 0.1 &&
+      Math.abs(triangle.normal.z) < 0.1 &&
       triangle.vertices.some(
         (vertex) =>
           Math.abs(Math.abs(vertex.x) - 2.5) < 0.15 ||
-          Math.abs(Math.abs(vertex.z) - 1.25) < 0.15,
+          Math.abs(Math.abs(vertex.y) - 1.25) < 0.15,
       ),
   )
   expect(ovalHoleWallTriangles.length).toBeGreaterThan(0)
@@ -217,7 +217,7 @@ test("createBoardMesh subtracts plated oval holes using emitted outer dimensions
   })
 
   const topArea = mesh.triangles
-    .filter((triangle) => triangle.normal.y > 0.9)
+    .filter((triangle) => triangle.normal.z > 0.9)
     .reduce((sum, triangle) => {
       const [a, b, c] = triangle.vertices
       return sum + triangleArea(a, b, c)
@@ -270,8 +270,8 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
   expect(boardBox.mesh?.triangles.length ?? 0).toBeGreaterThan(0)
   expect(boardBox.center).toEqual({
     x: board.center.x,
-    y: 0,
-    z: board.center.y,
+    y: board.center.y,
+    z: 0,
   })
-  expect(boardBox.size.y).toBeCloseTo(board.thickness ?? 1.2, 6)
+  expect(boardBox.size.z).toBeCloseTo(board.thickness ?? 1.2, 6)
 })

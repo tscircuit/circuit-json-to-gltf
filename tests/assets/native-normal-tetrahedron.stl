@@ -1,0 +1,30 @@
+solid native_normal_probe
+facet normal 0 0 -1
+outer loop
+vertex 0 0 0
+vertex 0 5 0
+vertex 3 0 0
+endloop
+endfacet
+facet normal 0 -1 0
+outer loop
+vertex 0 0 0
+vertex 3 0 0
+vertex 0 0 7
+endloop
+endfacet
+facet normal -1 0 0
+outer loop
+vertex 0 0 0
+vertex 0 0 7
+vertex 0 5 0
+endloop
+endfacet
+facet normal 0.8048635871819794 0.48291815230918766 0.3449415373637055
+outer loop
+vertex 3 0 0
+vertex 0 5 0
+vertex 0 0 7
+endloop
+endfacet
+endsolid native_normal_probe

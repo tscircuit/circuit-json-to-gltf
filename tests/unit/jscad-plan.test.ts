@@ -19,10 +19,10 @@ test("loads serializable JSCAD plans into scene meshes", async () => {
   expect(mesh.triangles.length).toBeGreaterThan(0)
   expect(mesh.boundingBox.min.x).toBeCloseTo(-7)
   expect(mesh.boundingBox.max.x).toBeCloseTo(7)
-  expect(mesh.boundingBox.min.y).toBeCloseTo(-3)
-  expect(mesh.boundingBox.max.y).toBeCloseTo(3)
-  expect(mesh.boundingBox.min.z).toBeCloseTo(-5)
-  expect(mesh.boundingBox.max.z).toBeCloseTo(5)
+  expect(mesh.boundingBox.min.y).toBeCloseTo(-5)
+  expect(mesh.boundingBox.max.y).toBeCloseTo(5)
+  expect(mesh.boundingBox.min.z).toBeCloseTo(-3)
+  expect(mesh.boundingBox.max.z).toBeCloseTo(3)
 
   const scene = await convertCircuitJsonTo3D(
     [
@@ -56,22 +56,14 @@ test("loads serializable JSCAD plans into scene meshes", async () => {
 
   expect(scene.boxes).toHaveLength(1)
   expect(scene.boxes[0]?.mesh?.triangles.length).toBeGreaterThan(0)
-  expect(scene.boxes[0]?.center).toEqual({ x: 1, y: 3, z: 2 })
-  expect(scene.boxes[0]?.size).toEqual({ x: 14, y: 6, z: 10 })
+  expect(scene.boxes[0]?.center).toEqual({ x: 1, y: 2, z: 3 })
+  expect(scene.boxes[0]?.size).toEqual({ x: 14, y: 10, z: 6 })
 })
 
 /**
- * The bug: `loadJscadPlan` moved the plan into the scene frame with
- * `rotateX(-PI/2)`, which sends Circuit +Y to scene -Z. Every other path into
- * the same scene -- the OBJ loader (`OBJ_Z_UP_TO_Y_UP`), the board mesh, and
- * `cad_component.position` -- sends Circuit +Y to scene +Z. So a `model_jscad`
- * component came out rotated 180 degrees about X relative to everything it was
- * meant to sit next to, and relative to its own position offset.
- *
- * A plan translated +4 in Circuit Y must therefore span +3..+5 in scene Z, not
- * -5..-3.
+ * No loader-stage renderer conversion: a plan's +Y offset stays canonical +Y.
  */
-test("a JSCAD plan translated along Circuit +Y lands at +Z in the scene frame", () => {
+test("a JSCAD plan translated along Circuit +Y stays at +Y in the scene frame", () => {
   const positiveYPlan = {
     type: "translate",
     vector: [0, 4, 0],
@@ -80,8 +72,8 @@ test("a JSCAD plan translated along Circuit +Y lands at +Z in the scene frame", 
 
   const mesh = loadJscadPlan(positiveYPlan)
 
-  expect(mesh.boundingBox.min.z).toBeCloseTo(3)
-  expect(mesh.boundingBox.max.z).toBeCloseTo(5)
+  expect(mesh.boundingBox.min.y).toBeCloseTo(3)
+  expect(mesh.boundingBox.max.y).toBeCloseTo(5)
 })
 
 /**
@@ -91,13 +83,7 @@ test("a JSCAD plan translated along Circuit +Y lands at +Z in the scene frame", 
  * applied in different places, so they only agree if the loader and the node
  * placement share one frame.
  *
- * Before the fix the Y case failed -- +4 in the plan read back as -4 in the
- * scene -- while X and Z agreed, which is exactly the 180-degree X rotation
- * above. The X and Z cases are kept as the guard for the other half of the
- * mapping: X must stay un-negated here because
- * `GLTFBuilder.convertMeshToGLTFOrientation` applies the single canonical
- * X-mirror to every mesh at export, and negating it here too would mirror JSCAD
- * geometry alone.
+ * The final glTF basis belongs at export, not in either of these paths.
  */
 test.each([
   ["x", [4, 0, 0]],
@@ -159,8 +145,7 @@ test.each([
 
 /**
  * The mesh's bounds must describe the triangles it ships, so they are measured
- * from those triangles rather than from the source Geom3 -- which is still Z-up
- * when the triangles have already been remapped. A cylinder is the shape that
+ * from those triangles rather than transforming a source bounding box. A cylinder
  * keeps the two apart if this is ever reverted to moving the source box: it
  * does not fill its own bounding box, so a transform that rotates the box
  * inflates the empty corners instead of following the shape.

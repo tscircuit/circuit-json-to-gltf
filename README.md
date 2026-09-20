@@ -91,7 +91,12 @@ The converter uses a modular architecture:
 1. **Circuit to 3D Converter**: Parses circuit JSON and creates a 3D scene representation
 2. **Board Renderer**: Renders PCB layers as textures using circuit-to-svg and resvg
 3. **Model Loaders**: Load STL and OBJ files for component 3D models
-4. **GLTF Builder**: Constructs the final GLTF using Three.js
+4. **GLTF Builder**: Encodes canonical world geometry in the final glTF frame
+
+Geometry uses right-handed, Z-up local and world coordinates until the final
+export conversion. See the [canonical geometry pipeline](docs/geometry-pipeline.md)
+for the operation order shared with `3d-viewer`, rotation semantics, model
+origins, fitting, format compatibility, and the `Scene3D` coordinate contract.
 
 ## Development
 

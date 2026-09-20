@@ -203,7 +203,7 @@ function convertOcctResultToMesh(
 
   // Apply coordinate transformation
   // STEP files use Z-up coordinate system, same as STL
-  const finalConfig = transform ?? COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP
+  const finalConfig = transform ?? COORDINATE_TRANSFORMS.IDENTITY
   const transformedTriangles = transformTriangles(allTriangles, finalConfig)
 
   // Use OBJMesh path when colors are present, otherwise plain STLMesh

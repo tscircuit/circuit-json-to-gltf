@@ -1,6 +1,8 @@
 import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
 import type { BoundingBox } from "../types"
 import { boundsOfPositions } from "../utils/bounding-box"
+import * as vec3 from "@jscad/modeling/src/maths/vec3"
+import { getCadRotationMatrix } from "../utils/cad-rotation"
 
 export interface MeshData {
   positions: number[]
@@ -163,7 +165,7 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
   // Define the 6 faces as separate meshes
   const faceDefinitions = {
     // Front face (positive Z)
-    front: {
+    top: {
       vertices: [
         [-hw, -hh, hd],
         [hw, -hh, hd],
@@ -179,7 +181,7 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
       ],
     },
     // Back face (negative Z)
-    back: {
+    bottom: {
       vertices: [
         [hw, -hh, -hd],
         [-hw, -hh, -hd],
@@ -188,14 +190,14 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
       ],
       normal: [0, 0, -1],
       uvs: [
-        [0, 1],
         [1, 1],
-        [1, 0],
+        [0, 1],
         [0, 0],
+        [1, 0],
       ],
     },
     // Top face (positive Y)
-    top: {
+    front: {
       vertices: [
         [-hw, hh, hd],
         [hw, hh, hd],
@@ -211,7 +213,7 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
       ],
     },
     // Bottom face (negative Y)
-    bottom: {
+    back: {
       vertices: [
         [-hw, -hh, -hd],
         [hw, -hh, -hd],
@@ -301,11 +303,10 @@ export function createMeshFromSTL(stlMesh: STLMesh): MeshData {
       positions.push(vertex.x, vertex.y, vertex.z)
       normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
       // Simple planar UV mapping
-      texcoords.push(vertex.x, vertex.z)
+      texcoords.push(vertex.x, vertex.y)
     }
 
-    // Add indices (reverse winding for correct face orientation)
-    indices.push(vertexIndex, vertexIndex + 2, vertexIndex + 1)
+    indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
     vertexIndex += 3
   }
 
@@ -343,10 +344,10 @@ export function createMeshFromOBJ(
         triangle.normal.y,
         triangle.normal.z,
       )
-      targetMesh.texcoords.push(vertex.x, vertex.z)
+      targetMesh.texcoords.push(vertex.x, vertex.y)
     }
 
-    targetMesh.indices.push(baseIndex, baseIndex + 2, baseIndex + 1)
+    targetMesh.indices.push(baseIndex, baseIndex + 1, baseIndex + 2)
   }
 
   const result: { meshData: MeshData; materialIndex: number }[] = []
@@ -362,6 +363,11 @@ export function createMeshFromOBJ(
     : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
 }
 
+/**
+ * Canonical local -> canonical world, both right-handed Z-up millimeters.
+ * Scale, intrinsic XYZ rotation (radians), then translation. Normals are
+ * directions and receive the inverse-transpose linear transform, never translation.
+ */
 export function transformMesh(
   mesh: MeshData,
   translation: Point3,
@@ -378,6 +384,9 @@ export function transformMesh(
   if (mesh.colors) {
     result.colors = [...mesh.colors]
   }
+  const rotationMatrix = getCadRotationMatrix(rotation ?? { x: 0, y: 0, z: 0 })
+  const singularScale =
+    scale && (scale.x === 0 || scale.y === 0 || scale.z === 0)
 
   // Apply transformations to positions
   for (let i = 0; i < result.positions.length; i += 3) {
@@ -392,80 +401,44 @@ export function transformMesh(
       z *= scale.z
     }
 
-    // Apply rotation (simplified - proper rotation would use quaternions)
-    if (rotation) {
-      // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rx = x * cosY - z * sinY
-      const rz = x * sinY + z * cosY
-      x = rx
-      z = rz
-
-      // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const ry = y * cosX - z * sinX
-      const rz2 = y * sinX + z * cosX
-      y = ry
-      z = rz2
-
-      // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
-      const rx2 = x * cosZ - y * sinZ
-      const ry2 = x * sinZ + y * cosZ
-      x = rx2
-      y = ry2
-    }
-
+    const rotated = vec3.transform(vec3.create(), [x, y, z], rotationMatrix)
     // Apply translation
-    result.positions[i] = x + translation.x
-    result.positions[i + 1] = y + translation.y
-    result.positions[i + 2] = z + translation.z
+    result.positions[i] = rotated[0] + translation.x
+    result.positions[i + 1] = rotated[1] + translation.y
+    result.positions[i + 2] = rotated[2] + translation.z
   }
 
-  // Also transform normals if there was rotation
-  if (rotation) {
+  if (rotation || scale) {
     for (let i = 0; i < result.normals.length; i += 3) {
-      let nx = result.normals[i]!
-      let ny = result.normals[i + 1]!
-      let nz = result.normals[i + 2]!
-
-      // Apply same rotations to normals
-      // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rnx = nx * cosY - nz * sinY
-      const rnz = nx * sinY + nz * cosY
-      nx = rnx
-      nz = rnz
-
-      // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const rny = ny * cosX - nz * sinX
-      const rnz2 = ny * sinX + nz * cosX
-      ny = rny
-      nz = rnz2
-
-      // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
-      const rnx2 = nx * cosZ - ny * sinZ
-      const rny2 = nx * sinZ + ny * cosZ
-      nx = rnx2
-      ny = rny2
-
-      result.normals[i] = nx
-      result.normals[i + 1] = ny
-      result.normals[i + 2] = nz
+      const normal = singularScale
+        ? vec3.create()
+        : vec3.transform(
+            vec3.create(),
+            [
+              result.normals[i]! / (scale?.x ?? 1),
+              result.normals[i + 1]! / (scale?.y ?? 1),
+              result.normals[i + 2]! / (scale?.z ?? 1),
+            ],
+            rotationMatrix,
+          )
+      vec3.normalize(normal, normal)
+      result.normals[i] = normal[0]
+      result.normals[i + 1] = normal[1]
+      result.normals[i + 2] = normal[2]
+    }
+  }
+  if (scale && scale.x * scale.y * scale.z < 0) {
+    for (let i = 0; i < result.indices.length; i += 3) {
+      const second = result.indices[i + 1]!
+      result.indices[i + 1] = result.indices[i + 2]!
+      result.indices[i + 2] = second
     }
   }
 
   return result
 }
 
+/** Canonical P -> glTF G=(-P.x,P.z,P.y), a proper rotation, in mm. */
 export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
   const result: MeshData = {
     positions: [...mesh.positions],
@@ -479,27 +452,17 @@ export function convertMeshToGLTFOrientation(mesh: MeshData): MeshData {
   }
 
   for (let i = 0; i < result.positions.length; i += 3) {
-    const x = result.positions[i]
-    if (typeof x === "number") {
-      result.positions[i] = -x
-    }
+    const [x, y, z] = result.positions.slice(i, i + 3)
+    result.positions[i] = -x!
+    result.positions[i + 1] = z!
+    result.positions[i + 2] = y!
   }
 
   for (let i = 0; i < result.normals.length; i += 3) {
-    const nx = result.normals[i]
-    if (typeof nx === "number") {
-      result.normals[i] = -nx
-    }
-  }
-
-  for (let i = 0; i < result.indices.length; i += 3) {
-    const i1 = result.indices[i + 1]
-    const i2 = result.indices[i + 2]
-
-    if (typeof i1 === "number" && typeof i2 === "number") {
-      result.indices[i + 1] = i2
-      result.indices[i + 2] = i1
-    }
+    const [x, y, z] = result.normals.slice(i, i + 3)
+    result.normals[i] = -x!
+    result.normals[i + 1] = z!
+    result.normals[i + 2] = y!
   }
 
   return result
