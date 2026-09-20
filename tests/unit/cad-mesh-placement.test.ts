@@ -17,24 +17,24 @@ test("getMeshOrigin infers board-surface origin from the contact patch", () => {
       triangles: [
         {
           vertices: [
-            { x: -2, y: -3, z: -1 },
-            { x: 6, y: -3, z: -1 },
-            { x: -2, y: -3, z: 1 },
+            { x: -2, y: -1, z: -3 },
+            { x: 6, y: -1, z: -3 },
+            { x: -2, y: 1, z: -3 },
           ],
-          normal: { x: 0, y: -1, z: 0 },
+          normal: { x: 0, y: 0, z: -1 },
         },
         {
           vertices: [
-            { x: 6, y: -3, z: -1 },
-            { x: 6, y: -3, z: 1 },
-            { x: -2, y: -3, z: 1 },
+            { x: 6, y: -1, z: -3 },
+            { x: 6, y: 1, z: -3 },
+            { x: -2, y: 1, z: -3 },
           ],
-          normal: { x: 0, y: -1, z: 0 },
+          normal: { x: 0, y: 0, z: -1 },
         },
       ],
       boundingBox: {
-        min: { x: -2, y: -3, z: -4 },
-        max: { x: 6, y: 7, z: 8 },
+        min: { x: -2, y: -4, z: -3 },
+        max: { x: 6, y: 8, z: 7 },
       },
     },
   )

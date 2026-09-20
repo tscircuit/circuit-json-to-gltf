@@ -101,11 +101,8 @@ export function parseGLB(
   // Extract geometry from GLTF
   const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
 
-  // Apply coordinate transformation
-  // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
-  const finalConfig = transform ?? {
-    axisMapping: { x: "x" as const, y: "z" as const, z: "y" as const },
-  }
+  // Preserve native asset axes; the final project/glTF basis belongs at export.
+  const finalConfig = transform ?? {}
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
   // Check if any triangles have colors (materials)

@@ -25,9 +25,9 @@ test("GLB default normalization is explicit and independent of native board-norm
   }
   const defaultMesh = parseGLB(glb)
   expect(defaultMesh.triangles[0]!.vertices).toEqual([
-    { x: 1, y: 3, z: 2 },
-    { x: 2, y: 3, z: 2 },
-    { x: 1, y: 4, z: 3 },
+    { x: 1, y: 2, z: 3 },
+    { x: 2, y: 2, z: 3 },
+    { x: 1, y: 3, z: 4 },
   ])
   for (const direction of [
     undefined,
@@ -45,7 +45,7 @@ test("GLB default normalization is explicit and independent of native board-norm
     expect(parseGLB(glb, transform)).toEqual(defaultMesh)
     expect(
       applyCoordinateTransform(cad.model_origin_position!, transform),
-    ).toEqual({ x: 1, y: 3, z: 2 })
+    ).toEqual({ x: 1, y: 2, z: 3 })
   }
   const coordinateTransform = {
     axisMapping: { x: "-x", y: "y", z: "z" },
