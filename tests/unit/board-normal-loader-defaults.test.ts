@@ -43,8 +43,8 @@ test("native declarations retain each format's loader mapping and absence is ide
         transform ?? {},
       )
       expect(mapped.x).toBeCloseTo(2, 10)
-      expect(mapped.y).toBeCloseTo(format === "stl" ? -5 : 5, 10)
-      expect(mapped.z).toBeCloseTo(format === "stl" ? -3 : 3, 10)
+      expect(mapped.y).toBeCloseTo(format === "stl" ? -3 : 3, 10)
+      expect(mapped.z).toBeCloseTo(format === "stl" ? -5 : 5, 10)
       expect(getMeshWithBoardNormalTransform(mesh, undefined, transform)).toBe(
         mesh,
       )

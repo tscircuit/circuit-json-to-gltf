@@ -1,7 +1,7 @@
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import measureBoundingBox from "@jscad/modeling/src/measurements/measureBoundingBox"
 import { subtract } from "@jscad/modeling/src/operations/booleans"
-import { rotateX } from "@jscad/modeling/src/operations/transforms"
+import { mirrorY } from "@jscad/modeling/src/operations/transforms"
 import type { PcbBoard, PcbHole, PcbPanel, PcbPlatedHole } from "circuit-json"
 import type { STLMesh } from "../types"
 import { batchedUnion } from "./batched-union"
@@ -14,6 +14,7 @@ import {
   geom3ToTriangles,
 } from "./pcb-board-geometry"
 
+/** Clip in canonical board-local XYZ (Z-up, mm), returning outward-wound triangles. */
 export const cutBoardMeshOutsideBoardBoundary = ({
   board,
   center,
@@ -34,14 +35,15 @@ export const cutBoardMeshOutsideBoardBoundary = ({
   let boardGeom = createBoardOutlineGeom(board, center, thickness)
   const subtractGeoms = [
     ...createHoleGeoms(center, thickness, holes, platedHoles, segments),
-    ...createCutoutGeoms(center, thickness, cutouts, segments),
+    // Normalize the cutout producer's Y-reflected frame before the boolean.
+    ...createCutoutGeoms(center, thickness, cutouts, segments).map((geometry) =>
+      mirrorY(geometry),
+    ),
   ]
 
   if (subtractGeoms.length > 0) {
     boardGeom = subtract(boardGeom, batchedUnion(subtractGeoms))
   }
-
-  boardGeom = rotateX(-Math.PI / 2, boardGeom)
 
   const polygons = geom3.toPolygons(boardGeom)
   return {

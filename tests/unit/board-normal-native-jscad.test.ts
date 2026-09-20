@@ -28,14 +28,14 @@ test.each([undefined, "z+", "z-"] as const)(
         coordinateTransform,
       })
       const bounds = scene.boxes[0]!.mesh!.boundingBox
-      expect(bounds.min.y).toBeCloseTo(direction === "z-" ? -6 : 0, 10)
-      expect(bounds.max.y).toBeCloseTo(direction === "z-" ? 0 : 6, 10)
+      expect(bounds.min.z).toBeCloseTo(direction === "z-" ? -6 : 0, 10)
+      expect(bounds.max.z).toBeCloseTo(direction === "z-" ? 0 : 6, 10)
       for (const [key, sign] of [
         ["min", -1],
         ["max", 1],
       ] as const) {
         expect(bounds[key].x).toBeCloseTo(sign, 10)
-        expect(bounds[key].z).toBeCloseTo(sign * 2, 10)
+        expect(bounds[key].y).toBeCloseTo(sign * 2, 10)
       }
     }
   },

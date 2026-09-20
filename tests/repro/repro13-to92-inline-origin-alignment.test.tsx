@@ -66,18 +66,18 @@ test("repro13: TO-92 KiCad STEP model should align to the footprint origin", asy
   const bounds = mesh.boundingBox
   const contactVertices = mesh.triangles
     .flatMap((triangle) => triangle.vertices)
-    .filter((vertex) => Math.abs(vertex.y - bounds.min.y) < 1e-6)
+    .filter((vertex) => Math.abs(vertex.z - bounds.min.z) < 1e-6)
 
   const contactMinX = Math.min(...contactVertices.map((vertex) => vertex.x))
   const contactMaxX = Math.max(...contactVertices.map((vertex) => vertex.x))
-  const contactMinZ = Math.min(...contactVertices.map((vertex) => vertex.z))
-  const contactMaxZ = Math.max(...contactVertices.map((vertex) => vertex.z))
+  const contactMinY = Math.min(...contactVertices.map((vertex) => vertex.y))
+  const contactMaxY = Math.max(...contactVertices.map((vertex) => vertex.y))
 
   // The STEP model should keep its board-surface height plane while its
   // through-hole contact patch is centered on the footprint origin.
-  expect(bounds.min.y).toBeCloseTo(-2.5, 6)
+  expect(bounds.min.z).toBeCloseTo(-2.5, 6)
   expect((contactMinX + contactMaxX) / 2).toBeCloseTo(0, 6)
-  expect((contactMinZ + contactMaxZ) / 2).toBeCloseTo(0, 6)
+  expect((contactMinY + contactMaxY) / 2).toBeCloseTo(0, 6)
 })
 
 test("repro13: TO-92 KiCad STEP model snapshot", async () => {

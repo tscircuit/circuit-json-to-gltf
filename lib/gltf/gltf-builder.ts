@@ -266,12 +266,12 @@ export class GLTFBuilder {
     const bottomTriangles: NonNullable<typeof box.mesh>["triangles"] = []
     const sideTriangles: NonNullable<typeof box.mesh>["triangles"] = []
 
-    const yThreshold = 0.8 // Faces with normal Y > threshold are "top"
+    const zThreshold = 0.8
 
     for (const triangle of box.mesh!.triangles) {
-      const ny = Math.abs(triangle.normal.y)
-      if (ny > yThreshold) {
-        if (triangle.normal.y > 0) {
+      const nz = Math.abs(triangle.normal.z)
+      if (nz > zThreshold) {
+        if (triangle.normal.z > 0) {
           topTriangles.push(triangle)
         } else {
           bottomTriangles.push(triangle)
@@ -389,7 +389,7 @@ export class GLTFBuilder {
     }
 
     const sizeX = maxX - minX
-    const sizeZ = maxZ - minZ
+    const sizeY = maxY - minY
 
     for (const { triangles, materialIndex } of materials) {
       const positions: number[] = []
@@ -403,9 +403,9 @@ export class GLTFBuilder {
           positions.push(v.x, v.y, v.z)
           normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
 
-          // Generate UV coordinates based on X/Z position for top/bottom faces
+          // Board textures are parameterized in canonical PCB XY.
           const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
-          const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
+          const v_coord = sizeY > 0 ? (v.y - minY) / sizeY : 0.5
           texcoords.push(u, 1 - v_coord) // Flip V coordinate
         }
 
@@ -699,7 +699,7 @@ export class GLTFBuilder {
   }
 
   private toGltfTranslation(center: Box3D["center"]): [number, number, number] {
-    return [-center.x, center.y, center.z]
+    return [-center.x, center.z, center.y]
   }
 
   private getPoppyglNodeExtras(box: Box3D): Partial<Pick<GLTFNode, "extras">> {

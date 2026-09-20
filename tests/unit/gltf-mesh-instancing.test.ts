@@ -46,6 +46,6 @@ test("reuses shared meshes for translated model instances", async () => {
   expect(gltf.meshes).toHaveLength(1)
   expect(gltf.nodes).toHaveLength(2)
   expect(gltf.nodes[0].mesh).toBe(gltf.nodes[1].mesh)
-  expect(gltf.nodes[0].translation).toEqual([-1, 2, 3])
-  expect(gltf.nodes[1].translation).toEqual([-10, 20, 30])
+  expect(gltf.nodes[0].translation).toEqual([-1, 3, 2])
+  expect(gltf.nodes[1].translation).toEqual([-10, 30, 20])
 })

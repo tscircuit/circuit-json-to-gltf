@@ -33,8 +33,8 @@ function getOrientationRotationForBoardNormal(
     "z+": { x: 0, y: 0, z: 1 },
     "z-": { x: 0, y: 0, z: -1 },
   }
-  // Like getMeshOrigin, carry the native model axis through the loader:
-  // B * L * nativeNormal = scene +Y. Directions have no translation or units.
+  // The schema names a native MODEL axis, so geometry and its declared normal
+  // cross the loader boundary together: B * L * nativeNormal = project +Z.
   const nativeNormal = nativeDirections[modelBoardNormalDirection]
   if (!nativeNormal) {
     throw new Error(
@@ -50,22 +50,21 @@ function getOrientationRotationForBoardNormal(
     )
   }
   vec3.normalize(normal, normal)
-  const axis = vec3.cross(vec3.create(), normal, [0, 1, 0])
+  const axis = vec3.cross(vec3.create(), normal, [0, 0, 1])
   const sine = vec3.length(axis)
   // Keep the established X-axis half-turn when the vectors are opposite.
   if (sine < 1e-12) {
-    return normal[1] < 0
+    return normal[2] < 0
       ? mat4.fromXRotation(mat4.create(), Math.PI)
       : mat4.create()
   }
   return mat4.fromRotation(
     mat4.create(),
-    Math.atan2(sine, normal[1]),
+    Math.atan2(sine, normal[2]),
     vec3.normalize(axis, axis),
   )
 }
 
-/** Orient a loader-mapped mesh in the existing Y-up local scene frame. */
 export function getMeshWithBoardNormalTransform<T extends STLMesh | OBJMesh>(
   mesh: T,
   modelBoardNormalDirection?: CadComponent["model_board_normal_direction"],
@@ -81,25 +80,25 @@ export function getMeshWithBoardNormalTransform<T extends STLMesh | OBJMesh>(
 }
 
 function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
-  const minY = mesh.boundingBox.min.y
-  const height = mesh.boundingBox.max.y - minY
+  const minZ = mesh.boundingBox.min.z
+  const height = mesh.boundingBox.max.z - minZ
   const tolerance = Math.max(1e-6, height * 1e-5)
 
   let minX = Infinity
   let maxX = -Infinity
-  let minZ = Infinity
-  let maxZ = -Infinity
+  let minY = Infinity
+  let maxY = -Infinity
   let hasContactVertex = false
 
   for (const triangle of mesh.triangles) {
     for (const vertex of triangle.vertices) {
-      if (Math.abs(vertex.y - minY) > tolerance) continue
+      if (Math.abs(vertex.z - minZ) > tolerance) continue
 
       hasContactVertex = true
       minX = Math.min(minX, vertex.x)
       maxX = Math.max(maxX, vertex.x)
-      minZ = Math.min(minZ, vertex.z)
-      maxZ = Math.max(maxZ, vertex.z)
+      minY = Math.min(minY, vertex.y)
+      maxY = Math.max(maxY, vertex.y)
     }
   }
 
@@ -107,7 +106,7 @@ function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
 
   return {
     min: { x: minX, y: minY, z: minZ },
-    max: { x: maxX, y: minY, z: maxZ },
+    max: { x: maxX, y: maxY, z: minZ },
   }
 }
 
@@ -124,8 +123,8 @@ function getInferredMeshOrigin(
 
     return {
       x: center.x,
-      y: 0,
-      z: center.z,
+      y: center.y,
+      z: 0,
     }
   }
 
@@ -136,6 +135,7 @@ function getInferredMeshOrigin(
   return { x: 0, y: 0, z: 0 }
 }
 
+/** Preserve exporter datum policy, measured in canonical Z-up local space. */
 export function getMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,

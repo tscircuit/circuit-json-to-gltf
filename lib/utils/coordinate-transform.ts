@@ -1,4 +1,5 @@
 import type { CoordinateTransformConfig, Point3, Triangle } from "../types"
+import * as vec3 from "@jscad/modeling/src/maths/vec3"
 
 export function applyCoordinateTransform(
   point: Point3,
@@ -85,35 +86,68 @@ export function transformTriangles(
   triangles: Triangle[],
   config: CoordinateTransformConfig,
 ): Triangle[] {
-  return triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((v) =>
-      applyCoordinateTransform(v, config),
-    ) as [Point3, Point3, Point3],
-    normal: applyCoordinateTransform(triangle.normal, config),
-  }))
+  const axes = [
+    { x: 1, y: 0, z: 0 },
+    { x: 0, y: 1, z: 0 },
+    { x: 0, y: 0, z: 1 },
+  ].map((axis) => {
+    const point = applyCoordinateTransform(axis, config)
+    return vec3.fromValues(point.x, point.y, point.z)
+  })
+  const cofactors = [
+    vec3.cross(vec3.create(), axes[1]!, axes[2]!),
+    vec3.cross(vec3.create(), axes[2]!, axes[0]!),
+    vec3.cross(vec3.create(), axes[0]!, axes[1]!),
+  ]
+  const determinant = vec3.dot(axes[0]!, cofactors[0]!)
+  if (determinant === 0) {
+    throw new Error("Coordinate transform must have an invertible basis")
+  }
+  return triangles.map((triangle): Triangle => {
+    const vertices: [Point3, Point3, Point3] = [
+      applyCoordinateTransform(triangle.vertices[0], config),
+      applyCoordinateTransform(triangle.vertices[1], config),
+      applyCoordinateTransform(triangle.vertices[2], config),
+    ]
+    if (determinant < 0) {
+      ;[vertices[1], vertices[2]] = [vertices[2], vertices[1]]
+    }
+    // Cofactor columns / determinant are the inverse-transpose basis.
+    const normal = vec3.create()
+    for (const [i, value] of [
+      triangle.normal.x,
+      triangle.normal.y,
+      triangle.normal.z,
+    ].entries()) {
+      vec3.add(
+        normal,
+        normal,
+        vec3.scale(vec3.create(), cofactors[i]!, value / determinant),
+      )
+    }
+    vec3.normalize(normal, normal)
+    return {
+      ...triangle,
+      vertices,
+      normal: { x: normal[0], y: normal[1], z: normal[2] },
+    }
+  })
 }
 
 // Predefined transformation configs for common model orientations
 export const COORDINATE_TRANSFORMS = {
-  // Circuit/CAD Z-up (JSCAD geometry) to the intermediate Scene3D Y-up frame.
-  // NOTE the name says SCENE, not GLTF: this is NOT the final glTF frame.
-  // GLTFBuilder.convertMeshToGLTFOrientation applies the single canonical
-  // X-mirror (and winding flip) to every mesh when exporting Scene3D -> glTF,
-  // so X is intentionally NOT negated here -- negating it here as well would
-  // mirror JSCAD geometry alone, away from the board and OBJ models.
-  //   Circuit +X -> Scene +X   (mirrored to glTF -X later, like all meshes)
-  //   Circuit +Y -> Scene +Z   (forward)
-  //   Circuit +Z -> Scene +Y   (up)
-  // Identical to OBJ_Z_UP_TO_Y_UP by construction: JSCAD geometry has to share
-  // one frame with the OBJ component models it sits beside. The rotateX(-PI/2)
-  // this replaced sent Circuit +Y to Scene -Z, rotating every model_jscad
-  // component 180 degrees about X relative to its own cad_component.position.
+  // Preserve the exporter's historical STL model orientation in project space:
+  // undo the old intermediate Y/Z swap, yielding a proper 180-degree X rotation.
+  STL_TO_CANONICAL: {
+    axisMapping: { x: "x", y: "-y", z: "-z" },
+  } as CoordinateTransformConfig,
+  // Legacy opt-in Y/Z swap. Scene3D is now canonical Z-up; loaders no longer
+  // use this reflection. Retained for callers explicitly requesting it.
   CIRCUIT_Z_UP_TO_SCENE_Y_UP: {
     axisMapping: { x: "x", y: "z", z: "y" },
   } as CoordinateTransformConfig,
 
-  // Default: Z-up to Y-up (current STL behavior)
+  // Legacy opt-in Z-up to Y-up rotation.
   Z_UP_TO_Y_UP: {
     axisMapping: { x: "x", y: "-z", z: "y" },
   } as CoordinateTransformConfig,
@@ -123,17 +157,17 @@ export const COORDINATE_TRANSFORMS = {
     axisMapping: { x: "x", y: "z", z: "-y" },
   } as CoordinateTransformConfig,
 
-  // STEP models need Y/Z remap without the extra 180-degree board-direction flip.
+  // Legacy opt-in STEP axis swap; canonical STEP loading uses identity.
   STEP_INVERTED: {
     axisMapping: { x: "x", y: "z", z: "y" },
   } as CoordinateTransformConfig,
 
-  // USB port fix: flip to top of board (flip Y axis after Z-up conversion)
+  // Legacy opt-in flip in the old intermediate frame.
   USB_PORT_FIX: {
     flipY: -1,
   } as CoordinateTransformConfig,
 
-  // Combined: Z-up to Y-up + USB port fix (flip Z to face outward)
+  // Legacy combined mapping in the old intermediate Y-up frame.
   Z_UP_TO_Y_UP_USB_FIX: {
     axisMapping: { x: "x", y: "-z", z: "y" },
     flipZ: -1,
@@ -183,13 +217,14 @@ export const COORDINATE_TRANSFORMS = {
     axisMapping: { x: "x", y: "-z", z: "y" },
     flipZ: -1,
   } as CoordinateTransformConfig,
+  // Retained opt-in mapping, not the native footprinter loader default.
   FOOTPRINTER_MODEL_TRANSFORM: {
     axisMapping: { x: "x", y: "-z", z: "y" },
     flipX: -1,
     rotation: { x: 180, y: 180 },
   } as CoordinateTransformConfig,
 
-  // OBJ models: Z-up to Y-up with Y→Z (no negation to preserve winding order)
+  // Legacy opt-in OBJ axis swap; canonical OBJ loading uses identity.
   OBJ_Z_UP_TO_Y_UP: {
     axisMapping: { x: "x", y: "z", z: "y" },
   } as CoordinateTransformConfig,

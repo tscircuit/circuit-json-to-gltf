@@ -19,17 +19,16 @@ export function getDefaultModelTransform(
   }
 
   if (options.usingGlbCoordinates) {
-    // Match parseGLB's default Y/Z swap for both geometry and explicit origins.
-    return COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
+    return COORDINATE_TRANSFORMS.IDENTITY
   }
   if (options.hasFootprinterModel) {
-    return COORDINATE_TRANSFORMS.FOOTPRINTER_MODEL_TRANSFORM
+    return COORDINATE_TRANSFORMS.IDENTITY
   }
   if (options.usingObjFormat) {
-    return COORDINATE_TRANSFORMS.OBJ_Z_UP_TO_Y_UP
+    return COORDINATE_TRANSFORMS.IDENTITY
   }
   if (options.usingStepFormat) {
-    return COORDINATE_TRANSFORMS.STEP_INVERTED
+    return COORDINATE_TRANSFORMS.IDENTITY
   }
-  return COORDINATE_TRANSFORMS.Z_UP_TO_Y_UP_USB_FIX
+  return COORDINATE_TRANSFORMS.STL_TO_CANONICAL
 }
