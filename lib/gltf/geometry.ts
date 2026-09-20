@@ -1,6 +1,8 @@
 import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
 import type { BoundingBox } from "../types"
 import { boundsOfPositions } from "../utils/bounding-box"
+import * as vec3 from "@jscad/modeling/src/maths/vec3"
+import { getCadRotationMatrix } from "../utils/cad-rotation"
 
 export interface MeshData {
   positions: number[]
@@ -362,6 +364,11 @@ export function createMeshFromOBJ(
     : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
 }
 
+/**
+ * Meshes/translations remain in intermediate S=(P.x,P.z,P.y), in mm.
+ * circuit-to-3d also remaps CAD radians to (x,z,y). Undo that angle remap
+ * and conjugate the project's intrinsic XYZ rotation through the S/P basis.
+ */
 export function transformMesh(
   mesh: MeshData,
   translation: Point3,
@@ -378,6 +385,17 @@ export function transformMesh(
   if (mesh.colors) {
     result.colors = [...mesh.colors]
   }
+  const projectRotation = getCadRotationMatrix({
+    x: rotation?.x ?? 0,
+    y: rotation?.z ?? 0,
+    z: rotation?.y ?? 0,
+  })
+  const rotateInScene = (x: number, y: number, z: number) => {
+    const point = vec3.transform(vec3.create(), [x, z, y], projectRotation)
+    return vec3.fromValues(point[0], point[2], point[1])
+  }
+  const singularScale =
+    scale && (scale.x === 0 || scale.y === 0 || scale.z === 0)
 
   // Apply transformations to positions
   for (let i = 0; i < result.positions.length; i += 3) {
@@ -392,74 +410,34 @@ export function transformMesh(
       z *= scale.z
     }
 
-    // Apply rotation (simplified - proper rotation would use quaternions)
-    if (rotation) {
-      // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rx = x * cosY - z * sinY
-      const rz = x * sinY + z * cosY
-      x = rx
-      z = rz
-
-      // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const ry = y * cosX - z * sinX
-      const rz2 = y * sinX + z * cosX
-      y = ry
-      z = rz2
-
-      // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
-      const rx2 = x * cosZ - y * sinZ
-      const ry2 = x * sinZ + y * cosZ
-      x = rx2
-      y = ry2
-    }
+    const rotated = rotateInScene(x, y, z)
 
     // Apply translation
-    result.positions[i] = x + translation.x
-    result.positions[i + 1] = y + translation.y
-    result.positions[i + 2] = z + translation.z
+    result.positions[i] = rotated[0] + translation.x
+    result.positions[i + 1] = rotated[1] + translation.y
+    result.positions[i + 2] = rotated[2] + translation.z
   }
 
-  // Also transform normals if there was rotation
-  if (rotation) {
+  if (rotation || scale) {
     for (let i = 0; i < result.normals.length; i += 3) {
-      let nx = result.normals[i]!
-      let ny = result.normals[i + 1]!
-      let nz = result.normals[i + 2]!
-
-      // Apply same rotations to normals
-      // Rotation around Y axis
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
-      const rnx = nx * cosY - nz * sinY
-      const rnz = nx * sinY + nz * cosY
-      nx = rnx
-      nz = rnz
-
-      // Rotation around X axis
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const rny = ny * cosX - nz * sinX
-      const rnz2 = ny * sinX + nz * cosX
-      ny = rny
-      nz = rnz2
-
-      // Rotation around Z axis
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
-      const rnx2 = nx * cosZ - ny * sinZ
-      const rny2 = nx * sinZ + ny * cosZ
-      nx = rnx2
-      ny = rny2
-
-      result.normals[i] = nx
-      result.normals[i + 1] = ny
-      result.normals[i + 2] = nz
+      const normal = singularScale
+        ? vec3.create()
+        : rotateInScene(
+            result.normals[i]! / (scale?.x ?? 1),
+            result.normals[i + 1]! / (scale?.y ?? 1),
+            result.normals[i + 2]! / (scale?.z ?? 1),
+          )
+      vec3.normalize(normal, normal)
+      result.normals[i] = normal[0]
+      result.normals[i + 1] = normal[1]
+      result.normals[i + 2] = normal[2]
+    }
+    if (scale && scale.x * scale.y * scale.z < 0) {
+      for (let i = 0; i < result.indices.length; i += 3) {
+        const second = result.indices[i + 1]!
+        result.indices[i + 1] = result.indices[i + 2]!
+        result.indices[i + 2] = second
+      }
     }
   }
 
