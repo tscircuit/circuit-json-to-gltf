@@ -1,13 +1,7 @@
 import type { BoundingBox, OBJMesh, Point3, STLMesh, Triangle } from "../types"
 import { boundsOfTriangles } from "./bounding-box"
-
-function scalePoint(point: Point3, scale: number): Point3 {
-  return {
-    x: point.x * scale,
-    y: point.y * scale,
-    z: point.z * scale,
-  }
-}
+import * as mat4 from "@jscad/modeling/src/maths/mat4"
+import * as vec3 from "@jscad/modeling/src/maths/vec3"
 
 function scalePointByAxis(point: Point3, scale: Point3): Point3 {
   return {
@@ -17,7 +11,23 @@ function scalePointByAxis(point: Point3, scale: Point3): Point3 {
   }
 }
 
-export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
+/**
+ * Existing 3D helper: sequential X, Y, Z degrees or a pure-rotation matrix.
+ * Unlike circuit-json-util/shape-distances:rotatePoint (2D, one radian angle),
+ * this rotates Point3; retain the existing name and degree convention.
+ */
+export function rotatePoint(
+  point: Point3,
+  rotationDeg: Point3 | mat4.Mat4,
+): Point3 {
+  if (Array.isArray(rotationDeg)) {
+    const [x, y, z] = vec3.transform(
+      vec3.create(),
+      [point.x, point.y, point.z],
+      rotationDeg,
+    )
+    return { x, y, z }
+  }
   let { x, y, z } = point
 
   if (rotationDeg.x !== 0) {
@@ -53,17 +63,6 @@ export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
   return { x, y, z }
 }
 
-function scaleTriangle(triangle: Triangle, scale: number): Triangle {
-  return {
-    ...triangle,
-    vertices: triangle.vertices.map((vertex) => scalePoint(vertex, scale)) as [
-      Point3,
-      Point3,
-      Point3,
-    ],
-  }
-}
-
 export function scaleMesh<T extends STLMesh | OBJMesh>(
   mesh: T,
   scale: number,
@@ -72,20 +71,7 @@ export function scaleMesh<T extends STLMesh | OBJMesh>(
     return mesh
   }
 
-  const scaledTriangles = mesh.triangles.map((triangle) =>
-    scaleTriangle(triangle, scale),
-  )
-
-  const scaledBoundingBox = {
-    min: scalePoint(mesh.boundingBox.min, scale),
-    max: scalePoint(mesh.boundingBox.max, scale),
-  }
-
-  return {
-    ...mesh,
-    triangles: scaledTriangles,
-    boundingBox: scaledBoundingBox,
-  } as T
+  return scaleMeshByAxis(mesh, { x: scale, y: scale, z: scale })
 }
 
 export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
@@ -101,12 +87,30 @@ export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
     return mesh
   }
 
-  const scaledTriangles = mesh.triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((vertex) =>
-      scalePointByAxis(vertex, scale),
-    ) as [Point3, Point3, Point3],
-  }))
+  const singularScale = scale.x === 0 || scale.y === 0 || scale.z === 0
+  const scaledTriangles = mesh.triangles.map((triangle): Triangle => {
+    // Match transformMesh's inverse-transpose policy, including singular scales.
+    const normal = singularScale
+      ? vec3.create()
+      : vec3.normalize(vec3.create(), [
+          triangle.normal.x / scale.x,
+          triangle.normal.y / scale.y,
+          triangle.normal.z / scale.z,
+        ])
+    const vertices: [Point3, Point3, Point3] = [
+      scalePointByAxis(triangle.vertices[0], scale),
+      scalePointByAxis(triangle.vertices[1], scale),
+      scalePointByAxis(triangle.vertices[2], scale),
+    ]
+    if (scale.x * scale.y * scale.z < 0) {
+      ;[vertices[1], vertices[2]] = [vertices[2], vertices[1]]
+    }
+    return {
+      ...triangle,
+      vertices,
+      normal: { x: normal[0], y: normal[1], z: normal[2] },
+    }
+  })
 
   return {
     ...mesh,
@@ -152,9 +156,13 @@ export function translateMesh<T extends STLMesh | OBJMesh>(
 
 export function rotateMesh<T extends STLMesh | OBJMesh>(
   mesh: T,
-  rotationDeg: Point3,
+  rotationDeg: Point3 | mat4.Mat4,
 ): T {
-  if (rotationDeg.x === 0 && rotationDeg.y === 0 && rotationDeg.z === 0) {
+  if (
+    Array.isArray(rotationDeg)
+      ? mat4.isIdentity(rotationDeg)
+      : rotationDeg.x === 0 && rotationDeg.y === 0 && rotationDeg.z === 0
+  ) {
     return mesh
   }
 

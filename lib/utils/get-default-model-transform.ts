@@ -11,21 +11,11 @@ export interface GetDefaultModelTransformOptions {
 }
 
 export function getDefaultModelTransform(
-  cad: CadComponent,
+  _cad: CadComponent,
   options: GetDefaultModelTransformOptions,
 ): CoordinateTransformConfig {
   if (options.coordinateTransform) {
     return options.coordinateTransform
-  }
-
-  const modelBoardNormalDirection = cad.model_board_normal_direction
-
-  if (
-    modelBoardNormalDirection === "x-" ||
-    modelBoardNormalDirection === "y+" ||
-    modelBoardNormalDirection === "y-"
-  ) {
-    return COORDINATE_TRANSFORMS.IDENTITY
   }
 
   if (options.usingGlbCoordinates) {
