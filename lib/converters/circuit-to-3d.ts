@@ -270,8 +270,8 @@ export async function convertCircuitJsonTo3D(
     const fauxBoardBox: Box3D = {
       center: {
         x: fauxCenterX,
-        y: fauxCenterY,
-        z: 0,
+        y: 0,
+        z: fauxCenterY,
       },
       size: {
         x: fauxWidth,
