@@ -7,27 +7,39 @@ import { renderBoardTextures } from "../../lib/converters/board-renderer"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 import fixture from "../fixtures/via-tenting.json"
 
-test("GLB via tenting inherits board defaults and preserves per-side overrides", async () => {
+test("GLB via tenting preserves pad openings and overlapping silkscreen text", async () => {
   const circuitJson = fixture as CircuitJson
-  const textures = await renderBoardTextures(circuitJson, { resolution: 900 })
-  function viaCenters(texture: string) {
+  const textures = await renderBoardTextures(circuitJson, { resolution: 1200 })
+  function readTexture(texture: string) {
     const { pixels } = new Resvg(
-      `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="500"><image href="${texture}" width="900" height="500"/></svg>`,
+      `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900"><image href="${texture}" width="1200" height="900"/></svg>`,
     ).render()
-    const pixel = (x: number) =>
-      Array.from(pixels.subarray((300 * 900 + x) * 4, (300 * 900 + x) * 4 + 4))
-    return { inherited: pixel(150), exposed: pixel(450), tented: pixel(750) }
+    return (x: number, y: number) => {
+      const offset =
+        (Math.round((9 - y) * 50) * 1200 + Math.round((x + 12) * 50)) * 4
+      return Array.from(pixels.subarray(offset, offset + 4))
+    }
   }
-  const top = viaCenters(textures.top)
-  const bottom = viaCenters(textures.bottom)
-  expect(top.inherited).toEqual(top.tented)
-  expect(top.inherited).not.toEqual(top.exposed)
-  expect(bottom.inherited).toEqual(bottom.exposed)
-  expect(bottom.inherited).not.toEqual(bottom.tented)
+  const top = readTexture(textures.top)
+  const bottom = readTexture(textures.bottom)
+  const white = [255, 255, 255, 255]
+  expect(top(-8, 2)).toEqual(white)
+  expect(top(0, 2)).not.toEqual(white)
+  expect(top(8, 2)).toEqual(white)
+  expect(bottom(-8, 2)).not.toEqual(white)
+  expect(bottom(0, 2)).not.toEqual(white)
+  expect(bottom(8, 2)).toEqual(white)
+
+  expect(top(5, -4.2)).toEqual(top(3.5, -4.2))
+  expect(top(6.2, -4.2)).toEqual(top(-6, -4.2))
+  expect(top(3.5, -4.2)).not.toEqual(top(-6, -4.2))
+  expect(bottom(5, -4.2)).toEqual(bottom(3.5, -4.2))
+  expect(bottom(6.2, -4.2)).toEqual(bottom(-6, -4.2))
+  expect(bottom(3.5, -4.2)).not.toEqual(bottom(-6, -4.2))
 
   const glb = await convertCircuitJsonToGltf(circuitJson, {
     format: "glb",
-    boardTextureResolution: 1024,
+    boardTextureResolution: 2048,
     includeModels: false,
     showPcbNotes: true,
   })
@@ -36,13 +48,13 @@ test("GLB via tenting inherits board defaults and preserves per-side overrides",
   const camera = getBestCameraPosition(circuitJson, {
     direction: [0, 1, -1e-3],
     ortho: true,
-    aspectRatio: 1.8,
+    aspectRatio: 4 / 3,
   })
   await expect(
     renderGLTFToPNGFromGLB(glb as ArrayBuffer, {
       ...camera,
-      width: 900,
-      height: 500,
+      width: 1200,
+      height: 900,
       backgroundColor: [1, 1, 1],
     }),
   ).toMatchPngSnapshot(import.meta.path)
