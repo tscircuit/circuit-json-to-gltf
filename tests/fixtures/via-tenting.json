@@ -1,0 +1,104 @@
+[
+  {
+    "type": "pcb_board",
+    "pcb_board_id": "board",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 18,
+    "height": 10,
+    "thickness": 1.6,
+    "material": "fr4",
+    "num_layers": 2,
+    "default_via_tented_on_top": true,
+    "default_via_tented_on_bottom": false
+  },
+  {
+    "type": "pcb_note_text",
+    "pcb_note_text_id": "board_label",
+    "text": "TOP VIEW\nBoard defaults: top: true, bottom: false",
+    "anchor_position": {
+      "x": 0,
+      "y": 4
+    },
+    "anchor_alignment": "center",
+    "font": "tscircuit2024",
+    "font_size": 0.5,
+    "layer": "top",
+    "color": "white"
+  },
+  {
+    "type": "pcb_note_text",
+    "pcb_note_text_id": "inherited_label",
+    "text": "top: unset\nbottom: unset\nExpect top: TENTED",
+    "anchor_position": {
+      "x": -6,
+      "y": 1.8
+    },
+    "anchor_alignment": "center",
+    "font": "tscircuit2024",
+    "font_size": 0.45,
+    "layer": "top",
+    "color": "white"
+  },
+  {
+    "type": "pcb_note_text",
+    "pcb_note_text_id": "exposed_label",
+    "text": "top: false\nbottom: false\nExpect top: EXPOSED",
+    "anchor_position": {
+      "x": 0,
+      "y": 1.8
+    },
+    "anchor_alignment": "center",
+    "font": "tscircuit2024",
+    "font_size": 0.45,
+    "layer": "top",
+    "color": "white"
+  },
+  {
+    "type": "pcb_note_text",
+    "pcb_note_text_id": "tented_label",
+    "text": "top: true\nbottom: true\nExpect top: TENTED",
+    "anchor_position": {
+      "x": 6,
+      "y": 1.8
+    },
+    "anchor_alignment": "center",
+    "font": "tscircuit2024",
+    "font_size": 0.45,
+    "layer": "top",
+    "color": "white"
+  },
+  {
+    "type": "pcb_via",
+    "pcb_via_id": "inherited",
+    "x": -6,
+    "y": -1,
+    "outer_diameter": 2.4,
+    "hole_diameter": 1.2,
+    "layers": ["top", "bottom"]
+  },
+  {
+    "type": "pcb_via",
+    "pcb_via_id": "exposed",
+    "x": 0,
+    "y": -1,
+    "outer_diameter": 2.4,
+    "hole_diameter": 1.2,
+    "layers": ["top", "bottom"],
+    "tented_on_top": false,
+    "tented_on_bottom": false
+  },
+  {
+    "type": "pcb_via",
+    "pcb_via_id": "tented",
+    "x": 6,
+    "y": -1,
+    "outer_diameter": 2.4,
+    "hole_diameter": 1.2,
+    "layers": ["top", "bottom"],
+    "tented_on_top": true,
+    "tented_on_bottom": true
+  }
+]
