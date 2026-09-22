@@ -1,3 +1,10 @@
+import {
+  createPcbFold,
+  foldBoardMesh,
+  type PcbBendRecord,
+  type PcbStiffenerRecord,
+} from "../utils/pcb-fold"
+import { foldRigidBox } from "../utils/fold-rigid-box"
 import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
 import type {
   CadComponent,
@@ -18,6 +25,7 @@ import type {
   Box3D,
   Camera3D,
   CircuitTo3DOptions,
+  CircuitJsonWithPcbFlex,
   Light3D,
   Point3,
   Scene3D,
@@ -73,7 +81,7 @@ function convertCadSizeToSceneSize(size: { x: number; y: number; z: number }): {
 }
 
 export async function convertCircuitJsonTo3D(
-  circuitJson: CircuitJson,
+  inputCircuitJson: CircuitJsonWithPcbFlex,
   options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
   const {
@@ -97,6 +105,7 @@ export async function convertCircuitJsonTo3D(
     authHeaders,
   } = options
 
+  const circuitJson = inputCircuitJson as CircuitJson
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
@@ -125,6 +134,28 @@ export async function convertCircuitJsonTo3D(
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
   const pcbBoard = db.pcb_board?.list?.()[0]
   const pcbComponents = db.pcb_component?.list?.() ?? []
+  const bends = inputCircuitJson.filter(
+    (e): e is PcbBendRecord => e.type === "pcb_bend",
+  )
+  const stiffeners = inputCircuitJson.filter(
+    (e): e is PcbStiffenerRecord => e.type === "pcb_stiffener",
+  )
+  if (
+    (bends.length || stiffeners.length) &&
+    (pcbPanel ||
+      db.pcb_board.list().length !== 1 ||
+      [...bends, ...stiffeners].some(
+        (e) => e.pcb_board_id !== pcbBoard?.pcb_board_id,
+      ))
+  ) {
+    throw new Error(
+      "PCB flex rendering requires exactly one board, matching board references, and no panel",
+    )
+  }
+  const fold =
+    options.foldPcbs === true && bends.length
+      ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness)
+      : undefined
 
   // Panels don't have thickness, so always use board's thickness as fallback
   const effectiveBoardThickness = pcbBoard?.thickness ?? boardThickness
@@ -218,7 +249,7 @@ export async function convertCircuitJsonTo3D(
         y: effectiveBoardThickness,
         z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
       },
-      mesh: boardMesh,
+      mesh: fold ? foldBoardMesh(boardMesh, fold) : boardMesh,
       color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
@@ -245,6 +276,8 @@ export async function convertCircuitJsonTo3D(
       boardBox.color = resolvedPcbColor
     }
 
+    if (fold && boardBox.mesh)
+      boardBox.size = getBoundingBoxSize(boardBox.mesh.boundingBox)
     boxes.push(boardBox)
   } else if (drawFauxBoard) {
     const hasComponentBounds = pcbComponents.length > 0
@@ -578,7 +611,11 @@ export async function convertCircuitJsonTo3D(
       box.color = componentColor
     }
 
-    boxes.push(box)
+    boxes.push(
+      fold && pcbComponent
+        ? foldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)
+        : box,
+    )
   }
 
   // Add generic boxes for components without 3D models (only if showBoundingBoxes is true)
@@ -599,7 +636,7 @@ export async function convertCircuitJsonTo3D(
       // Check if component is on bottom layer
       const isBottomLayer = component.layer === "bottom"
 
-      boxes.push({
+      const box: Box3D = {
         center: {
           x: component.center.x,
           y: isBottomLayer
@@ -615,8 +652,85 @@ export async function convertCircuitJsonTo3D(
         color: componentColor,
         label: sourceComponent?.name ?? "?",
         labelColor: "white",
-      })
+      }
+      boxes.push(
+        fold ? foldRigidBox(box, fold, pcbBoard.center, component.center) : box,
+      )
     }
+  }
+
+  for (const stiffener of stiffeners) {
+    if (
+      !Number.isFinite(stiffener.thickness) ||
+      stiffener.thickness <= 0 ||
+      !["top", "bottom"].includes(stiffener.layer) ||
+      !Number.isFinite(stiffener.adhesive_thickness ?? 0) ||
+      (stiffener.adhesive_thickness ?? 0) < 0
+    )
+      throw new Error(`Invalid PCB stiffener ${stiffener.pcb_stiffener_id}`)
+    const center = pcbBoard.center
+    const outline =
+      stiffener.shape === "polygon"
+        ? stiffener.outline
+        : (() => {
+            if (!(stiffener.width > 0) || !(stiffener.height > 0))
+              throw new Error("Invalid stiffener dimensions")
+            const angle = ((stiffener.rotation ?? 0) * Math.PI) / 180
+            return [
+              [-1, -1],
+              [1, -1],
+              [1, 1],
+              [-1, 1],
+            ].map(([x, y]) => ({
+              x:
+                stiffener.center.x +
+                ((x! * stiffener.width) / 2) * Math.cos(angle) -
+                ((y! * stiffener.height) / 2) * Math.sin(angle),
+              y:
+                stiffener.center.y +
+                ((x! * stiffener.width) / 2) * Math.sin(angle) +
+                ((y! * stiffener.height) / 2) * Math.cos(angle),
+            }))
+          })()
+    if (
+      outline.length < 3 ||
+      outline.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))
+    )
+      throw new Error("Invalid stiffener outline")
+    const mesh = createBoardMesh(
+      {
+        ...pcbBoard,
+        outline: outline.map((p) => ({ x: p.x + center.x, y: p.y + center.y })),
+      },
+      { thickness: stiffener.thickness },
+    )
+    const side = stiffener.layer === "top" ? 1 : -1
+    const box: Box3D = {
+      center: {
+        x: center.x,
+        y:
+          side *
+          (effectiveBoardThickness / 2 +
+            (stiffener.adhesive_thickness ?? 0) +
+            stiffener.thickness / 2),
+        z: center.y,
+      },
+      size: getBoundingBoxSize(mesh.boundingBox),
+      mesh,
+      color:
+        stiffener.material === "polyimide"
+          ? "#bd7f27"
+          : stiffener.material === "fr4"
+            ? "#879568"
+            : "#b8bdc4",
+      label: stiffener.pcb_stiffener_id,
+    }
+    // Anchor at the stiffener geometry, whose mesh remains relative to board center.
+    const mount = {
+      x: center.x + outline.reduce((sum, p) => sum + p.x, 0) / outline.length,
+      y: center.y + outline.reduce((sum, p) => sum + p.y, 0) / outline.length,
+    }
+    boxes.push(fold ? foldRigidBox(box, fold, center, mount) : box)
   }
 
   // Create a default camera positioned to view the board or components
@@ -691,6 +805,44 @@ export async function convertCircuitJsonTo3D(
         near: 0.1,
         far: 120,
       }
+    }
+  }
+
+  if (fold) {
+    // Folded Scene3D meshes already contain their rotations (+Y up, mm).
+    const points = boxes.flatMap(
+      (box) =>
+        box.mesh?.triangles.flatMap((t) =>
+          t.vertices.map((p) => ({
+            x: p.x + box.center.x,
+            y: p.y + box.center.y,
+            z: p.z + box.center.z,
+          })),
+        ) ?? [box.center],
+    )
+    const min = { x: Infinity, y: Infinity, z: Infinity },
+      max = { x: -Infinity, y: -Infinity, z: -Infinity }
+    for (const p of points)
+      for (const axis of ["x", "y", "z"] as const) {
+        min[axis] = Math.min(min[axis], p[axis])
+        max[axis] = Math.max(max[axis], p[axis])
+      }
+    const target = {
+      x: (min.x + max.x) / 2,
+      y: (min.y + max.y) / 2,
+      z: (min.z + max.z) / 2,
+    }
+    const distance =
+      Math.max(Math.hypot(max.x - min.x, max.y - min.y, max.z - min.z), 1) * 1.5
+    camera = {
+      ...camera,
+      target,
+      position: {
+        x: target.x + distance * 0.5,
+        y: target.y + distance * 0.7,
+        z: target.z + distance * 0.5,
+      },
+      far: distance * 4,
     }
   }
 

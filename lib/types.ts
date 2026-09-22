@@ -1,8 +1,21 @@
+import type { CircuitJson, PcbBoard } from "circuit-json"
+import type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
+
+/** Accept unreleased flex records alongside existing Circuit JSON elements. */
+export type CircuitJsonWithPcbFlex = (
+  | CircuitJson[number]
+  | PcbBendRecord
+  | PcbStiffenerRecord
+  | (Omit<PcbBoard, "material"> & { material: "flex" })
+)[]
+
 export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
 export interface ConversionOptions {
+  /** Fold boards at render time; stored Circuit JSON remains flat. Default: false. */
+  foldPcbs?: boolean
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   showPcbNotes?: boolean
@@ -55,6 +68,14 @@ export interface Size3 {
 }
 
 export interface Triangle {
+  /** Original PCB surface identity, retained after folding. */
+  pcbFace?: "top" | "bottom" | "side"
+  /** Flat PCB texture coordinates, retained/interpolated during tessellation. */
+  uvs?: [
+    { u: number; v: number },
+    { u: number; v: number },
+    { u: number; v: number },
+  ]
   vertices: [Point3, Point3, Point3]
   normal: Point3
   color?: Color
@@ -145,6 +166,8 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
+  /** Fold boards at render time (default: false); supports parallel, non-overlapping bends. */
+  foldPcbs?: boolean
   pcbColor?: Color
   boardSideColor?: Color
   componentColor?: Color

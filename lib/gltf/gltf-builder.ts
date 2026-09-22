@@ -270,7 +270,13 @@ export class GLTFBuilder {
 
     for (const triangle of box.mesh!.triangles) {
       const ny = Math.abs(triangle.normal.y)
-      if (ny > yThreshold) {
+      if (triangle.pcbFace === "top") {
+        topTriangles.push(triangle)
+      } else if (triangle.pcbFace === "bottom") {
+        bottomTriangles.push(triangle)
+      } else if (triangle.pcbFace === "side") {
+        sideTriangles.push(triangle)
+      } else if (ny > yThreshold) {
         if (triangle.normal.y > 0) {
           topTriangles.push(triangle)
         } else {
@@ -399,14 +405,15 @@ export class GLTFBuilder {
       let vertexIndex = 0
 
       for (const triangle of triangles) {
-        for (const v of triangle.vertices) {
+        for (const [vertexNumber, v] of triangle.vertices.entries()) {
           positions.push(v.x, v.y, v.z)
           normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
 
           // Generate UV coordinates based on X/Z position for top/bottom faces
           const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
           const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
-          texcoords.push(u, 1 - v_coord) // Flip V coordinate
+          const uv = triangle.uvs?.[vertexNumber]
+          texcoords.push(uv?.u ?? u, uv?.v ?? 1 - v_coord) // Flat UVs survive folding
         }
 
         indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
@@ -442,7 +449,9 @@ export class GLTFBuilder {
       const indicesAccessorIndex = this.addAccessor(
         transformedMeshData.indices,
         "SCALAR",
-        COMPONENT_TYPE.UNSIGNED_SHORT,
+        indices.length > 65535
+          ? COMPONENT_TYPE.UNSIGNED_INT
+          : COMPONENT_TYPE.UNSIGNED_SHORT,
         TARGET.ELEMENT_ARRAY_BUFFER,
       )
 
@@ -672,7 +681,9 @@ export class GLTFBuilder {
     const indicesAccessorIndex = this.addAccessor(
       meshData.indices,
       "SCALAR",
-      COMPONENT_TYPE.UNSIGNED_SHORT,
+      meshData.positions.length / 3 > 65535
+        ? COMPONENT_TYPE.UNSIGNED_INT
+        : COMPONENT_TYPE.UNSIGNED_SHORT,
       TARGET.ELEMENT_ARRAY_BUFFER,
     )
 
