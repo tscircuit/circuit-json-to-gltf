@@ -48,7 +48,7 @@ export async function convertCircuitJsonTo3D(
   } = options
 
   if (
-    options.pcbFoldState === "folded" ||
+    options.foldPcbs === true ||
     circuitJson.some((e) => e.type === "pcb_stiffener" || e.type === "pcb_bend")
   ) {
     const { convertCircuitJsonTo3D: convertFlex } = await import(

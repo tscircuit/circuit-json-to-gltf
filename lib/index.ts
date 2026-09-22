@@ -27,7 +27,7 @@ export async function convertCircuitJsonToGltf(
   // Convert circuit JSON to 3D scene
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
-    pcbFoldState: options.pcbFoldState,
+    foldPcbs: options.foldPcbs,
     textureResolution: boardTextureResolution,
     showPcbNotes,
     boardDrillQuality,

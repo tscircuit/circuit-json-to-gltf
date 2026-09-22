@@ -15,7 +15,7 @@ await Bun.write(
 for (const state of ["flat", "folded"] as const) {
   const glb = (await convertCircuitJsonToGltf(circuit, {
     format: "glb",
-    pcbFoldState: state,
+    foldPcbs: state === "folded",
     boardTextureResolution: 1024,
     showBoundingBoxes: true,
   })) as ArrayBuffer

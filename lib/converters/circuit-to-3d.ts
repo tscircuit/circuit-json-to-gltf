@@ -153,7 +153,7 @@ export async function convertCircuitJsonTo3D(
     )
   }
   const fold =
-    options.pcbFoldState === "folded" && bends.length
+    options.foldPcbs === true && bends.length
       ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness)
       : undefined
 

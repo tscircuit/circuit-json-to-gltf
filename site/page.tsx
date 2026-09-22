@@ -45,13 +45,13 @@ declare global {
 interface CircuitToGltfDemoProps {
   initialCircuitJson?: unknown
   initialFormat?: "gltf" | "glb"
-  initialPcbFoldState?: "flat" | "folded"
+  initialFoldPcbs?: boolean
 }
 
 export default function CircuitToGltfDemo({
   initialCircuitJson,
   initialFormat = "gltf",
-  initialPcbFoldState = "flat",
+  initialFoldPcbs = false,
 }: CircuitToGltfDemoProps = {}) {
   const [gltfUrl, setGltfUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
@@ -75,7 +75,7 @@ export default function CircuitToGltfDemo({
     setError("")
   }
 
-  const [pcbFoldState, setPcbFoldState] = useState(initialPcbFoldState)
+  const [foldPcbs, setFoldPcbs] = useState(initialFoldPcbs)
   const [format, setFormat] = useState<"gltf" | "glb">(initialFormat)
 
   const convertToGltf = async () => {
@@ -93,7 +93,7 @@ export default function CircuitToGltfDemo({
       // Now we can use texture rendering with WASM!
       const result = await convertCircuitJsonToGltf(circuit, {
         format,
-        pcbFoldState,
+        foldPcbs,
         boardTextureResolution: 1024, // Lower resolution for performance
       })
 
@@ -250,9 +250,9 @@ export default function CircuitToGltfDemo({
               PCB pose:
               <select
                 aria-label="PCB pose"
-                value={pcbFoldState}
+                value={foldPcbs ? "folded" : "flat"}
                 onChange={(event) =>
-                  setPcbFoldState(event.target.value as "flat" | "folded")
+                  setFoldPcbs(event.target.value === "folded")
                 }
                 style={{ marginLeft: "10px", padding: "5px" }}
               >

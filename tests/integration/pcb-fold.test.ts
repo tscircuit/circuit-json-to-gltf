@@ -22,10 +22,11 @@ test("capsule export stacks three discs and CAD models without mutating Circuit 
   const circuit = createThreeDiscFlex(),
     before = JSON.stringify(circuit)
   const flat = await convertCircuitJsonTo3D(circuit, {
+    foldPcbs: false,
     renderBoardTextures: false,
   })
   const folded = await convertCircuitJsonTo3D(circuit, {
-    pcbFoldState: "folded",
+    foldPcbs: true,
     renderBoardTextures: false,
   })
   const implicit = await convertCircuitJsonTo3D(circuit, {
@@ -70,7 +71,7 @@ test("capsule export stacks three discs and CAD models without mutating Circuit 
   expect(JSON.stringify(circuit)).toBe(before)
   const glb = (await convertCircuitJsonToGltf(circuit, {
     format: "glb",
-    pcbFoldState: "folded",
+    foldPcbs: true,
     boardTextureResolution: 512,
   })) as ArrayBuffer
   const mesh = parseGLB(glb, COORDINATE_TRANSFORMS.IDENTITY)
@@ -92,7 +93,7 @@ test("capsule export stacks three discs and CAD models without mutating Circuit 
 
 test("folded board keeps texture surface identity and flat UVs", async () => {
   const scene = await convertCircuitJsonTo3D(createThreeDiscFlex(), {
-    pcbFoldState: "folded",
+    foldPcbs: true,
     renderBoardTextures: false,
   })
   const triangles = scene.boxes[0]!.mesh!.triangles
@@ -209,7 +210,7 @@ test("partial bend centerlines and rigid components across bend zones are reject
   )
   await expect(
     convertCircuitJsonTo3D(partial, {
-      pcbFoldState: "folded",
+      foldPcbs: true,
       renderBoardTextures: false,
     }),
   ).rejects.toThrow("full board cross-section")
@@ -221,7 +222,7 @@ test("partial bend centerlines and rigid components across bend zones are reject
   )
   await expect(
     convertCircuitJsonTo3D(bad, {
-      pcbFoldState: "folded",
+      foldPcbs: true,
       renderBoardTextures: false,
     }),
   ).rejects.toThrow("intersects PCB bend zone")
@@ -230,7 +231,7 @@ test("partial bend centerlines and rigid components across bend zones are reject
   )
   await expect(
     convertCircuitJsonTo3D(wrong, {
-      pcbFoldState: "folded",
+      foldPcbs: true,
       renderBoardTextures: false,
     }),
   ).rejects.toThrow("matching board")
@@ -251,7 +252,7 @@ test("standalone CAD geometry stays fixed while board-bound components fold", as
     renderBoardTextures: false,
   })
   const folded = await convertCircuitJsonTo3D(circuit, {
-    pcbFoldState: "folded",
+    foldPcbs: true,
     renderBoardTextures: false,
   })
   const getStandalone = (scene: typeof flat) =>

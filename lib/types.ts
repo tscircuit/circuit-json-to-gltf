@@ -14,8 +14,8 @@ export interface AuthHeaders extends Record<string, string> {
 }
 
 export interface ConversionOptions {
-  /** Runtime board pose; stored Circuit JSON remains flat. Default: flat. */
-  pcbFoldState?: "flat" | "folded"
+  /** Fold boards at render time; stored Circuit JSON remains flat. Default: false. */
+  foldPcbs?: boolean
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   showPcbNotes?: boolean
@@ -166,8 +166,8 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
-  /** Runtime board pose; parallel, non-overlapping bend chains are supported. */
-  pcbFoldState?: "flat" | "folded"
+  /** Fold boards at render time (default: false); supports parallel, non-overlapping bends. */
+  foldPcbs?: boolean
   pcbColor?: Color
   boardSideColor?: Color
   componentColor?: Color

@@ -16,7 +16,7 @@ const views: { label: string; camera: RenderOptionsInput }[] = [
 test("folded three-disc flex PCB from four views", async () => {
   const glb = (await convertCircuitJsonToGltf(createThreeDiscFlex(), {
     format: "glb",
-    pcbFoldState: "folded",
+    foldPcbs: true,
     boardTextureResolution: 1024,
   })) as ArrayBuffer
 

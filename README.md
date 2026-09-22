@@ -120,11 +120,11 @@ bun run examples/basic-conversion.ts
 ```ts
 const glb = await convertCircuitJsonToGltf(circuitJson, {
   format: "glb",
-  pcbFoldState: "folded", // Default: "flat"
+  foldPcbs: true, // Default: false (flat)
 })
 ```
 
-`pcbFoldState` is also available on `convertCircuitJsonTo3D`. The same Circuit
+`foldPcbs` is also available on `convertCircuitJsonTo3D`. The same Circuit
 JSON renders either pose without modifying PCB coordinates or stored CAD poses.
 `pcb_bend` uses board-relative `start`/`end`, signed degrees in `bend_angle`, a
 neutral-surface `bend_radius` in mm, and `bend_side`. This follows

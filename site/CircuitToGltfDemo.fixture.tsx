@@ -7,7 +7,7 @@ export default {
     <CircuitToGltfDemo
       initialCircuitJson={createThreeDiscFlex()}
       initialFormat="glb"
-      initialPcbFoldState="folded"
+      initialFoldPcbs
     />
   ),
 }
