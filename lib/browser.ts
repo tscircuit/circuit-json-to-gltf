@@ -68,7 +68,7 @@ export async function convertCircuitJsonTo3D(
 
   const pcbComponentIdsWithBoundingBox = new Set<string>()
   for (const cadComponent of db.cad_component?.list?.() ?? []) {
-    if (cadComponent.show_as_bounding_box) {
+    if (cadComponent.show_as_bounding_box && cadComponent.pcb_component_id) {
       pcbComponentIdsWithBoundingBox.add(cadComponent.pcb_component_id)
     }
   }

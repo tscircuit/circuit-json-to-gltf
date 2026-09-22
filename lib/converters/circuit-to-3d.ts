@@ -346,7 +346,7 @@ export async function convertCircuitJsonTo3D(
         !model_step_url,
     )
 
-    if (cad.show_as_bounding_box) {
+    if (cad.show_as_bounding_box && cad.pcb_component_id) {
       pcbComponentIdsWithBoundingBox.add(cad.pcb_component_id)
     }
 
@@ -362,13 +362,15 @@ export async function convertCircuitJsonTo3D(
 
     if (!hasModelSource) continue
 
-    pcbComponentIdsWith3D.add(cad.pcb_component_id)
+    if (cad.pcb_component_id) pcbComponentIdsWith3D.add(cad.pcb_component_id)
 
     // Get the associated PCB component
-    const pcbComponent = db.pcb_component.get(cad.pcb_component_id)
+    const pcbComponent = cad.pcb_component_id
+      ? db.pcb_component.get(cad.pcb_component_id)
+      : undefined
 
     // Check if component is on bottom layer
-    const isBottomLayer = pcbComponent?.layer === "bottom"
+    const isBottomLayer = (cad.layer ?? pcbComponent?.layer) === "bottom"
 
     const modelScaleFactor = cad.model_unit_to_mm_scale_factor ?? 1
 
