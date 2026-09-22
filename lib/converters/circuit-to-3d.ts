@@ -1,4 +1,10 @@
 import {
+  createStiffenerMesh,
+  getCadFoldContext,
+  transformCircuitJsonCadComponents,
+} from "@tscircuit/flex-utils"
+import { swapMeshFrame } from "../utils/pcb-fold"
+import {
   createPcbFold,
   foldBoardMesh,
   type PcbBendRecord,
@@ -105,7 +111,12 @@ export async function convertCircuitJsonTo3D(
     authHeaders,
   } = options
 
-  const circuitJson = inputCircuitJson as CircuitJson
+  // Normalize pre-folded CAD before format-specific mesh loading. The same
+  // shared inverse is used by core/viewer; PCB records remain flat.
+  const circuitJson = transformCircuitJsonCadComponents(
+    inputCircuitJson as CircuitJson,
+    { foldPcbs: false },
+  )
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
@@ -474,15 +485,22 @@ export async function convertCircuitJsonTo3D(
       box.meshType = meshType as any
     }
 
+    // Flex inputs share the same missing-rotation convention as core/viewer
+    // pose conversion, including legacy bottom-layer CAD without a rotation.
+    const cadRotation =
+      cad.rotation ??
+      (bends.length
+        ? getCadFoldContext(cad, circuitJson)?.defaultRotation
+        : undefined)
     // Add rotation if specified
-    if (cad.rotation) {
+    if (cadRotation) {
       // For GLB/GLTF models, we need to remap rotation axes because the coordinate
       // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
       // model uses Y-up.
       box.rotation = convertRotationFromCadRotation({
-        x: cad.rotation.x,
-        y: cad.rotation.z, // Circuit Z rotation becomes model Y rotation
-        z: cad.rotation.y, // Circuit Y rotation becomes model Z rotation
+        x: cadRotation.x,
+        y: cadRotation.z, // Circuit Z rotation becomes model Y rotation
+        z: cadRotation.y, // Circuit Y rotation becomes model Z rotation
       })
     } else if (isBottomLayer) {
       // If no rotation specified but component is on bottom, flip it
@@ -660,61 +678,11 @@ export async function convertCircuitJsonTo3D(
   }
 
   for (const stiffener of stiffeners) {
-    if (
-      !Number.isFinite(stiffener.thickness) ||
-      stiffener.thickness <= 0 ||
-      !["top", "bottom"].includes(stiffener.layer) ||
-      !Number.isFinite(stiffener.adhesive_thickness ?? 0) ||
-      (stiffener.adhesive_thickness ?? 0) < 0
+    const mesh = swapMeshFrame(
+      createStiffenerMesh(stiffener, effectiveBoardThickness, fold),
     )
-      throw new Error(`Invalid PCB stiffener ${stiffener.pcb_stiffener_id}`)
-    const center = pcbBoard.center
-    const outline =
-      stiffener.shape === "polygon"
-        ? stiffener.outline
-        : (() => {
-            if (!(stiffener.width > 0) || !(stiffener.height > 0))
-              throw new Error("Invalid stiffener dimensions")
-            const angle = ((stiffener.rotation ?? 0) * Math.PI) / 180
-            return [
-              [-1, -1],
-              [1, -1],
-              [1, 1],
-              [-1, 1],
-            ].map(([x, y]) => ({
-              x:
-                stiffener.center.x +
-                ((x! * stiffener.width) / 2) * Math.cos(angle) -
-                ((y! * stiffener.height) / 2) * Math.sin(angle),
-              y:
-                stiffener.center.y +
-                ((x! * stiffener.width) / 2) * Math.sin(angle) +
-                ((y! * stiffener.height) / 2) * Math.cos(angle),
-            }))
-          })()
-    if (
-      outline.length < 3 ||
-      outline.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))
-    )
-      throw new Error("Invalid stiffener outline")
-    const mesh = createBoardMesh(
-      {
-        ...pcbBoard,
-        outline: outline.map((p) => ({ x: p.x + center.x, y: p.y + center.y })),
-      },
-      { thickness: stiffener.thickness },
-    )
-    const side = stiffener.layer === "top" ? 1 : -1
-    const box: Box3D = {
-      center: {
-        x: center.x,
-        y:
-          side *
-          (effectiveBoardThickness / 2 +
-            (stiffener.adhesive_thickness ?? 0) +
-            stiffener.thickness / 2),
-        z: center.y,
-      },
+    boxes.push({
+      center: { x: pcbBoard.center.x, y: 0, z: pcbBoard.center.y },
       size: getBoundingBoxSize(mesh.boundingBox),
       mesh,
       color:
@@ -724,13 +692,7 @@ export async function convertCircuitJsonTo3D(
             ? "#879568"
             : "#b8bdc4",
       label: stiffener.pcb_stiffener_id,
-    }
-    // Anchor at the stiffener geometry, whose mesh remains relative to board center.
-    const mount = {
-      x: center.x + outline.reduce((sum, p) => sum + p.x, 0) / outline.length,
-      y: center.y + outline.reduce((sum, p) => sum + p.y, 0) / outline.length,
-    }
-    boxes.push(fold ? foldRigidBox(box, fold, center, mount) : box)
+    })
   }
 
   // Create a default camera positioned to view the board or components

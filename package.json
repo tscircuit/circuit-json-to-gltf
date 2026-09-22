@@ -26,7 +26,8 @@
     "jscad-electronics": "^0.0.178",
     "jscad-planner": "^0.0.14",
     "jscad-to-gltf": "^0.0.5",
-    "occt-import-js": "^0.0.23"
+    "occt-import-js": "^0.0.23",
+    "@tscircuit/flex-utils": "^0.0.1"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.1.4",
@@ -44,7 +45,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
-    "circuit-json": "^0.0.497",
+    "circuit-json": "^0.0.499",
     "circuit-to-svg": "^0.0.429",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
@@ -75,6 +76,6 @@
   },
   "overrides": {
     "@tscircuit/core": "^0.0.1955",
-    "circuit-json": "^0.0.497"
+    "circuit-json": "^0.0.499"
   }
 }
