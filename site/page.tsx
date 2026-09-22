@@ -45,11 +45,13 @@ declare global {
 interface CircuitToGltfDemoProps {
   initialCircuitJson?: unknown
   initialFormat?: "gltf" | "glb"
+  initialPcbFoldState?: "flat" | "folded"
 }
 
 export default function CircuitToGltfDemo({
   initialCircuitJson,
   initialFormat = "gltf",
+  initialPcbFoldState = "flat",
 }: CircuitToGltfDemoProps = {}) {
   const [gltfUrl, setGltfUrl] = useState<string>("")
   const [loading, setLoading] = useState(false)
@@ -73,6 +75,7 @@ export default function CircuitToGltfDemo({
     setError("")
   }
 
+  const [pcbFoldState, setPcbFoldState] = useState(initialPcbFoldState)
   const [format, setFormat] = useState<"gltf" | "glb">(initialFormat)
 
   const convertToGltf = async () => {
@@ -90,6 +93,7 @@ export default function CircuitToGltfDemo({
       // Now we can use texture rendering with WASM!
       const result = await convertCircuitJsonToGltf(circuit, {
         format,
+        pcbFoldState,
         boardTextureResolution: 1024, // Lower resolution for performance
       })
 
@@ -232,12 +236,28 @@ export default function CircuitToGltfDemo({
             <label>
               Format:
               <select
+                aria-label="Export format"
                 value={format}
                 onChange={(e) => setFormat(e.target.value as "gltf" | "glb")}
                 style={{ marginLeft: "10px", padding: "5px" }}
               >
                 <option value="gltf">GLTF (JSON)</option>
                 <option value="glb">GLB (Binary)</option>
+              </select>
+            </label>
+
+            <label style={{ marginLeft: "20px" }}>
+              PCB pose:
+              <select
+                aria-label="PCB pose"
+                value={pcbFoldState}
+                onChange={(event) =>
+                  setPcbFoldState(event.target.value as "flat" | "folded")
+                }
+                style={{ marginLeft: "10px", padding: "5px" }}
+              >
+                <option value="flat">Flat</option>
+                <option value="folded">Folded</option>
               </select>
             </label>
 

@@ -2,7 +2,7 @@
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonTo3D as originalConvertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
-import type { ConversionOptions } from "./types"
+import type { CircuitJsonWithPcbFlex, ConversionOptions } from "./types"
 
 export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
@@ -10,6 +10,7 @@ export { clearOBJCache, loadOBJ } from "./loaders/obj"
 export { clearSTLCache, loadSTL } from "./loaders/stl"
 // Re-export types
 export type {
+  CircuitJsonWithPcbFlex,
   BoardRenderOptions,
   BoundingBox,
   Box3D,
@@ -48,7 +49,7 @@ if (typeof window !== "undefined") {
 
 // Wrapper for circuit to 3D conversion
 export async function convertCircuitJsonTo3D(
-  circuitJson: CircuitJson,
+  circuitJson: CircuitJsonWithPcbFlex,
   options: any = {},
 ) {
   // Always disable textures in browser for now
@@ -61,7 +62,7 @@ export async function convertCircuitJsonTo3D(
 
 // Main conversion function
 export async function convertCircuitJsonToGltf(
-  circuitJson: CircuitJson,
+  circuitJson: CircuitJsonWithPcbFlex,
   options: ConversionOptions = {},
 ): Promise<ArrayBuffer | object> {
   const { format = "gltf" } = options

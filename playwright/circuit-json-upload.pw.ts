@@ -49,7 +49,9 @@ test("drops a large JSON file without rendering its contents and converts both f
   await expect(page.getByRole("link", { name: /Download/ })).toHaveCount(0)
 
   for (const format of ["gltf", "glb"]) {
-    await page.getByRole("combobox").selectOption(format)
+    await page
+      .getByRole("combobox", { name: "Export format" })
+      .selectOption(format)
     await page.getByRole("button", { name: "Convert to GLTF" }).click()
     await expect(
       page.getByRole("button", { name: "Convert to GLTF" }),

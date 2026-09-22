@@ -4,6 +4,7 @@ export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
 export { clearSTLCache, loadSTL } from "./loaders/stl"
 export type {
+  CircuitJsonWithPcbFlex,
   BoardRenderOptions,
   BoundingBox,
   Box3D,
@@ -26,13 +27,17 @@ import { cju } from "@tscircuit/circuit-json-util"
 // Browser-safe version of circuit to 3D conversion (without texture rendering)
 import type { CircuitJson } from "circuit-json"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
-import type { ConversionOptions, Scene3D } from "./types"
+import type {
+  CircuitJsonWithPcbFlex,
+  ConversionOptions,
+  Scene3D,
+} from "./types"
 
 const DEFAULT_BOARD_THICKNESS = 1.6
 const DEFAULT_COMPONENT_HEIGHT = 2
 
 export async function convertCircuitJsonTo3D(
-  circuitJson: CircuitJson,
+  circuitJson: CircuitJsonWithPcbFlex,
   options: any = {},
 ): Promise<Scene3D> {
   const {
@@ -42,7 +47,16 @@ export async function convertCircuitJsonTo3D(
     defaultComponentHeight = DEFAULT_COMPONENT_HEIGHT,
   } = options
 
-  const db = cju(circuitJson)
+  if (
+    options.pcbFoldState === "folded" ||
+    circuitJson.some((e) => e.type === "pcb_stiffener" || e.type === "pcb_bend")
+  ) {
+    const { convertCircuitJsonTo3D: convertFlex } = await import(
+      "./converters/circuit-to-3d"
+    )
+    return convertFlex(circuitJson, { ...options, renderBoardTextures: false })
+  }
+  const db = cju(circuitJson as CircuitJson)
   const boxes: any[] = []
 
   // Get PCB board
@@ -149,13 +163,14 @@ export async function convertCircuitJsonTo3D(
 }
 
 export async function convertCircuitJsonToGltf(
-  circuitJson: CircuitJson,
+  circuitJson: CircuitJsonWithPcbFlex,
   options: ConversionOptions = {},
 ): Promise<ArrayBuffer | object> {
   const { format = "gltf" } = options
 
   // Convert circuit JSON to 3D scene (without textures in browser)
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
+    ...options,
     renderBoardTextures: false,
   })
 
