@@ -26,10 +26,10 @@
     "jscad-electronics": "^0.0.178",
     "jscad-planner": "^0.0.14",
     "jscad-to-gltf": "^0.0.5",
-    "occt-import-js": "^0.0.23",
-    "@tscircuit/flex-utils": "^0.0.2"
+    "occt-import-js": "^0.0.23"
   },
   "devDependencies": {
+    "@tscircuit/flex-utils": "https://jscdn.tscircuit.com/@tscircuit/flex-utils/0.0.5.tgz",
     "@biomejs/biome": "^2.1.4",
     "@google/model-viewer": "^4.1.0",
     "@napi-rs/canvas": "^1.0.9",

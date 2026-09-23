@@ -3,7 +3,7 @@ import { defineConfig } from "tsup"
 export default defineConfig({
   entry: ["lib/index.ts"],
   format: ["esm"],
-  dts: true,
+  dts: { resolve: ["@tscircuit/flex-utils"] },
   outDir: "dist",
-  noExternal: ["@jscad/modeling"],
+  noExternal: ["@jscad/modeling", "@tscircuit/flex-utils"],
 })
