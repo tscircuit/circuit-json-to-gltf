@@ -111,6 +111,13 @@ export async function convertCircuitJsonTo3D(
     authHeaders,
   } = options
 
+  const foldPcbs =
+    options.foldPcbs ??
+    inputCircuitJson.some(
+      (element) =>
+        element.type === "cad_component" && element.is_on_folded_board === true,
+    )
+
   // Normalize pre-folded CAD before format-specific mesh loading. The same
   // shared inverse is used by core/viewer; PCB records remain flat.
   const circuitJson = transformCircuitJsonCadComponents(
@@ -164,7 +171,7 @@ export async function convertCircuitJsonTo3D(
     )
   }
   const fold =
-    options.foldPcbs === true && bends.length
+    foldPcbs && bends.length
       ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness)
       : undefined
 

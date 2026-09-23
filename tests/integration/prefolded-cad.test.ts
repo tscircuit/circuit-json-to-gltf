@@ -50,5 +50,23 @@ test("flat and pre-folded CAD input produce the same selected output pose", asyn
       }
     }
   }
+  for (const [input, foldPcbs] of [
+    [flat, false],
+    [assembled, true],
+  ] as const) {
+    const expected = await convertCircuitJsonTo3D(input, {
+      foldPcbs,
+      renderBoardTextures: false,
+    })
+    const automatic = await convertCircuitJsonTo3D(input, {
+      renderBoardTextures: false,
+    })
+    const undefinedOption = await convertCircuitJsonTo3D(input, {
+      foldPcbs: undefined,
+      renderBoardTextures: false,
+    })
+    expect(automatic).toEqual(expected)
+    expect(undefinedOption).toEqual(expected)
+  }
   expect(JSON.stringify(assembled)).toBe(before)
 })
