@@ -679,7 +679,11 @@ export async function convertCircuitJsonTo3D(
 
   for (const stiffener of stiffeners) {
     const mesh = swapMeshFrame(
-      createStiffenerMesh(stiffener, effectiveBoardThickness, fold),
+      createStiffenerMesh({
+        stiffener: stiffener,
+        boardThickness: effectiveBoardThickness,
+        fold: fold,
+      }),
     )
     boxes.push({
       center: { x: pcbBoard.center.x, y: 0, z: pcbBoard.center.y },
