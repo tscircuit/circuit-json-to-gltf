@@ -13,6 +13,11 @@ export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
+/** Minimal filesystem capability used to load local model URLs. */
+export interface FilesystemInterface {
+  readFile(fileUrl: URL): Promise<ArrayBuffer | Uint8Array>
+}
+
 export interface ConversionOptions {
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
@@ -33,6 +38,7 @@ export interface ConversionOptions {
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }
 
 export interface CoordinateTransformConfig {
@@ -186,6 +192,7 @@ export interface CircuitTo3DOptions {
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }
 
 export interface BoardRenderOptions {

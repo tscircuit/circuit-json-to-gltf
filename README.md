@@ -79,6 +79,9 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `showBoundingBoxes`: Show bounding boxes for debugging (default: `false`)
 - `projectBaseUrl`: Optional base URL used to resolve `node_modules` model assets via `/package_files/download`
 - `authHeaders`: Optional auth headers for model downloads, e.g. `{ Authorization: "Bearer ..." }`
+- `fs`: Optional filesystem capability for `file://` model URLs. It has one method:
+  `readFile(fileUrl: URL): Promise<ArrayBuffer | Uint8Array>`. Local model loading
+  returns a clear error when this capability is not provided.
 
 When a `pcb_board` supplies `solder_mask_color`, the renderer uses it for the
 board surface and derives contrasting covered-copper, substrate-edge, and

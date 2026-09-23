@@ -4,6 +4,7 @@ import type {
   Point3,
   STLMesh,
   Triangle,
+  FilesystemInterface,
 } from "../types"
 import { boundsOfTriangles } from "../utils/bounding-box"
 import {
@@ -11,6 +12,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { fetchWithTimeout } from "./fetch-with-timeout"
+import { getFilesystemCacheKey } from "./filesystem-cache-key"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const stlCache = new Map<string, STLMesh>()
@@ -20,19 +22,21 @@ export async function loadSTL({
   transform,
   projectBaseUrl,
   authHeaders,
+  fs,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }): Promise<STLMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}:fs=${getFilesystemCacheKey(fs)}`
   if (stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders, fs })
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
   stlCache.set(cacheKey, mesh)
