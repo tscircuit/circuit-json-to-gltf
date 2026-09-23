@@ -14,7 +14,7 @@ export interface AuthHeaders extends Record<string, string> {
 }
 
 export interface ConversionOptions {
-  /** Fold boards at render time; stored Circuit JSON remains flat. Default: false. */
+  /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
   format?: "gltf" | "glb"
   boardTextureResolution?: number
@@ -166,7 +166,7 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
-  /** Fold boards at render time (default: false); supports parallel, non-overlapping bends. */
+  /** Override folding for parallel, non-overlapping bends. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color
   boardSideColor?: Color
