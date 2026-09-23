@@ -826,6 +826,14 @@ export class GLTFBuilder {
     let byteOffset: number
     let byteLength: number
 
+    // glTF reserves 65535 for primitive restart; larger indices also wrap in uint16.
+    if (
+      target === TARGET.ELEMENT_ARRAY_BUFFER &&
+      componentType === COMPONENT_TYPE.UNSIGNED_SHORT &&
+      data.some((index) => index >= 65535)
+    ) {
+      componentType = COMPONENT_TYPE.UNSIGNED_INT
+    }
     if (componentType === COMPONENT_TYPE.FLOAT) {
       byteOffset = this.bufferBuilder.addFloat32Array(data)
       byteLength = data.length * 4
