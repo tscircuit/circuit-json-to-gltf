@@ -1,4 +1,6 @@
 import * as jscadModeling from "@jscad/modeling"
+import measureEpsilon from "@jscad/modeling/src/measurements/measureEpsilon"
+import { conformJscadTriangles } from "./conform-jscad-triangles"
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { generalize } from "@jscad/modeling/src/operations/modifiers/generalize"
@@ -30,8 +32,11 @@ export const loadJscadPlan = (
     ? generalizeGeometry({ snap: true, triangulate: true }, plannedGeometry)
     : plannedGeometry
   const polygons = geom3.toPolygons(zUpGeometry)
+  const sourceTriangles = geom3ToTriangles(zUpGeometry, polygons)
   const triangles = transformTriangles(
-    geom3ToTriangles(zUpGeometry, polygons),
+    conformingTriangles
+      ? conformJscadTriangles(sourceTriangles, measureEpsilon(plannedGeometry))
+      : sourceTriangles,
     JSCAD_PLAN_TRANSFORM,
   )
 
