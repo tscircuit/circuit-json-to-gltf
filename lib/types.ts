@@ -166,6 +166,9 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
+  /** Conforming JSCAD triangulation for solid geometry consumers. Default false
+   * preserves the renderer's polygon/hidden-edge representation. */
+  conformingModelMeshes?: boolean
   /** Override folding for parallel, non-overlapping bends. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color

@@ -588,7 +588,9 @@ export async function convertCircuitJsonTo3D(
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
       }
     } else if (model_jscad) {
-      box.mesh = loadJscadPlan(model_jscad)
+      box.mesh = loadJscadPlan(model_jscad, {
+        conformingTriangles: options.conformingModelMeshes,
+      })
       box.color = componentColor
     } else if (hasFootprinterModel && cad.footprinter_string) {
       box.mesh = await loadFootprinterModel(
