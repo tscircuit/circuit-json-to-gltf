@@ -18,6 +18,12 @@ export function getDefaultModelTransform(
     return options.coordinateTransform
   }
 
+  // loadJscadPlan always uses this frame. The model origin must be transformed
+  // by the same expression as its triangles, rather than the STL fallback.
+  if (cad.model_jscad) {
+    return COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
+  }
+
   const modelBoardNormalDirection = cad.model_board_normal_direction
 
   if (
