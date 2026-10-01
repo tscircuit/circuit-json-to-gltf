@@ -1,5 +1,4 @@
-import type { Point3, Size3, STLMesh, OBJMesh, Triangle } from "../types"
-import type { BoundingBox } from "../types"
+import type { BoundingBox, OBJMesh, Point3, Size3, STLMesh } from "../types"
 import { boundsOfPositions } from "../utils/bounding-box"
 
 export interface MeshData {
@@ -392,9 +391,7 @@ export function transformMesh(
       z *= scale.z
     }
 
-    // Apply rotation (simplified - proper rotation would use quaternions)
     if (rotation) {
-      // Rotation around Y axis
       const cosY = Math.cos(rotation.y)
       const sinY = Math.sin(rotation.y)
       const rx = x * cosY - z * sinY
@@ -402,19 +399,17 @@ export function transformMesh(
       x = rx
       z = rz
 
-      // Rotation around X axis
       const cosX = Math.cos(rotation.x)
       const sinX = Math.sin(rotation.x)
-      const ry = y * cosX - z * sinX
-      const rz2 = y * sinX + z * cosX
+      const ry = y * cosX + z * sinX
+      const rz2 = -y * sinX + z * cosX
       y = ry
       z = rz2
 
-      // Rotation around Z axis
       const cosZ = Math.cos(rotation.z)
       const sinZ = Math.sin(rotation.z)
-      const rx2 = x * cosZ - y * sinZ
-      const ry2 = x * sinZ + y * cosZ
+      const rx2 = x * cosZ + y * sinZ
+      const ry2 = -x * sinZ + y * cosZ
       x = rx2
       y = ry2
     }
@@ -432,8 +427,6 @@ export function transformMesh(
       let ny = result.normals[i + 1]!
       let nz = result.normals[i + 2]!
 
-      // Apply same rotations to normals
-      // Rotation around Y axis
       const cosY = Math.cos(rotation.y)
       const sinY = Math.sin(rotation.y)
       const rnx = nx * cosY - nz * sinY
@@ -441,19 +434,17 @@ export function transformMesh(
       nx = rnx
       nz = rnz
 
-      // Rotation around X axis
       const cosX = Math.cos(rotation.x)
       const sinX = Math.sin(rotation.x)
-      const rny = ny * cosX - nz * sinX
-      const rnz2 = ny * sinX + nz * cosX
+      const rny = ny * cosX + nz * sinX
+      const rnz2 = -ny * sinX + nz * cosX
       ny = rny
       nz = rnz2
 
-      // Rotation around Z axis
       const cosZ = Math.cos(rotation.z)
       const sinZ = Math.sin(rotation.z)
-      const rnx2 = nx * cosZ - ny * sinZ
-      const rny2 = nx * sinZ + ny * cosZ
+      const rnx2 = nx * cosZ + ny * sinZ
+      const rny2 = -nx * sinZ + ny * cosZ
       nx = rnx2
       ny = rny2
 
