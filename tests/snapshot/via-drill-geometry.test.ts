@@ -104,6 +104,7 @@ test("GLB surface mask covers tented sides while the substrate keeps every via d
       20,
       y + 48,
     )
+    ctx.font = "12px ViaSnapshot"
     for (const [i, tenting] of flags.entries()) {
       ctx.fillText(
         `tented_on_top: ${tenting.tented_on_top}`,
