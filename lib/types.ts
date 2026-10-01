@@ -13,6 +13,8 @@ export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
+export type AssetFetch = (url: string, init?: RequestInit) => Promise<Response>
+
 export interface ConversionOptions {
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
@@ -33,6 +35,7 @@ export interface ConversionOptions {
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }
 
 export interface CoordinateTransformConfig {
@@ -78,6 +81,11 @@ export interface Triangle {
   ]
   vertices: [Point3, Point3, Point3]
   normal: Point3
+  /** Odd reflection parity baked into vertices without reordering them.
+   * Compose with the final placement determinant before producing solid indices.
+   * This tracks introduced transforms, not source topology or outwardness.
+   */
+  windingReversed?: boolean
   color?: Color
   materialIndex?: number
 }
@@ -124,7 +132,7 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj" | "glb" | "step"
+  meshType?: "stl" | "obj" | "glb" | "gltf" | "step"
   label?: string
   labelColor?: Color
   isTranslucent?: boolean
@@ -186,6 +194,7 @@ export interface CircuitTo3DOptions {
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }
 
 export interface BoardRenderOptions {

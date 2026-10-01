@@ -1,5 +1,6 @@
 import type {
   AuthHeaders,
+  AssetFetch,
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
@@ -14,36 +15,47 @@ import {
 } from "../utils/coordinate-transform"
 import { fetchWithTimeout } from "./fetch-with-timeout"
 import { resolveModelUrl } from "./resolve-model-url"
+import type { OcctModule, OcctResult } from "occt-import-js"
 
 const stepCache = new Map<string, STLMesh | OBJMesh>()
 
-let occtModulePromise: Promise<any> | null = null
+const occtModules = new Map<string, Promise<OcctModule>>()
 
-async function getOcctModule(): Promise<any> {
-  if (!occtModulePromise) {
-    const occtimportjs = (await import("occt-import-js" as string)).default
-    const isBrowser =
-      typeof window !== "undefined" || typeof self !== "undefined"
+async function getOcctModule(stepWasmUrl?: string): Promise<OcctModule> {
+  const key = stepWasmUrl ?? ""
+  if (!occtModules.has(key)) {
+    const promise = (async () => {
+      const occtimportjs = (await import("occt-import-js")).default
+      const isBrowser =
+        typeof window !== "undefined" || typeof self !== "undefined"
 
-    if (isBrowser) {
-      let wasmUrl: string | undefined
-      try {
-        wasmUrl = (
-          await import("occt-import-js/dist/occt-import-js.wasm?url" as string)
-        ).default
-      } catch {
-        wasmUrl = undefined
+      if (isBrowser) {
+        let wasmUrl = stepWasmUrl
+        if (!wasmUrl)
+          try {
+            wasmUrl = (
+              await import(
+                "occt-import-js/dist/occt-import-js.wasm?url" as string
+              )
+            ).default
+          } catch {
+            wasmUrl = undefined
+          }
+
+        return occtimportjs({
+          locateFile: (path: string) =>
+            path.endsWith(".wasm") && wasmUrl ? wasmUrl : path,
+        })
+      } else {
+        return occtimportjs()
       }
-
-      occtModulePromise = occtimportjs({
-        locateFile: (path: string) =>
-          path.endsWith(".wasm") && wasmUrl ? wasmUrl : path,
-      })
-    } else {
-      occtModulePromise = occtimportjs()
-    }
+    })().catch((error) => {
+      occtModules.delete(key)
+      throw error
+    })
+    occtModules.set(key, promise)
   }
-  return occtModulePromise
+  return occtModules.get(key)!
 }
 
 export async function loadSTEP({
@@ -51,19 +63,26 @@ export async function loadSTEP({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchAsset,
+  stepWasmUrl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
+  stepWasmUrl?: string
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (stepCache.has(cacheKey)) {
+  if (!authHeaders && !fetchAsset && stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchAsset,
+  })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,
@@ -72,7 +91,7 @@ export async function loadSTEP({
   const buffer = await response.arrayBuffer()
   const fileBuffer = new Uint8Array(buffer)
 
-  const occt = await getOcctModule()
+  const occt = await getOcctModule(stepWasmUrl)
   const result = occt.ReadStepFile(fileBuffer, {
     linearUnit: "millimeter",
   })
@@ -82,12 +101,12 @@ export async function loadSTEP({
   }
 
   const mesh = convertOcctResultToMesh(result, transform)
-  stepCache.set(cacheKey, mesh)
+  if (!authHeaders && !fetchAsset) stepCache.set(cacheKey, mesh)
   return mesh
 }
 
 function convertOcctResultToMesh(
-  result: any,
+  result: OcctResult,
   transform?: CoordinateTransformConfig,
 ): STLMesh | OBJMesh {
   const allTriangles: Triangle[] = []

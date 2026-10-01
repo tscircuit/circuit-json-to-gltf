@@ -56,6 +56,7 @@ export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
 function scaleTriangle(triangle: Triangle, scale: number): Triangle {
   return {
     ...triangle,
+    ...(scale < 0 ? { windingReversed: !triangle.windingReversed } : {}),
     vertices: triangle.vertices.map((vertex) => scalePoint(vertex, scale)) as [
       Point3,
       Point3,
@@ -76,15 +77,10 @@ export function scaleMesh<T extends STLMesh | OBJMesh>(
     scaleTriangle(triangle, scale),
   )
 
-  const scaledBoundingBox = {
-    min: scalePoint(mesh.boundingBox.min, scale),
-    max: scalePoint(mesh.boundingBox.max, scale),
-  }
-
   return {
     ...mesh,
     triangles: scaledTriangles,
-    boundingBox: scaledBoundingBox,
+    boundingBox: boundsOfTriangles(scaledTriangles),
   } as T
 }
 
@@ -103,6 +99,9 @@ export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
 
   const scaledTriangles = mesh.triangles.map((triangle) => ({
     ...triangle,
+    ...(scale.x * scale.y * scale.z < 0
+      ? { windingReversed: !triangle.windingReversed }
+      : {}),
     vertices: triangle.vertices.map((vertex) =>
       scalePointByAxis(vertex, scale),
     ) as [Point3, Point3, Point3],

@@ -85,8 +85,17 @@ export function transformTriangles(
   triangles: Triangle[],
   config: CoordinateTransformConfig,
 ): Triangle[] {
+  const x = applyCoordinateTransform({ x: 1, y: 0, z: 0 }, config)
+  const y = applyCoordinateTransform({ x: 0, y: 1, z: 0 }, config)
+  const z = applyCoordinateTransform({ x: 0, y: 0, z: 1 }, config)
+  const reflected =
+    x.x * (y.y * z.z - y.z * z.y) -
+      y.x * (x.y * z.z - x.z * z.y) +
+      z.x * (x.y * y.z - x.z * y.y) <
+    0
   return triangles.map((triangle) => ({
     ...triangle,
+    ...(reflected ? { windingReversed: !triangle.windingReversed } : {}),
     vertices: triangle.vertices.map((v) =>
       applyCoordinateTransform(v, config),
     ) as [Point3, Point3, Point3],

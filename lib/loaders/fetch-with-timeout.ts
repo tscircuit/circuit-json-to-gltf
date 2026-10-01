@@ -1,4 +1,4 @@
-import type { AuthHeaders } from "../types"
+import type { AssetFetch, AuthHeaders } from "../types"
 
 export const DEFAULT_FETCH_TIMEOUT_MS = 30_000
 
@@ -6,9 +6,11 @@ export async function fetchWithTimeout(
   url: string,
   {
     authHeaders,
+    fetch: fetchAsset,
     timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
   }: {
     authHeaders?: AuthHeaders
+    fetch?: AssetFetch
     timeoutMs?: number
   } = {},
 ): Promise<Response> {
@@ -21,7 +23,7 @@ export async function fetchWithTimeout(
   }, timeoutMs)
 
   try {
-    return await fetch(url, {
+    return await (fetchAsset ?? globalThis.fetch)(url, {
       headers: authHeaders,
       signal: controller.signal,
     })

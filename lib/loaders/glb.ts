@@ -1,5 +1,6 @@
 import type {
   AuthHeaders,
+  AssetFetch,
   CoordinateTransformConfig,
   OBJMaterial,
   OBJMesh,
@@ -24,33 +25,41 @@ export async function loadGLB({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchAsset,
+  strictGeometry = false,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
+  strictGeometry?: boolean
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (glbCache.has(cacheKey)) {
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}:${strictGeometry}`
+  if (!authHeaders && !fetchAsset && glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchAsset,
+  })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch GLB: ${response.status} ${response.statusText}`,
     )
   }
   const buffer = await response.arrayBuffer()
-  const mesh = parseGLB(buffer, transform)
-  glbCache.set(cacheKey, mesh)
+  const mesh = parseGLB(buffer, transform, strictGeometry)
+  if (!authHeaders && !fetchAsset) glbCache.set(cacheKey, mesh)
   return mesh
 }
 
 export function parseGLB(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
+  strictGeometry = false,
 ): STLMesh | OBJMesh {
   const view = new DataView(buffer)
   let offset = 0
@@ -100,7 +109,7 @@ export function parseGLB(
     }
   }
   // Extract geometry from GLTF
-  const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
+  const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer, strictGeometry)
 
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
@@ -182,6 +191,7 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
 function extractTrianglesFromGLTF(
   gltf: any,
   binaryBuffer?: ArrayBuffer,
+  strictGeometry = false,
 ): Triangle[] {
   const triangles: Triangle[] = []
 
@@ -190,12 +200,21 @@ function extractTrianglesFromGLTF(
   }
 
   // Build mesh transforms from node hierarchy
-  const meshTransforms = buildMeshTransforms(gltf)
+  const meshTransforms = buildMeshTransforms(gltf, strictGeometry)
 
   // Process each mesh
   for (let meshIndex = 0; meshIndex < gltf.meshes.length; meshIndex++) {
     const mesh = gltf.meshes[meshIndex]
     const transforms = meshTransforms.get(meshIndex) || []
+    const reflected =
+      transforms.reduce(
+        (parity, transform) =>
+          parity *
+          (transform.scale?.[0] ?? 1) *
+          (transform.scale?.[1] ?? 1) *
+          (transform.scale?.[2] ?? 1),
+        1,
+      ) < 0
     for (const primitive of mesh.primitives) {
       // Only support TRIANGLES mode
       const mode = primitive.mode ?? 4 // Default to TRIANGLES (4)
@@ -395,6 +414,7 @@ function extractTrianglesFromGLTF(
 
           triangles.push({
             vertices: [v0, v1, v2],
+            ...(reflected ? { windingReversed: true } : {}),
             normal,
             color: triangleColor,
           })
@@ -525,6 +545,7 @@ function extractTrianglesFromGLTF(
 
           triangles.push({
             vertices: [v0, v1, v2],
+            ...(reflected ? { windingReversed: true } : {}),
             normal,
             color: triangleColor,
           })

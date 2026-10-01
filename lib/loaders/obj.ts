@@ -1,5 +1,6 @@
 import type {
   AuthHeaders,
+  AssetFetch,
   Color,
   CoordinateTransformConfig,
   OBJMaterial,
@@ -17,26 +18,37 @@ import { resolveModelUrl } from "./resolve-model-url"
 
 const objCache = new Map<string, OBJMesh>()
 
+export class ObjHttpError extends Error {}
+
 export async function loadOBJ({
   url,
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchAsset,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }): Promise<OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (objCache.has(cacheKey)) {
+  if (!authHeaders && !fetchAsset && objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchAsset,
+  })
+  if (!response.ok)
+    throw new ObjHttpError(
+      `Failed to fetch OBJ: ${response.status} ${response.statusText}`,
+    )
   const text = await response.text()
   const mesh = parseOBJ(text, transform)
-  objCache.set(cacheKey, mesh)
+  if (!authHeaders && !fetchAsset) objCache.set(cacheKey, mesh)
   return mesh
 }
 

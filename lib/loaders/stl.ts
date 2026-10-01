@@ -1,5 +1,6 @@
 import type {
   AuthHeaders,
+  AssetFetch,
   CoordinateTransformConfig,
   Point3,
   STLMesh,
@@ -20,22 +21,31 @@ export async function loadSTL({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchAsset,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: AssetFetch
 }): Promise<STLMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (stlCache.has(cacheKey)) {
+  if (!authHeaders && !fetchAsset && stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchAsset,
+  })
+  if (!response.ok)
+    throw new Error(
+      `Failed to fetch STL: ${response.status} ${response.statusText}`,
+    )
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
-  stlCache.set(cacheKey, mesh)
+  if (!authHeaders && !fetchAsset) stlCache.set(cacheKey, mesh)
   return mesh
 }
 

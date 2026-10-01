@@ -20,40 +20,22 @@ import type {
   PcbPanel,
   PcbPlatedHole,
 } from "circuit-json"
-import { loadFootprinterModel } from "../loaders/footprinter"
-import { loadGLB } from "../loaders/glb"
-import { loadGLTF } from "../loaders/gltf"
-import { loadJscadPlan } from "../loaders/jscad-plan"
-import { loadOBJ } from "../loaders/obj"
-import { loadSTEP } from "../loaders/step"
-import { loadSTL } from "../loaders/stl"
+import { prepareCad } from "../geometry/prepare-cad"
+import { prepareBoardMesh } from "../geometry/prepare-board-mesh"
 import type {
   Box3D,
   Camera3D,
   CircuitTo3DOptions,
   CircuitJsonWithPcbFlex,
   Light3D,
-  Point3,
   Scene3D,
 } from "../types"
-import {
-  fitMeshToCadBounds,
-  getMeshOrigin,
-  getMeshWithBoardNormalTransform,
-} from "../utils/cad-mesh-placement"
-import { getDefaultModelTransform } from "../utils/get-default-model-transform"
-import {
-  getBoundingBoxSize,
-  scaleMesh,
-  translateMesh,
-} from "../utils/mesh-scale"
-import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
-import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import {
   colorToCssString,
   getBoardColorPalette,
 } from "../utils/board-color-palette"
+import { getBoundingBoxSize } from "../utils/mesh-scale"
 import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
@@ -61,30 +43,6 @@ const DEFAULT_COMPONENT_HEIGHT = 2 // mm
 const COPPER_THICKNESS = 0.035
 const FAUX_BOARD_MARGIN = 2
 const DEFAULT_FAUX_BOARD_SIZE = 10
-
-function convertRotationFromCadRotation(rot: {
-  x: number
-  y: number
-  z: number
-}): { x: number; y: number; z: number } {
-  return {
-    x: (rot.x * Math.PI) / 180,
-    y: (rot.y * Math.PI) / 180,
-    z: (rot.z * Math.PI) / 180,
-  }
-}
-
-function convertCadSizeToSceneSize(size: { x: number; y: number; z: number }): {
-  x: number
-  y: number
-  z: number
-} {
-  return {
-    x: size.x,
-    y: size.z,
-    z: size.y,
-  }
-}
 
 export async function convertCircuitJsonTo3D(
   inputCircuitJson: CircuitJsonWithPcbFlex,
@@ -105,10 +63,7 @@ export async function convertCircuitJsonTo3D(
     renderBoardTextures: shouldRenderTextures = true,
     textureResolution = 1024,
     showPcbNotes = false,
-    coordinateTransform,
     showBoundingBoxes = false,
-    projectBaseUrl,
-    authHeaders,
   } = options
 
   const foldPcbs =
@@ -239,17 +194,8 @@ export async function convertCircuitJsonTo3D(
     boxes.push(panelBox)
   } else if (pcbBoard) {
     // Create the main PCB board box
-    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PcbPlatedHole[]
-    const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
-    const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
-
-    const boardMesh = createBoardMesh(pcbBoard, {
+    const boardMesh = prepareBoardMesh(circuitJson, pcbBoard, {
       thickness: effectiveBoardThickness,
-      holes: pcbHoles,
-      platedHoles: pcbPlatedHoles,
-      cutouts: boardCutouts,
       drillQuality: boardDrillQuality,
     })
 
@@ -378,258 +324,29 @@ export async function convertCircuitJsonTo3D(
   const pcbComponentIdsWithBoundingBox = new Set<string>()
 
   for (const cad of cadComponents) {
-    const {
-      model_stl_url,
-      model_obj_url,
-      model_glb_url,
-      model_gltf_url,
-      model_jscad,
-      model_step_url,
-    } = cad
-
-    const hasFootprinterModel = Boolean(
-      cad.footprinter_string &&
-        !model_stl_url &&
-        !model_obj_url &&
-        !model_glb_url &&
-        !model_gltf_url &&
-        !model_jscad &&
-        !model_step_url,
-    )
-
     if (cad.show_as_bounding_box && cad.pcb_component_id) {
       pcbComponentIdsWithBoundingBox.add(cad.pcb_component_id)
     }
-
-    const hasModelSource = Boolean(
-      model_stl_url ||
-        model_obj_url ||
-        model_glb_url ||
-        model_gltf_url ||
-        model_jscad ||
-        model_step_url ||
-        hasFootprinterModel,
-    )
-
-    if (!hasModelSource) continue
-
-    if (cad.pcb_component_id) pcbComponentIdsWith3D.add(cad.pcb_component_id)
-
-    // Get the associated PCB component
     const pcbComponent = cad.pcb_component_id
       ? db.pcb_component.get(cad.pcb_component_id)
       : undefined
-
-    // Check if component is on bottom layer
-    const isBottomLayer = (cad.layer ?? pcbComponent?.layer) === "bottom"
-
-    const modelScaleFactor = cad.model_unit_to_mm_scale_factor ?? 1
-
-    // Determine size
-    const size = cad.size
-      ? convertCadSizeToSceneSize({
-          x: cad.size.x * modelScaleFactor,
-          y: cad.size.y * modelScaleFactor,
-          z: cad.size.z * modelScaleFactor,
-        })
-      : {
-          x: pcbComponent?.width ?? 2,
-          y: defaultComponentHeight,
-          z: pcbComponent?.height ?? 2,
-        }
-
-    // Determine position
-    const center = cad.position
-      ? {
-          x: cad.position.x,
-          y: cad.position.z,
-          z: cad.position.y,
-        }
-      : {
-          x: pcbComponent?.center.x ?? 0,
-          y: isBottomLayer
-            ? -(effectiveBoardThickness / 2 + size.y / 2)
-            : effectiveBoardThickness / 2 + size.y / 2,
-          z: pcbComponent?.center.y ?? 0,
-        }
-
-    const meshType = model_stl_url
-      ? "stl"
-      : model_obj_url
-        ? "obj"
-        : model_gltf_url
-          ? "gltf"
-          : model_glb_url
-            ? "glb"
-            : model_step_url
-              ? "step"
-              : hasFootprinterModel
-                ? "glb"
-                : undefined
-    const sourceComponent = db.source_component.get(cad.source_component_id)
-    const box: Box3D = {
-      center,
-      size,
-      isTranslucent: cad.show_as_translucent_model,
-      showHiddenEdges: (cad as CadComponent & { show_hidden_edges?: boolean })
-        .show_hidden_edges,
-      label: sourceComponent?.name,
-    }
-
-    if (
-      model_stl_url ||
-      model_obj_url ||
-      model_glb_url ||
-      model_gltf_url ||
-      model_step_url
-    ) {
-      box.meshUrl =
-        model_stl_url ||
-        model_obj_url ||
-        model_glb_url ||
-        model_gltf_url ||
-        model_step_url
-      box.meshType = meshType as any
-    }
-
-    // Flex inputs share the same missing-rotation convention as core/viewer
-    // pose conversion, including legacy bottom-layer CAD without a rotation.
-    const cadRotation =
-      cad.rotation ??
-      (bends.length
+    const foldDefaultRotation =
+      !cad.rotation && bends.length
         ? getCadFoldContext(cad, circuitJson)?.defaultRotation
-        : undefined)
-    // Add rotation if specified
-    if (cadRotation) {
-      // For GLB/GLTF models, we need to remap rotation axes because the coordinate
-      // system has Y and Z swapped. Circuit JSON uses Z-up, but the transformed
-      // model uses Y-up.
-      box.rotation = convertRotationFromCadRotation({
-        x: cadRotation.x,
-        y: cadRotation.z, // Circuit Z rotation becomes model Y rotation
-        z: cadRotation.y, // Circuit Y rotation becomes model Z rotation
-      })
-    } else if (isBottomLayer) {
-      // If no rotation specified but component is on bottom, flip it
-      if (model_glb_url || model_gltf_url || hasFootprinterModel) {
-        box.rotation = convertRotationFromCadRotation({
-          x: 0,
-          y: 0,
-          z: 180, // Flip via Z rotation for GLB models (matches circuit JSON convention)
-        })
-      } else {
-        box.rotation = convertRotationFromCadRotation({
-          x: 180,
-          y: 0,
-          z: 0,
-        })
-      }
-    }
-
-    // Try to load the mesh with default coordinate transform if none specified
-    // Note: GLB loader handles its own default Y/Z swap, so we pass through coordinateTransform
-    // Different model formats use different coordinate conventions:
-    // - OBJ models typically have Z-up with origin at the bottom
-    // - STL models vary widely
-    // - GLB/GLTF have their own conventions
-    const usingGlbCoordinates = Boolean(model_glb_url || model_gltf_url)
-    const usingObjFormat = Boolean(model_obj_url)
-    const usingStepFormat = Boolean(model_step_url)
-
-    const defaultTransform = getDefaultModelTransform(cad, {
-      coordinateTransform,
-      usingGlbCoordinates,
-      usingObjFormat,
-      usingStepFormat,
-      hasFootprinterModel,
-    })
-
-    if (model_stl_url) {
-      box.mesh = await loadSTL({
-        url: model_stl_url,
-        transform: defaultTransform,
-        projectBaseUrl,
-        authHeaders,
-      })
-    } else if (model_obj_url) {
-      box.mesh = await loadOBJ({
-        url: model_obj_url,
-        transform: defaultTransform,
-        projectBaseUrl,
-        authHeaders,
-      })
-    } else if (model_glb_url) {
-      try {
-        box.mesh = await loadGLB({
-          url: model_glb_url,
-          transform: defaultTransform,
-          projectBaseUrl,
-          authHeaders,
-        })
-      } catch (err) {
-        console.error(`Failed to load GLB from ${model_glb_url}:`, err)
-      }
-    } else if (model_gltf_url) {
-      box.mesh = await loadGLTF({
-        url: model_gltf_url,
-        transform: defaultTransform,
-        projectBaseUrl,
-        authHeaders,
-      })
-    } else if (model_step_url) {
-      try {
-        box.mesh = await loadSTEP({
-          url: model_step_url,
-          transform: defaultTransform,
-          projectBaseUrl,
-          authHeaders,
-        })
-      } catch (err) {
-        console.error(`Failed to load STEP from ${model_step_url}:`, err)
-      }
-    } else if (model_jscad) {
-      box.mesh = loadJscadPlan(model_jscad)
-      box.color = componentColor
-    } else if (hasFootprinterModel && cad.footprinter_string) {
-      box.mesh = await loadFootprinterModel(
-        cad.footprinter_string,
-        defaultTransform,
-      )
-    }
-
-    if (box.mesh && modelScaleFactor !== 1) {
-      box.mesh = scaleMesh(box.mesh, modelScaleFactor)
-    }
-
-    if (box.mesh) {
-      box.mesh = getMeshWithBoardNormalTransform(
-        box.mesh,
-        cad.model_board_normal_direction,
-      )
-
-      const meshOrigin = getMeshOrigin(cad, box.mesh, {
-        loaderTransform: defaultTransform,
-        modelBoardNormalDirection: cad.model_board_normal_direction,
-      })
-      if (meshOrigin) {
-        box.mesh = translateMesh(box.mesh, {
-          x: -meshOrigin.x,
-          y: -meshOrigin.y,
-          z: -meshOrigin.z,
-        })
-      }
-
-      if (cad.size) {
-        box.mesh = fitMeshToCadBounds(
-          box.mesh,
-          size,
-          cad.model_object_fit ?? "contain_within_bounds",
-        )
-      }
-
-      box.size = getBoundingBoxSize(box.mesh.boundingBox)
-    }
-
+        : undefined
+    const { box, hasModelSource, hasFootprinterModel } = await prepareCad(
+      foldDefaultRotation ? { ...cad, rotation: foldDefaultRotation } : cad,
+      circuitJson,
+      options,
+      effectiveBoardThickness,
+      (error, source) =>
+        console.error(
+          `Failed to load ${source} for CAD ${cad.cad_component_id}:`,
+          error,
+        ),
+    )
+    if (!hasModelSource) continue
+    if (cad.pcb_component_id) pcbComponentIdsWith3D.add(cad.pcb_component_id)
     // Skip empty generated footprint models unless debug boxes are requested.
     if (!box.mesh) {
       if (hasFootprinterModel && !showBoundingBoxes) continue
