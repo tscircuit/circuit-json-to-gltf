@@ -260,6 +260,9 @@ export async function prepareBoardGeometry({
   for (const original of circuitJson.filter(
     (item) => item.type === "cad_component",
   )) {
+    // Standalone mechanical CAD has no PCB owner and therefore does not belong
+    // to any prepared board.
+    if (!original.pcb_component_id) continue
     if (
       supplementalModelMetadata?.excludedCadComponentIds?.includes(
         original.cad_component_id,

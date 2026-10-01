@@ -35,6 +35,7 @@ import {
   colorToCssString,
   getBoardColorPalette,
 } from "../utils/board-color-palette"
+import { getBoundingBoxSize } from "../utils/mesh-scale"
 import { renderBoardTextures } from "./board-renderer"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
@@ -345,8 +346,7 @@ export async function convertCircuitJsonTo3D(
         ),
     )
     if (!hasModelSource) continue
-    if (cad.pcb_component_id)
-        pcbComponentIdsWith3D.add(cad.pcb_component_id)
+    if (cad.pcb_component_id) pcbComponentIdsWith3D.add(cad.pcb_component_id)
     // Skip empty generated footprint models unless debug boxes are requested.
     if (!box.mesh) {
       if (hasFootprinterModel && !showBoundingBoxes) continue

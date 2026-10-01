@@ -13,6 +13,21 @@ test("board relationships and exclusions are authoritative, and ambiguous boards
     (await prepareBoardGeometry({ circuitJson: circuit, pcbBoardId: "other" }))
       .components,
   ).toEqual([])
+  const cad = circuit.find((item) => item.type === "cad_component")!
+  if (cad.type !== "cad_component") throw new Error("Missing CAD")
+  circuit.push({
+    ...cad,
+    cad_component_id: "standalone",
+    pcb_component_id: undefined,
+  })
+  expect(
+    (
+      await prepareBoardGeometry({
+        circuitJson: circuit,
+        pcbBoardId: "board",
+      })
+    ).components.map(({ cadComponentId }) => cadComponentId),
+  ).toEqual(["cad"])
   expect(
     (
       await prepareBoardGeometry({
