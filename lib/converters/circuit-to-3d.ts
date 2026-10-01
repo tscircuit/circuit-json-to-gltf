@@ -14,6 +14,7 @@ import {
   type PcbStiffenerRecord,
 } from "../utils/pcb-fold"
 import { tryFoldRigidBox } from "../utils/fold-rigid-box"
+import { withCircuitJsonErrorOverlay } from "../utils/circuit-json-error-overlay"
 import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
 import type {
   CadComponent,
@@ -881,9 +882,12 @@ export async function convertCircuitJsonTo3D(
     },
   ]
 
-  return {
+  const scene: Scene3D = {
     boxes,
     camera,
     lights,
   }
+  return options.showErrors
+    ? withCircuitJsonErrorOverlay(scene, inputCircuitJson)
+    : scene
 }

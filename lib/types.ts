@@ -19,6 +19,8 @@ export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   showPcbNotes?: boolean
+  /** Include a visible 3D card with full Circuit JSON error messages. Defaults to false. */
+  showErrors?: boolean
   boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
   includeModels?: boolean
@@ -182,6 +184,8 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   showPcbNotes?: boolean
+  /** Include a visible 3D card with full Circuit JSON error messages. Defaults to false. */
+  showErrors?: boolean
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
   projectBaseUrl?: string

@@ -24,6 +24,7 @@ export type {
 } from "./types"
 
 import { cju } from "@tscircuit/circuit-json-util"
+import { withCircuitJsonErrorOverlay } from "./utils/circuit-json-error-overlay"
 // Browser-safe version of circuit to 3D conversion (without texture rendering)
 import type { CircuitJson } from "circuit-json"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
@@ -155,11 +156,14 @@ export async function convertCircuitJsonTo3D(
     },
   ]
 
-  return {
+  const scene: Scene3D = {
     boxes,
     camera,
     lights,
   }
+  return options.showErrors
+    ? withCircuitJsonErrorOverlay(scene, circuitJson)
+    : scene
 }
 
 export async function convertCircuitJsonToGltf(

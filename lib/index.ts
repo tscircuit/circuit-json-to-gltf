@@ -30,6 +30,7 @@ export async function convertCircuitJsonToGltf(
     foldPcbs: options.foldPcbs,
     textureResolution: boardTextureResolution,
     showPcbNotes,
+    showErrors: options.showErrors,
     boardDrillQuality,
     drawFauxBoard,
     pcbColor: backgroundColor,

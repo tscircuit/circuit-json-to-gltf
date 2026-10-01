@@ -66,6 +66,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)
+- `showErrors`: Include a visible card beside the 3D circuit with complete, wrapped Circuit JSON error messages (default: `false`). Errors without coordinates are included. The annotation stays flat beside folded boards, and messages remain available as glTF node names. Characters outside the alphabet font are shown as Unicode escapes.
 - `boardDrillQuality`: Drill geometry detail level, "high" or "fast" - default: "fast"
 - `drawFauxBoard`: Draw a fallback board if no `pcb_board` or `pcb_panel` is present - default: false
 - `includeModels`: Whether to load external 3D models - default: true
