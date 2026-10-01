@@ -1,6 +1,5 @@
 import {
   createStiffenerMesh,
-  getCadFoldContext,
   transformCircuitJsonCadComponents,
   type Point2,
 } from "@tscircuit/flex-utils"
@@ -12,6 +11,7 @@ import {
   type PcbStiffenerRecord,
 } from "../utils/pcb-fold"
 import { foldRigidBox } from "../utils/fold-rigid-box"
+import { withPcbFoldFallback } from "../utils/with-pcb-fold-fallback"
 import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
 import type {
   CadComponent,
@@ -171,18 +171,23 @@ export async function convertCircuitJsonTo3D(
       "PCB flex rendering requires exactly one board, matching board references, and no panel",
     )
   }
-  const fold =
+  let fold =
     foldPcbs && bends.length
-      ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness, {
-          // Outline points are circuit-world mm (+X right, +Y top, +Z above).
-          // Translate them into the right-handed board-local frame used by
-          // bend endpoints before folding the mesh into the +Y-up scene.
-          // Matches flex-utils' getCadFoldContext outline translation.
-          outline: pcbBoard?.outline?.map((point: Point2) => ({
-            x: point.x - pcbBoard.center.x,
-            y: point.y - pcbBoard.center.y,
-          })),
-        })
+      ? withPcbFoldFallback(
+          `PCB board ${pcbBoard.pcb_board_id}`,
+          () =>
+            createPcbFold(bends, pcbBoard?.thickness ?? boardThickness, {
+              // Outline points are circuit-world mm (+X right, +Y top, +Z above).
+              // Translate them into the right-handed board-local frame used by
+              // bend endpoints before folding the mesh into the +Y-up scene.
+              // Matches flex-utils' getCadFoldContext outline translation.
+              outline: pcbBoard?.outline?.map((point: Point2) => ({
+                x: point.x - pcbBoard.center.x,
+                y: point.y - pcbBoard.center.y,
+              })),
+            }),
+          () => undefined,
+        )
       : undefined
 
   // Panels don't have thickness, so always use board's thickness as fallback
@@ -266,6 +271,17 @@ export async function convertCircuitJsonTo3D(
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
     const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
 
+    const foldedBoardMesh = fold
+      ? withPcbFoldFallback(
+          `PCB board ${pcbBoard.pcb_board_id}`,
+          () => foldBoardMesh(boardMesh, fold!),
+          () => {
+            // Components and stiffeners must share the board's flat fallback.
+            fold = undefined
+            return boardMesh
+          },
+        )
+      : boardMesh
     const boardBox: Box3D = {
       center: {
         x: pcbBoard.center.x,
@@ -277,7 +293,7 @@ export async function convertCircuitJsonTo3D(
         y: effectiveBoardThickness,
         z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
       },
-      mesh: fold ? foldBoardMesh(boardMesh, fold) : boardMesh,
+      mesh: foldedBoardMesh,
       color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
@@ -502,12 +518,13 @@ export async function convertCircuitJsonTo3D(
       box.meshType = meshType as any
     }
 
-    // Flex inputs share the same missing-rotation convention as core/viewer
-    // pose conversion, including legacy bottom-layer CAD without a rotation.
+    // Matches flex-utils' getCadFoldContext.defaultRotation in Circuit JSON
+    // (+Z up, intrinsic XYZ degrees). Resolving this flat layer convention
+    // does not require constructing an unsupported board fold.
     const cadRotation =
       cad.rotation ??
-      (bends.length
-        ? getCadFoldContext(cad, circuitJson)?.defaultRotation
+      (bends.length && pcbComponent
+        ? { x: isBottomLayer ? 180 : 0, y: 0, z: 0 }
         : undefined)
     // Add rotation if specified
     if (cadRotation) {
@@ -648,7 +665,12 @@ export async function convertCircuitJsonTo3D(
 
     boxes.push(
       fold && pcbComponent
-        ? foldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)
+        ? withPcbFoldFallback(
+            `CAD component ${cad.cad_component_id}`,
+            () =>
+              foldRigidBox(box, fold!, pcbBoard.center, pcbComponent.center),
+            () => box,
+          )
         : box,
     )
   }
@@ -689,18 +711,33 @@ export async function convertCircuitJsonTo3D(
         labelColor: "white",
       }
       boxes.push(
-        fold ? foldRigidBox(box, fold, pcbBoard.center, component.center) : box,
+        fold
+          ? withPcbFoldFallback(
+              `PCB component ${component.pcb_component_id}`,
+              () => foldRigidBox(box, fold!, pcbBoard.center, component.center),
+              () => box,
+            )
+          : box,
       )
     }
   }
 
   for (const stiffener of stiffeners) {
     const mesh = swapMeshFrame(
-      createStiffenerMesh({
-        stiffener: stiffener,
-        boardThickness: effectiveBoardThickness,
-        fold: fold,
-      }),
+      withPcbFoldFallback(
+        `PCB stiffener ${stiffener.pcb_stiffener_id}`,
+        () =>
+          createStiffenerMesh({
+            stiffener,
+            boardThickness: effectiveBoardThickness,
+            fold,
+          }),
+        () =>
+          createStiffenerMesh({
+            stiffener,
+            boardThickness: effectiveBoardThickness,
+          }),
+      ),
     )
     boxes.push({
       center: { x: pcbBoard.center.x, y: 0, z: pcbBoard.center.y },
