@@ -30,6 +30,9 @@ export function foldRigidBox(
   const anchor = mount
     ? { x: mount.x - boardCenter.x, y: mount.y - boardCenter.y, z: 0 }
     : center
+  // Match flex-utils' transformCadComponentPlacement mount validation even
+  // when a model offset moves all of its vertices outside the bend zone.
+  fold.assertRigid([anchor], `${box.label ?? "CAD component"} mount`)
   const points: Point3[] = []
   for (let i = 0; i < rotated.positions.length; i += 3)
     points.push(
