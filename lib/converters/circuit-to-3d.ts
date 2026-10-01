@@ -2,6 +2,7 @@ import {
   createStiffenerMesh,
   getCadFoldContext,
   transformCircuitJsonCadComponents,
+  type Point2,
 } from "@tscircuit/flex-utils"
 import { swapMeshFrame } from "../utils/pcb-fold"
 import {
@@ -172,7 +173,16 @@ export async function convertCircuitJsonTo3D(
   }
   const fold =
     foldPcbs && bends.length
-      ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness)
+      ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness, {
+          // Outline points are circuit-world mm (+X right, +Y top, +Z above).
+          // Translate them into the right-handed board-local frame used by
+          // bend endpoints before folding the mesh into the +Y-up scene.
+          // Matches flex-utils' getCadFoldContext outline translation.
+          outline: pcbBoard?.outline?.map((point: Point2) => ({
+            x: point.x - pcbBoard.center.x,
+            y: point.y - pcbBoard.center.y,
+          })),
+        })
       : undefined
 
   // Panels don't have thickness, so always use board's thickness as fallback

@@ -213,7 +213,7 @@ test("partial bend centerlines and rigid components across bend zones are reject
       foldPcbs: true,
       renderBoardTextures: false,
     }),
-  ).rejects.toThrow("full board cross-section")
+  ).rejects.toThrow("from boundary to boundary")
   const first = circuit.find((e): e is PcbBendRecord => e.type === "pcb_bend")!
   const bad = circuit.map((e) =>
     e.type === "cad_component"
