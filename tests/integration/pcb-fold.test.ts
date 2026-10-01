@@ -201,31 +201,54 @@ test("exported off-axis model geometry follows folds after all existing rotation
     }
 })
 
-test("partial bend centerlines and rigid components across bend zones are rejected", async () => {
+test("unsupported folds fall back to flat geometry while invalid board references are rejected", async () => {
   const circuit = createThreeDiscFlex()
   const partial = circuit.map((e) =>
     e.type === "pcb_bend"
       ? { ...e, start: { ...e.start, y: -0.1 }, end: { ...e.end, y: 0.1 } }
       : e,
   )
-  await expect(
-    convertCircuitJsonTo3D(partial, {
-      foldPcbs: true,
-      renderBoardTextures: false,
-    }),
-  ).rejects.toThrow("from boundary to boundary")
+  const partialFold = await convertCircuitJsonTo3D(partial, {
+    foldPcbs: true,
+    renderBoardTextures: false,
+  })
+  const partialFlat = await convertCircuitJsonTo3D(partial, {
+    foldPcbs: false,
+    renderBoardTextures: false,
+  })
+  expect(partialFold.boxes).toEqual(partialFlat.boxes)
+  // Legacy inputs without an outline are validated while folding the board
+  // mesh. That failure must also disable subsequent CAD/stiffener folding.
+  const partialLegacy = partial.map((element) =>
+    element.type === "pcb_board" ? { ...element, outline: undefined } : element,
+  )
+  const legacyFold = await convertCircuitJsonTo3D(partialLegacy, {
+    foldPcbs: true,
+    renderBoardTextures: false,
+  })
+  const legacyFlat = await convertCircuitJsonTo3D(partialLegacy, {
+    foldPcbs: false,
+    renderBoardTextures: false,
+  })
+  expect(legacyFold.boxes).toEqual(legacyFlat.boxes)
   const first = circuit.find((e): e is PcbBendRecord => e.type === "pcb_bend")!
   const bad = circuit.map((e) =>
     e.type === "cad_component"
       ? { ...e, position: { x: DISC_PITCH + first.start.x, y: 0, z: 0.5 } }
       : e,
   )
-  await expect(
-    convertCircuitJsonTo3D(bad, {
-      foldPcbs: true,
-      renderBoardTextures: false,
-    }),
-  ).rejects.toThrow("intersects PCB bend zone")
+  const badFolded = await convertCircuitJsonTo3D(bad, {
+    foldPcbs: true,
+    renderBoardTextures: false,
+  })
+  const badFlat = await convertCircuitJsonTo3D(bad, {
+    foldPcbs: false,
+    renderBoardTextures: false,
+  })
+  for (const box of badFolded.boxes.filter((box) => box.label?.startsWith("U")))
+    expect(box).toEqual(
+      badFlat.boxes.find((flatBox) => flatBox.label === box.label)!,
+    )
   const wrong = circuit.map((e) =>
     e.type === "pcb_bend" ? { ...e, pcb_board_id: "wrong" } : e,
   )
