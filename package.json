@@ -36,7 +36,7 @@
     "@playwright/test": "^1.58.2",
     "@resvg/resvg-js": "^2.6.2",
     "@resvg/resvg-wasm": "^2.6.2",
-    "@tscircuit/circuit-json-util": "^0.0.114",
+    "@tscircuit/circuit-json-util": "^0.0.116",
     "@tscircuit/core": "^0.0.1955",
     "@tscircuit/props": "^0.0.664",
     "@types/bun": "latest",

@@ -114,6 +114,7 @@ export interface Box3D {
   rotation?: Point3
   color?: Color
   sideColor?: Color
+  textureAlphaMode?: "OPAQUE" | "MASK"
   texture?: {
     top?: string
     bottom?: string
@@ -198,4 +199,6 @@ export interface BoardRenderOptions {
   padColor?: string
   drillColor?: string
   showPcbNotes?: boolean
+  /** Render transparent surface coverage for the separate via mask mesh. */
+  viaTentingOnly?: boolean
 }

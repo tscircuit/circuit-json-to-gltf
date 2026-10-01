@@ -20,6 +20,7 @@ export async function renderBoardLayer(
     copperColor = "#ffe066",
     drillColor = "rgba(0,0,0,0.5)",
     showPcbNotes = false,
+    viaTentingOnly = false,
   } = options
   const backgroundColor =
     options.backgroundColor ??
@@ -35,7 +36,7 @@ export async function renderBoardLayer(
   const svg = convertCircuitJsonToPcbSvg(circuitJson, {
     layer,
     matchBoardAspectRatio: true,
-    backgroundColor,
+    backgroundColor: viaTentingOnly ? "transparent" : backgroundColor,
     drawPaddingOutsideBoard: false,
     showSolderMask: true,
     showPcbNotes,
@@ -61,7 +62,15 @@ export async function renderBoardLayer(
         top: solderMaskWithCopperColor,
         bottom: solderMaskWithCopperColor,
       },
-      drill: drillColor,
+      drill: viaTentingOnly ? "transparent" : drillColor,
+      ...(viaTentingOnly
+        ? {
+            copper: { top: "transparent", bottom: "transparent" },
+            soldermask: { top: "transparent", bottom: "transparent" },
+            substrate: "transparent",
+            boardOutline: "transparent",
+          }
+        : {}),
     },
   })
 
@@ -69,7 +78,11 @@ export async function renderBoardLayer(
   const finalSvg = svg
 
   // Use the best SVG-to-PNG conversion method for the platform
-  return await convertSvgToPng(finalSvg, resolution, backgroundColor)
+  return await convertSvgToPng(
+    finalSvg,
+    resolution,
+    viaTentingOnly ? "transparent" : backgroundColor,
+  )
 }
 
 // Intelligent SVG to PNG conversion based on platform
@@ -152,6 +165,7 @@ export async function renderBoardTextures(
     solderMaskWithCopperColor,
     drillColor,
     showPcbNotes = false,
+    viaTentingOnly = false,
   }: Omit<BoardRenderOptions, "layer">,
 ): Promise<{
   top: string
@@ -183,6 +197,7 @@ export async function renderBoardTextures(
     solderMaskWithCopperColor: resolvedSolderMaskWithCopperColor,
     drillColor,
     showPcbNotes,
+    viaTentingOnly,
   })
   const bottom = await renderBoardLayer(circuitJson, {
     layer: "bottom",
@@ -193,6 +208,7 @@ export async function renderBoardTextures(
     solderMaskWithCopperColor: resolvedSolderMaskWithCopperColor,
     drillColor,
     showPcbNotes,
+    viaTentingOnly,
   })
 
   return { top, bottom }
