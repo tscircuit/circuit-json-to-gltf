@@ -1,12 +1,15 @@
 import {
   createPcbFold,
   foldSurfaceMesh,
+  tryFoldSurfaceMesh,
   type PcbFold,
+  type PcbFoldResult,
 } from "@tscircuit/flex-utils"
 import type { PcbStiffener } from "circuit-json"
 import type { Point3, STLMesh } from "../types"
 export {
   createPcbFold,
+  tryCreatePcbFold,
   type PcbFold,
   type PcbBendRecord,
 } from "@tscircuit/flex-utils"
@@ -39,4 +42,13 @@ export function swapMeshFrame(mesh: STLMesh): STLMesh {
 /** All surface tessellation and deformation lives in flex-utils. */
 export function foldBoardMesh(mesh: STLMesh, fold: PcbFold): STLMesh {
   return swapMeshFrame(foldSurfaceMesh(swapMeshFrame(mesh), fold))
+}
+
+/** Adapt the shared fold result across the same axis/winding boundary. */
+export function tryFoldBoardMesh(
+  mesh: STLMesh,
+  fold: PcbFold,
+): PcbFoldResult<STLMesh> {
+  const result = tryFoldSurfaceMesh(swapMeshFrame(mesh), fold)
+  return result.ok ? { ok: true, value: swapMeshFrame(result.value) } : result
 }
