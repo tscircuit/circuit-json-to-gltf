@@ -64,7 +64,7 @@ const recolorDaughtercardGlb = (glb: ArrayBuffer) => {
   return result
 }
 
-test("captures the current +90 degree project Y daughtercard rotation", async () => {
+test("a TSX daughtercard rotated about CAD Y stands above its carrier", async () => {
   const daughter = new Circuit()
   daughter.add(createDaughtercard())
   await daughter.renderUntilSettled()
@@ -92,9 +92,9 @@ test("captures the current +90 degree project Y daughtercard rotation", async ()
   const bounds = boundsOfTriangles(
     parseGLB(afterGlb, COORDINATE_TRANSFORMS.IDENTITY).triangles,
   )
-  // Characterize the current exporter behavior before correcting its direction.
-  expect(bounds.max.y).toBeCloseTo(6.2, 5)
-  expect(bounds.min.y).toBeCloseTo(-20.461, 5)
+  // Final glTF Y is vertical: the 24 mm card rises from inside the socket slot.
+  expect(bounds.max.y).toBeCloseTo(27.539, 5)
+  expect(bounds.min.y).toBeCloseTo(-0.7, 5)
 
   const panelWidth = 720
   const panelHeight = 680
@@ -114,9 +114,9 @@ test("captures the current +90 degree project Y daughtercard rotation", async ()
     backgroundColor: "#f2f3f5",
   })
   context.drawImage(await loadImage(png), 0, headingHeight)
-  context.fillStyle = "#b42318"
+  context.fillStyle = "#067647"
   context.font = "bold 20px sans-serif"
-  context.fillText("Current bug: +90 degree Y points the card down", 20, 34)
+  context.fillText("M.2 card stands in the Amphenol receptacle", 20, 34)
 
   await expect(canvas.toBuffer("image/png")).toMatchPngSnapshot(
     import.meta.path,
