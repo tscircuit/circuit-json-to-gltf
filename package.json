@@ -29,7 +29,7 @@
     "occt-import-js": "^0.0.23"
   },
   "devDependencies": {
-    "@tscircuit/flex-utils": "github:tscircuit/flex-utils#553ee624c0b75165827e7995a46b8fd3ba689dda",
+    "@tscircuit/flex-utils": "https://jscdn.tscircuit.com/@tscircuit/flex-utils/0.0.7.tgz",
     "@biomejs/biome": "^2.1.4",
     "@google/model-viewer": "^4.1.0",
     "@napi-rs/canvas": "^1.0.9",
