@@ -1,11 +1,13 @@
 import { expect, test } from "bun:test"
-import { createCanvas, loadImage } from "@napi-rs/canvas"
+import { createCanvas, GlobalFonts, loadImage } from "@napi-rs/canvas"
+import tscircuitFont from "@tscircuit/alphabet/base64font"
 import type { CircuitJson } from "circuit-json"
 import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonTo3D, convertSceneToGLTF } from "../../lib"
 import { getBestCameraPosition } from "../../lib/utils/camera-position"
 
 test("GLB surface mask covers tented sides while the substrate keeps every via drill", async () => {
+  GlobalFonts.register(Buffer.from(tscircuitFont, "base64"), "ViaSnapshot")
   const circuit: CircuitJson = [
     {
       type: "pcb_board",
@@ -88,15 +90,15 @@ test("GLB surface mask covers tented sides while the substrate keeps every via d
     const y = row * (height + header)
     ctx.drawImage(await loadImage(png), 0, y + header)
     ctx.fillStyle = "#172c3b"
-    ctx.font = "20px sans-serif"
+    ctx.font = "18px ViaSnapshot"
     ctx.fillText(
       renderBoardTextures
         ? "Top surface with soldermask"
-        : "Physical substrate with textures disabled: all eight drills remain",
+        : "Textures disabled: all eight physical via drills remain",
       20,
       y + 25,
     )
-    ctx.font = "16px sans-serif"
+    ctx.font = "16px ViaSnapshot"
     ctx.fillText(
       "Upper row: pcb_via. Lower row: pcb_trace.route via.",
       20,
