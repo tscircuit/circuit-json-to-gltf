@@ -522,14 +522,4 @@ test("TSX via variants render board defaults, overrides, text and pad overlap in
     import.meta.path,
     "via-tenting-variants-bottom",
   )
-
-  const angled = await renderGlbToPng(glb, circuitJson, renderOptions, {
-    direction: [-0.4, 1, -0.8],
-    ortho: true,
-    aspectRatio: 4 / 3,
-  })
-  await expect(angled).toMatchPngSnapshot(
-    import.meta.path,
-    "via-tenting-variants-angled",
-  )
 }, 30_000)

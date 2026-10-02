@@ -310,7 +310,7 @@ export class GLTFBuilder {
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
-        alphaMode: box.textureAlphaMode ?? "OPAQUE",
+        alphaMode: "OPAQUE",
         doubleSided: true,
       })
 
@@ -340,7 +340,7 @@ export class GLTFBuilder {
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
-        alphaMode: box.textureAlphaMode ?? "OPAQUE",
+        alphaMode: "OPAQUE",
         doubleSided: true,
       })
 

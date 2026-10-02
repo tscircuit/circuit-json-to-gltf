@@ -7,7 +7,6 @@ import {
 } from "@tscircuit/flex-utils"
 import { swapMeshFrame } from "../utils/pcb-fold"
 import {
-  foldBoardMesh,
   tryCreatePcbFold,
   tryFoldBoardMesh,
   type PcbFold,
@@ -53,8 +52,6 @@ import {
   translateMesh,
 } from "../utils/mesh-scale"
 import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
-import { getPcbVias } from "../utils/get-pcb-vias"
-import { createViaTentingMesh } from "../utils/via-tenting-mesh"
 import { createBoardMesh } from "../utils/pcb-board-geometry"
 import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import {
@@ -133,25 +130,6 @@ export async function convertCircuitJsonTo3D(
   )
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
-  // A through via remains a physical drill even when a surface is tented.
-  const vias = getPcbVias(circuitJson)
-  const throughVias = vias.filter(
-    (via) => via.layers.includes("top") && via.layers.includes("bottom"),
-  )
-  // Use the same resolved vias for textures, including route-only vias with no
-  // wire segments. SVG skips duplicate route vias when standalone vias exist.
-  const textureCircuitJson = [
-    ...circuitJson.filter((element) => element.type !== "pcb_via"),
-    ...vias,
-  ]
-  const viaHoles: PcbHole[] = throughVias.map((via) => ({
-    type: "pcb_hole",
-    pcb_hole_id: via.pcb_via_id,
-    hole_shape: "circle",
-    x: via.x,
-    y: via.y,
-    hole_diameter: via.hole_diameter,
-  }))
 
   const pcbColorOverride =
     typeof options.pcbColor === "string"
@@ -214,7 +192,7 @@ export async function convertCircuitJsonTo3D(
 
   // Render panel if present (panel takes priority)
   if (pcbPanel) {
-    const pcbHoles: PcbHole[] = [...(db.pcb_hole?.list?.() ?? []), ...viaHoles]
+    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
     const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
       []) as PcbPlatedHole[]
     const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
@@ -248,11 +226,10 @@ export async function convertCircuitJsonTo3D(
       sideColor: resolvedBoardSideColor,
     }
 
-    let viaTentingBox: Box3D | undefined
     // Render panel textures if requested and resolution > 0
     if (shouldRenderTextures && textureResolution > 0) {
       try {
-        const textures = await renderBoardTextures(textureCircuitJson, {
+        const textures = await renderBoardTextures(circuitJson, {
           resolution: textureResolution,
           showPcbNotes,
           ...boardTextureColors,
@@ -260,28 +237,6 @@ export async function convertCircuitJsonTo3D(
         panelBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
-        }
-        if (
-          throughVias.some((via) => via.tented_on_top || via.tented_on_bottom)
-        ) {
-          const tentingMesh = createViaTentingMesh(
-            throughVias,
-            panelBox.center,
-            panelMesh.boundingBox,
-            effectiveBoardThickness,
-          )
-          viaTentingBox = {
-            center: panelBox.center,
-            size: panelBox.size,
-            mesh: tentingMesh,
-            texture: await renderBoardTextures(textureCircuitJson, {
-              resolution: textureResolution,
-              ...boardTextureColors,
-              viaTentingOnly: true,
-            }),
-            textureAlphaMode: "MASK",
-            label: "Via soldermask",
-          }
         }
       } catch (error) {
         console.warn("Failed to render panel textures:", error)
@@ -294,10 +249,9 @@ export async function convertCircuitJsonTo3D(
     }
 
     boxes.push(panelBox)
-    if (viaTentingBox) boxes.push(viaTentingBox)
   } else if (pcbBoard) {
     // Create the main PCB board box
-    const pcbHoles: PcbHole[] = [...(db.pcb_hole?.list?.() ?? []), ...viaHoles]
+    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
     const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
       []) as PcbPlatedHole[]
     const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
@@ -355,11 +309,10 @@ export async function convertCircuitJsonTo3D(
       sideColor: resolvedBoardSideColor,
     }
 
-    let viaTentingBox: Box3D | undefined
     // Render board textures if requested and resolution > 0
     if (shouldRenderTextures && textureResolution > 0) {
       try {
-        const textures = await renderBoardTextures(textureCircuitJson, {
+        const textures = await renderBoardTextures(circuitJson, {
           resolution: textureResolution,
           showPcbNotes,
           ...boardTextureColors,
@@ -367,28 +320,6 @@ export async function convertCircuitJsonTo3D(
         boardBox.texture = {
           top: textures.top,
           bottom: textures.bottom,
-        }
-        if (
-          throughVias.some((via) => via.tented_on_top || via.tented_on_bottom)
-        ) {
-          const tentingMesh = createViaTentingMesh(
-            throughVias,
-            boardBox.center,
-            boardMesh.boundingBox,
-            effectiveBoardThickness,
-          )
-          viaTentingBox = {
-            center: boardBox.center,
-            size: boardBox.size,
-            mesh: fold ? foldBoardMesh(tentingMesh, fold) : tentingMesh,
-            texture: await renderBoardTextures(textureCircuitJson, {
-              resolution: textureResolution,
-              ...boardTextureColors,
-              viaTentingOnly: true,
-            }),
-            textureAlphaMode: "MASK",
-            label: "Via soldermask",
-          }
         }
       } catch (error) {
         console.warn("Failed to render board textures:", error)
@@ -403,7 +334,6 @@ export async function convertCircuitJsonTo3D(
     if (fold && boardBox.mesh)
       boardBox.size = getBoundingBoxSize(boardBox.mesh.boundingBox)
     boxes.push(boardBox)
-    if (viaTentingBox) boxes.push(viaTentingBox)
   } else if (drawFauxBoard) {
     const hasComponentBounds = pcbComponents.length > 0
     const componentBounds = hasComponentBounds
