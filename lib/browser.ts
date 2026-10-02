@@ -1,5 +1,11 @@
 // Browser-safe exports that don't include Node.js dependencies
 
+export {
+  getPoppyglErrorOverlayOptions,
+  type PoppyglErrorOverlay,
+  type PoppyglErrorOverlayOptions,
+} from "./utils/poppygl-error-overlay"
+
 export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
 export { clearSTLCache, loadSTL } from "./loaders/stl"
@@ -24,6 +30,7 @@ export type {
 } from "./types"
 
 import { cju } from "@tscircuit/circuit-json-util"
+import { withCircuitJsonErrors } from "./utils/circuit-json-errors"
 // Browser-safe version of circuit to 3D conversion (without texture rendering)
 import type { CircuitJson } from "circuit-json"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
@@ -49,12 +56,17 @@ export async function convertCircuitJsonTo3D(
 
   if (
     options.foldPcbs === true ||
+    (options.showErrors === true &&
+      !circuitJson.some((element) => element.type === "pcb_board")) ||
     circuitJson.some((e) => e.type === "pcb_stiffener" || e.type === "pcb_bend")
   ) {
-    const { convertCircuitJsonTo3D: convertFlex } = await import(
+    const { convertCircuitJsonTo3D: convertFullScene } = await import(
       "./converters/circuit-to-3d"
     )
-    return convertFlex(circuitJson, { ...options, renderBoardTextures: false })
+    return convertFullScene(circuitJson, {
+      ...options,
+      renderBoardTextures: false,
+    })
   }
   const db = cju(circuitJson as CircuitJson)
   const boxes: any[] = []
@@ -155,11 +167,12 @@ export async function convertCircuitJsonTo3D(
     },
   ]
 
-  return {
+  const scene: Scene3D = {
     boxes,
     camera,
     lights,
   }
+  return options.showErrors ? withCircuitJsonErrors(scene, circuitJson) : scene
 }
 
 export async function convertCircuitJsonToGltf(

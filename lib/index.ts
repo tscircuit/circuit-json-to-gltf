@@ -30,6 +30,7 @@ export async function convertCircuitJsonToGltf(
     foldPcbs: options.foldPcbs,
     textureResolution: boardTextureResolution,
     showPcbNotes,
+    showErrors: options.showErrors,
     boardDrillQuality,
     drawFauxBoard,
     pcbColor: backgroundColor,
@@ -55,6 +56,12 @@ export async function convertCircuitJsonToGltf(
 
   return result
 }
+
+export {
+  getPoppyglErrorOverlayOptions,
+  type PoppyglErrorOverlay,
+  type PoppyglErrorOverlayOptions,
+} from "./utils/poppygl-error-overlay"
 
 export {
   renderBoardLayer,

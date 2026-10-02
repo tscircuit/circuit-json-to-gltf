@@ -1,4 +1,9 @@
 // Browser-safe exports that don't include Node.js dependencies
+export {
+  getPoppyglErrorOverlayOptions,
+  type PoppyglErrorOverlay,
+  type PoppyglErrorOverlayOptions,
+} from "./utils/poppygl-error-overlay"
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonTo3D as originalConvertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
