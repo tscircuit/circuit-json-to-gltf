@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { createCanvas, loadImage } from "@napi-rs/canvas"
 import { renderGLTFToPNGFromGLB } from "poppygl"
-import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
+import { convertCircuitJsonToGltf } from "../../lib"
 import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
 import {
@@ -9,7 +9,7 @@ import {
   createNonparallelFlex,
 } from "../fixtures/invalid-flex"
 
-test("Circuit JSON errors remain readable inside translated and invalid-flex GLB scenes", async () => {
+test("Circuit JSON errors appear as screen overlays in translated and invalid-flex GLB scenes", async () => {
   const nonparallel = createNonparallelFlex()
   const bendZone = createBendZoneFlex(true)
   for (const [input, message] of [
@@ -42,19 +42,6 @@ test("Circuit JSON errors remain readable inside translated and invalid-flex GLB
   context.fillStyle = "#f2f3f5"
   context.fillRect(0, 0, canvas.width, canvas.height)
   for (const [index, input] of inputs.entries()) {
-    const scene = await convertCircuitJsonTo3D(input, {
-      showErrors: true,
-      foldPcbs: true,
-      renderBoardTextures: false,
-    })
-    const target = scene.camera!.target
-    // Frame both real circuit geometry and its annotation in exported glTF,
-    // +Y up, mm. X uses the same canonical mirror as the exported board.
-    const diagonal = Math.hypot(
-      scene.camera!.position.x - target.x,
-      scene.camera!.position.y - target.y,
-      scene.camera!.position.z - target.z,
-    )
     const glb = await convertCircuitJsonToGltf(input, {
       format: "glb",
       showErrors: true,
@@ -64,16 +51,20 @@ test("Circuit JSON errors remain readable inside translated and invalid-flex GLB
     const png = await renderGLTFToPNGFromGLB(glb as ArrayBuffer, {
       width: tileWidth,
       height: tileHeight - heading,
-      camPos: [
-        -target.x + diagonal * 0.08,
-        target.y + diagonal * 0.65,
-        target.z - diagonal * 0.3,
-      ],
-      lookAt: [-target.x, target.y, target.z],
+      // Exported glTF (+Y up, mm): preserve each circuit's normal camera.
+      // Only PoppyGL draws the screen overlay embedded in the GLB metadata.
+      camPos:
+        index === 0
+          ? [-50, 42, -118]
+          : index === 1
+            ? [70, 65, -70]
+            : [-50, 42, -48],
+      lookAt:
+        index === 0 ? [-100, 0, -70] : index === 1 ? [-8, 0, 7] : [0, 7, 0],
       up: "y+",
-      fov: 42,
+      fov: 35,
       backgroundColor: "#f2f3f5",
-      ambient: 0.6,
+      ambient: 0.45,
     })
     context.drawImage(await loadImage(png), index * tileWidth, heading)
     context.fillStyle = "#28323c"

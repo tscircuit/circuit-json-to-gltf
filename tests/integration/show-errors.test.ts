@@ -6,13 +6,21 @@ import {
 } from "../../lib"
 import { convertCircuitJsonTo3D as browserConvert } from "../../lib/browser"
 import { convertCircuitJsonTo3D as browserIndexConvert } from "../../lib/browser-index"
-import type { CircuitJsonWithPcbFlex, Scene3D } from "../../lib/types"
-import { parseGLB } from "../../lib/loaders/glb"
-import { withCircuitJsonErrorOverlay } from "../../lib/utils/circuit-json-error-overlay"
-import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
+import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
+import { createNonparallelFlex } from "../fixtures/invalid-flex"
 
-test("showErrors exports visible full messages without changing circuit geometry or input", async () => {
+function parseGlb(glb: ArrayBuffer) {
+  const jsonLength = new DataView(glb).getUint32(12, true)
+  const json = JSON.parse(
+    new TextDecoder().decode(new Uint8Array(glb, 20, jsonLength)),
+  )
+  const binaryOffset = 20 + jsonLength
+  const binaryLength = new DataView(glb).getUint32(binaryOffset, true)
+  return { json, binary: new Uint8Array(glb, binaryOffset + 8, binaryLength) }
+}
+
+test("showErrors carries all full messages without changing scene geometry, camera or input", async () => {
   const input = createCircuitJsonErrors()
   const before = JSON.stringify(input)
   const options = { renderBoardTextures: false }
@@ -25,36 +33,17 @@ test("showErrors exports visible full messages without changing circuit geometry
     ...options,
     showErrors: true,
   })
-  expect(hiddenScene).toEqual(defaultScene)
-  expect(visibleScene.boxes.slice(0, defaultScene.boxes.length)).toEqual(
-    defaultScene.boxes,
-  )
   const messages = input.flatMap((element) =>
-    "message" in element ? [element.message] : [],
+    "error_type" in element && "message" in element ? [element.message] : [],
   )
-  for (const message of messages) {
-    const text = visibleScene.boxes.find((box) => box.label === message)!
-    expect(text.mesh!.triangles.length).toBeGreaterThan(100)
-    expect(
-      text.mesh!.boundingBox.max.z - text.mesh!.boundingBox.min.z,
-    ).toBeGreaterThan(1)
-  }
-  const glb = await convertCircuitJsonToGltf(input, {
-    format: "glb",
-    showErrors: true,
-  })
-  const emitted = parseGLB(glb as ArrayBuffer, COORDINATE_TRANSFORMS.IDENTITY)
-  // The actual exported annotation is beside the translated board, not near
-  // the origin or over the copper. Its X extent follows the board's X mirror.
-  expect(emitted.boundingBox.min.x).toBeCloseTo(-120)
-  expect(emitted.boundingBox.max.x).toBeCloseTo(-80)
-  expect(emitted.boundingBox.min.z).toBeLessThan(-90)
-  expect(emitted.boundingBox.max.z).toBeCloseTo(-60)
-  expect(visibleScene.camera!.target.x).toBeCloseTo(100)
+  expect(hiddenScene).toEqual(defaultScene)
+  expect(visibleScene).toEqual({ ...defaultScene, errorMessages: messages })
+  expect(messages).toHaveLength(2)
+  expect(messages[1]).toContain("no PCB coordinates")
   expect(JSON.stringify(input)).toBe(before)
 })
 
-test("showErrors with no errors leaves the scene unchanged", async () => {
+test("showErrors with no errors leaves the entire scene unchanged", async () => {
   const input = createCircuitJsonErrors().filter(
     (element) => !("error_type" in element),
   )
@@ -66,48 +55,64 @@ test("showErrors with no errors leaves the scene unchanged", async () => {
   ).toEqual(await convertCircuitJsonTo3D(input, { renderBoardTextures: false }))
 })
 
-test("both browser entry points include geometry for errors without PCB coordinates", async () => {
+test("both browser entry points carry unlocated errors without adding meshes or changing cameras", async () => {
   for (const convert of [browserConvert, browserIndexConvert]) {
-    const scene = await convert(createCircuitJsonErrors(), { showErrors: true })
-    expect(
-      scene.boxes.some(
-        (box) =>
-          box.label?.startsWith("U1 is missing") &&
-          box.mesh!.triangles.length > 100,
-      ),
-    ).toBe(true)
+    const input = createCircuitJsonErrors()
+    const hidden = await convert(input)
+    const visible = await convert(input, { showErrors: true })
+    expect(visible.boxes).toEqual(hidden.boxes)
+    expect(visible.camera).toEqual(hidden.camera)
+    expect(visible.errorMessages).toHaveLength(2)
+    expect(visible.errorMessages![1]).toContain("U1 is missing")
   }
 })
 
-test("error cards remain outside the emitted bounds of rotated long boxes", async () => {
-  const scene: Scene3D = {
-    boxes: [
-      {
-        center: { x: 23, y: 2, z: -17 },
-        size: { x: 100, y: 2, z: 2 },
-        rotation: { x: 0, y: Math.PI / 2, z: 0 },
-        color: "#224466",
-      },
-    ],
-  }
-  const withErrors = withCircuitJsonErrorOverlay(
-    scene,
-    createCircuitJsonErrors(),
+test("glTF and GLB store screen overlay metadata while preserving all geometry and binary buffers", async () => {
+  const input = createCircuitJsonErrors()
+  const before = JSON.stringify(input)
+  const hidden = (await convertCircuitJsonToGltf(input, {
+    boardTextureResolution: 128,
+  })) as any
+  const visible = (await convertCircuitJsonToGltf(input, {
+    showErrors: true,
+    boardTextureResolution: 128,
+  })) as any
+  const overlay = visible.scenes[visible.scene].extras.poppygl.textOverlay
+  expect(overlay.title).toBe("Circuit JSON errors (2)")
+  expect(overlay.messages).toEqual(
+    input.flatMap((element) => ("message" in element ? [element.message] : [])),
   )
-  const card = withErrors.boxes.find(
-    (box) => box.label === "Circuit JSON errors",
-  )!
-  // A 90-degree rotation puts the 100 mm length along Z, reaching Z=-67.
-  // Reading the unrotated size would incorrectly position the card near -18.
-  expect(card.center.z + card.size.z / 2).toBeLessThan(-67)
-  const glb = await convertSceneToGLTF(scene, { binary: true })
+  // The metadata is the entire difference. It adds no nodes, meshes, materials,
+  // accessors or buffer data, and does not affect the exported board's bounds.
+  expect({
+    ...visible,
+    scenes: visible.scenes.map(({ extras, ...scene }: any) => scene),
+  }).toEqual(hidden)
+  const hiddenGlb = parseGlb(
+    (await convertCircuitJsonToGltf(input, {
+      format: "glb",
+      boardTextureResolution: 128,
+    })) as ArrayBuffer,
+  )
+  const visibleGlb = parseGlb(
+    (await convertCircuitJsonToGltf(input, {
+      format: "glb",
+      showErrors: true,
+      boardTextureResolution: 128,
+    })) as ArrayBuffer,
+  )
   expect(
-    parseGLB(glb as ArrayBuffer, COORDINATE_TRANSFORMS.IDENTITY).boundingBox.min
-      .z,
-  ).toBeCloseTo(-67)
+    visibleGlb.json.scenes[visibleGlb.json.scene].extras.poppygl.textOverlay,
+  ).toEqual(overlay)
+  expect(visibleGlb.binary).toEqual(hiddenGlb.binary)
+  expect({
+    ...visibleGlb.json,
+    scenes: visibleGlb.json.scenes.map(({ extras, ...scene }: any) => scene),
+  }).toEqual(hiddenGlb.json)
+  expect(JSON.stringify(input)).toBe(before)
 })
 
-test("unlocated errors render even when the scene has no board or components", async () => {
+test("unlocated source errors survive export even before board or component geometry exists", async () => {
   const input = createCircuitJsonErrors().filter(
     (element) => element.type === "source_missing_property_error",
   )
@@ -115,19 +120,23 @@ test("unlocated errors render even when the scene has no board or components", a
     showErrors: true,
     renderBoardTextures: false,
   })
-  expect(scene.boxes).toHaveLength(3)
-  expect(scene.boxes.every((box) => box.mesh!.triangles.length > 0)).toBe(true)
-  const glb = await convertCircuitJsonToGltf(input, {
-    format: "glb",
-    showErrors: true,
-  })
-  expect(
-    parseGLB(glb as ArrayBuffer, COORDINATE_TRANSFORMS.IDENTITY).triangles
-      .length,
-  ).toBeGreaterThan(100)
+  expect(scene.boxes).toEqual([])
+  expect(scene.errorMessages).toHaveLength(1)
+  const { json, binary } = parseGlb(
+    (await convertCircuitJsonToGltf(input, {
+      format: "glb",
+      showErrors: true,
+    })) as ArrayBuffer,
+  )
+  expect(json.nodes).toEqual([])
+  expect(json.meshes).toEqual([])
+  expect(binary.byteLength).toBe(0)
+  expect(json.scenes[json.scene].extras.poppygl.textOverlay.messages).toEqual(
+    scene.errorMessages,
+  )
 })
 
-test("long multiline messages retain original text and readable geometry", async () => {
+test("long multiline Unicode error messages remain intact in exported metadata", async () => {
   const input: CircuitJsonWithPcbFlex = [
     {
       type: "pcb_placement_error",
@@ -140,73 +149,25 @@ test("long multiline messages retain original text and readable geometry", async
     showErrors: true,
     renderBoardTextures: false,
   })
-  expect(scene.boxes[2]!.label).toBe((input[0] as { message: string }).message)
-  const text = scene.boxes[2]!
-  const card = scene.boxes[0]!
-  expect(text.center.z + text.mesh!.boundingBox.min.z).toBeGreaterThan(
-    card.center.z - card.size.z / 2,
+  const messages = [...scene.errorMessages!]
+  const gltf = (await convertSceneToGLTF(scene)) as any
+  scene.errorMessages!.push("Later change to source scene")
+  expect(gltf.scenes[gltf.scene].extras.poppygl.textOverlay.messages).toEqual(
+    messages,
   )
-  expect(text.mesh!.triangles.length).toBeGreaterThan(500)
+  expect(gltf.scenes[gltf.scene].extras.poppygl.textOverlay.title).toBe(
+    "Circuit JSON errors (1)",
+  )
 })
 
-test("exported text and punctuation winding agree with their lighting normals", async () => {
-  const scene = withCircuitJsonErrorOverlay({ boxes: [] }, [
-    {
-      type: "pcb_placement_error",
-      pcb_placement_error_id: "punctuation_error",
-      error_type: "pcb_placement_error",
-      message: "Asymmetric R1; clearance: 0.2 mm?",
-    },
-  ])
-  const gltf = (await convertSceneToGLTF(scene)) as any
-  const buffer = Buffer.from(gltf.buffers[0].uri.split(",")[1], "base64")
-  const read = (accessorIndex: number): number[] => {
-    const accessor = gltf.accessors[accessorIndex]
-    const view = gltf.bufferViews[accessor.bufferView]
-    const offset = (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0)
-    const count = accessor.count * (accessor.type === "VEC3" ? 3 : 1)
-    const values = new DataView(
-      buffer.buffer,
-      buffer.byteOffset + offset,
-      view.byteLength,
-    )
-    return Array.from({ length: count }, (_, index) =>
-      accessor.componentType === 5126
-        ? values.getFloat32(index * 4, true)
-        : accessor.componentType === 5125
-          ? values.getUint32(index * 4, true)
-          : values.getUint16(index * 2, true),
-    )
-  }
-  for (const mesh of gltf.meshes) {
-    const primitive = mesh.primitives[0]
-    const positions = read(primitive.attributes.POSITION)
-    const normals = read(primitive.attributes.NORMAL)
-    const indices = read(primitive.indices)
-    for (let index = 0; index < indices.length; index += 3) {
-      const a = indices[index]! * 3
-      const b = indices[index + 1]! * 3
-      const c = indices[index + 2]! * 3
-      const ab = [
-        positions[b]! - positions[a]!,
-        positions[b + 1]! - positions[a + 1]!,
-        positions[b + 2]! - positions[a + 2]!,
-      ]
-      const ac = [
-        positions[c]! - positions[a]!,
-        positions[c + 1]! - positions[a + 1]!,
-        positions[c + 2]! - positions[a + 2]!,
-      ]
-      const cross = [
-        ab[1]! * ac[2]! - ab[2]! * ac[1]!,
-        ab[2]! * ac[0]! - ab[0]! * ac[2]!,
-        ab[0]! * ac[1]! - ab[1]! * ac[0]!,
-      ]
-      const dot =
-        cross[0]! * normals[a]! +
-        cross[1]! * normals[a + 1]! +
-        cross[2]! * normals[a + 2]!
-      expect(dot).toBeGreaterThan(0)
-    }
-  }
+test("exporter fold warnings do not become Circuit JSON error records", async () => {
+  const input = createNonparallelFlex()
+  const options = { foldPcbs: true, renderBoardTextures: false }
+  const hidden = await convertCircuitJsonTo3D(input, options)
+  const visible = await convertCircuitJsonTo3D(input, {
+    ...options,
+    showErrors: true,
+  })
+  expect(visible).toEqual(hidden)
+  expect(visible.errorMessages).toBeUndefined()
 })

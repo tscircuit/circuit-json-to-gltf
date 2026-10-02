@@ -69,6 +69,17 @@ export class GLTFBuilder {
   }
 
   async buildFromScene3D(scene3D: Scene3D): Promise<void> {
+    if (scene3D.errorMessages?.length) {
+      this.gltf.scenes![0]!.extras = {
+        poppygl: {
+          textOverlay: {
+            title: `Circuit JSON errors (${scene3D.errorMessages.length})`,
+            messages: [...scene3D.errorMessages],
+          },
+        },
+      }
+    }
+
     // Add default material
     const defaultMaterialIndex = this.addMaterial({
       name: "Default",
