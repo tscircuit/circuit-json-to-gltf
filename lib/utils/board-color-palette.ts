@@ -17,6 +17,10 @@ export const DEFAULT_GREEN_SOLDER_MASK = {
   solderMaskWithCopperColor: "#17613b",
 } as const
 
+// Match 3d-viewer's src/geoms/constants.ts colors.flexAmber [0.8, 0.61, 0.2].
+// Both its flex substrate and solder mask use this polyimide amber.
+export const DEFAULT_FLEX_AMBER = "#cc9c33"
+
 const BOARD_COLOR_PRESETS: Record<string, string> = {
   green: DEFAULT_GREEN_SOLDER_MASK.backgroundColor,
   red: "#8b1e1e",
@@ -86,12 +90,17 @@ const parseColor = (value: string): Rgb | undefined => {
   return parseRgbColor(resolved)
 }
 
+// Discard placeholders without changing real CSS colors (including alpha).
+export const getSpecifiedColor = (value?: string) =>
+  !value?.trim() || value.trim().toLowerCase() === "not_specified"
+    ? undefined
+    : value
+
 const normalizeColor = (value?: string) => {
-  if (!value || value.trim().toLowerCase() === "not_specified") {
-    return undefined
-  }
-  const parsed = parseColor(value)
-  return parsed ? toHex(parsed) : value.trim()
+  const specified = getSpecifiedColor(value)
+  if (!specified) return undefined
+  const parsed = parseColor(specified)
+  return parsed ? toHex(parsed) : specified.trim()
 }
 
 const mix = (color: Rgb, target: Rgb, amount: number): Rgb =>
@@ -160,12 +169,18 @@ export function getBoardColorPalette(
     | (PcbBoard & { soldermask_color?: string })
     | undefined
   const solderMaskColor =
-    overrides.solderMaskColor ??
-    board?.solder_mask_color ??
-    legacyBoard?.soldermask_color
+    getSpecifiedColor(overrides.solderMaskColor) ??
+    normalizeColor(board?.solder_mask_color) ??
+    normalizeColor(legacyBoard?.soldermask_color)
   const silkscreenColor = overrides.silkscreenColor ?? board?.silkscreen_color
 
   if (!solderMaskColor) {
+    if (board?.material === "flex") {
+      return {
+        ...deriveBoardColorPalette(DEFAULT_FLEX_AMBER, silkscreenColor),
+        boardSideColor: DEFAULT_FLEX_AMBER,
+      }
+    }
     return { silkscreenColor: normalizeColor(silkscreenColor) }
   }
   return deriveBoardColorPalette(solderMaskColor, silkscreenColor)

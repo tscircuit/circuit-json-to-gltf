@@ -4,14 +4,16 @@ import type { BoardRenderOptions } from "../types"
 import {
   DEFAULT_GREEN_SOLDER_MASK,
   getBoardColorPalette,
+  getSpecifiedColor,
 } from "../utils/board-color-palette"
 
 export async function renderBoardLayer(
   circuitJson: CircuitJson,
   options: BoardRenderOptions,
 ): Promise<string> {
+  const backgroundOverride = getSpecifiedColor(options.backgroundColor)
   const palette = getBoardColorPalette(circuitJson, {
-    solderMaskColor: options.backgroundColor,
+    solderMaskColor: backgroundOverride,
     silkscreenColor: options.silkscreenColor,
   })
   const {
@@ -22,7 +24,7 @@ export async function renderBoardLayer(
     showPcbNotes = false,
   } = options
   const backgroundColor =
-    options.backgroundColor ??
+    backgroundOverride ??
     palette.backgroundColor ??
     DEFAULT_GREEN_SOLDER_MASK.backgroundColor
   const silkscreenColor =
@@ -157,12 +159,13 @@ export async function renderBoardTextures(
   top: string
   bottom: string
 }> {
+  const backgroundOverride = getSpecifiedColor(backgroundColor)
   const palette = getBoardColorPalette(circuitJson, {
-    solderMaskColor: backgroundColor,
+    solderMaskColor: backgroundOverride,
     silkscreenColor,
   })
   const resolvedBackgroundColor =
-    backgroundColor ??
+    backgroundOverride ??
     palette.backgroundColor ??
     DEFAULT_GREEN_SOLDER_MASK.backgroundColor
   const resolvedSilkscreenColor =

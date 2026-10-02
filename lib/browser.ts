@@ -58,7 +58,12 @@ export async function convertCircuitJsonTo3D(
     options.foldPcbs === true ||
     (options.showErrors === true &&
       !circuitJson.some((element) => element.type === "pcb_board")) ||
-    circuitJson.some((e) => e.type === "pcb_stiffener" || e.type === "pcb_bend")
+    circuitJson.some(
+      (e) =>
+        e.type === "pcb_stiffener" ||
+        e.type === "pcb_bend" ||
+        (e.type === "pcb_board" && e.material === "flex"),
+    )
   ) {
     const { convertCircuitJsonTo3D: convertFullScene } = await import(
       "./converters/circuit-to-3d"
@@ -184,6 +189,7 @@ export async function convertCircuitJsonToGltf(
   // Convert circuit JSON to 3D scene (without textures in browser)
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     ...options,
+    pcbColor: options.backgroundColor,
     renderBoardTextures: false,
   })
 

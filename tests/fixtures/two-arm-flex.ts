@@ -26,7 +26,6 @@ export function createTwoArmFlex({
       thickness: 0.12,
       num_layers: 2,
       material: "flex",
-      solder_mask_color: "#cc9b32",
       outline: [
         point(-20, -10),
         point(20, -10),
