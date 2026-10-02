@@ -5,6 +5,7 @@ import {
   convertSceneToGLTF,
 } from "../../lib"
 import { convertCircuitJsonTo3D as browserConvert } from "../../lib/browser"
+import { convertCircuitJsonToGltf as browserExport } from "../../lib/browser"
 import { convertCircuitJsonTo3D as browserIndexConvert } from "../../lib/browser-index"
 import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
@@ -134,6 +135,33 @@ test("unlocated source errors survive export even before board or component geom
   expect(json.scenes[json.scene].extras.poppygl.textOverlay.messages).toEqual(
     scene.errorMessages,
   )
+})
+
+test("the browser entry supports pre-geometry errors when showErrors is enabled", async () => {
+  const input = createCircuitJsonErrors().filter(
+    (element) => element.type === "source_missing_property_error",
+  )
+  const before = JSON.stringify(input)
+  // Preserve the browser entry's existing missing-board behavior unless the
+  // caller requests error metadata for its pre-geometry diagnostic scene.
+  await expect(browserConvert(input)).rejects.toThrow("No pcb_board found")
+  await expect(browserConvert(input, { showErrors: false })).rejects.toThrow(
+    "No pcb_board found",
+  )
+  const scene = await browserConvert(input, { showErrors: true })
+  expect(scene.boxes).toEqual([])
+  expect(scene.errorMessages).toHaveLength(1)
+  const { json, binary } = parseGlb(
+    (await browserExport(input, {
+      format: "glb",
+      showErrors: true,
+    })) as ArrayBuffer,
+  )
+  expect(json.scenes[json.scene].extras.poppygl.textOverlay.messages).toEqual(
+    scene.errorMessages,
+  )
+  expect(binary.byteLength).toBe(0)
+  expect(JSON.stringify(input)).toBe(before)
 })
 
 test("long multiline Unicode error messages remain intact in exported metadata", async () => {

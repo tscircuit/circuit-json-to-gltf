@@ -50,12 +50,17 @@ export async function convertCircuitJsonTo3D(
 
   if (
     options.foldPcbs === true ||
+    (options.showErrors === true &&
+      !circuitJson.some((element) => element.type === "pcb_board")) ||
     circuitJson.some((e) => e.type === "pcb_stiffener" || e.type === "pcb_bend")
   ) {
-    const { convertCircuitJsonTo3D: convertFlex } = await import(
+    const { convertCircuitJsonTo3D: convertFullScene } = await import(
       "./converters/circuit-to-3d"
     )
-    return convertFlex(circuitJson, { ...options, renderBoardTextures: false })
+    return convertFullScene(circuitJson, {
+      ...options,
+      renderBoardTextures: false,
+    })
   }
   const db = cju(circuitJson as CircuitJson)
   const boxes: any[] = []
