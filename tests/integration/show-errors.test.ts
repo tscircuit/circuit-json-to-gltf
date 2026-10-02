@@ -9,7 +9,7 @@ import { convertCircuitJsonToGltf as browserExport } from "../../lib/browser"
 import { convertCircuitJsonTo3D as browserIndexConvert } from "../../lib/browser-index"
 import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
-import { createNonparallelFlex } from "../fixtures/invalid-flex"
+import { createCrossingFlex } from "../fixtures/invalid-flex"
 
 function parseGlb(glb: ArrayBuffer) {
   const jsonLength = new DataView(glb).getUint32(12, true)
@@ -189,7 +189,7 @@ test("long multiline Unicode error messages remain intact in exported metadata",
 })
 
 test("exporter fold warnings do not become Circuit JSON error records", async () => {
-  const input = createNonparallelFlex()
+  const input = createCrossingFlex()
   const options = { foldPcbs: true, renderBoardTextures: false }
   const hidden = await convertCircuitJsonTo3D(input, options)
   const visible = await convertCircuitJsonTo3D(input, {
