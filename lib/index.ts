@@ -58,6 +58,12 @@ export async function convertCircuitJsonToGltf(
 }
 
 export {
+  getPoppyglErrorOverlayOptions,
+  type PoppyglErrorOverlay,
+  type PoppyglErrorOverlayOptions,
+} from "./utils/poppygl-error-overlay"
+
+export {
   renderBoardLayer,
   renderBoardTextures,
 } from "./converters/board-renderer"

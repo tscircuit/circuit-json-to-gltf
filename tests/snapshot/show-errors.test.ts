@@ -1,7 +1,17 @@
 import { expect, test } from "bun:test"
 import { createCanvas, loadImage } from "@napi-rs/canvas"
-import { renderGLTFToPNGFromGLB } from "poppygl"
-import { convertCircuitJsonToGltf } from "../../lib"
+import {
+  buildCamera,
+  createSceneFromGLTF,
+  encodePNG,
+  loadGLTFWithResourcesFromURL,
+  renderSceneFromGLTF,
+  resolveRenderOptions,
+} from "poppygl"
+import {
+  convertCircuitJsonToGltf,
+  getPoppyglErrorOverlayOptions,
+} from "../../lib"
 import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
 import {
@@ -48,11 +58,16 @@ test("Circuit JSON errors appear as screen overlays in translated and invalid-fl
       foldPcbs: true,
       boardTextureResolution: 1024,
     })
-    const png = await renderGLTFToPNGFromGLB(glb as ArrayBuffer, {
+    const { gltf, resources } = await loadGLTFWithResourcesFromURL(
+      `data:model/gltf-binary;base64,${Buffer.from(glb as ArrayBuffer).toString("base64")}`,
+    )
+    const scene = createSceneFromGLTF(gltf, resources)
+    const options = resolveRenderOptions({
       width: tileWidth,
       height: tileHeight - heading,
       // Exported glTF (+Y up, mm): preserve each circuit's normal camera.
-      // Only PoppyGL draws the screen overlay embedded in the GLB metadata.
+      // The adapter only supplies stock PoppyGL debug labels, without changing
+      // any geometry or camera values.
       camPos:
         index === 0
           ? [-50, 42, -118]
@@ -65,7 +80,29 @@ test("Circuit JSON errors appear as screen overlays in translated and invalid-fl
       fov: 35,
       backgroundColor: "#f2f3f5",
       ambient: 0.45,
+      debugFontSize: 20,
+      debugLabelColor: [160, 0, 35],
+      debugPointColor: [160, 0, 35],
     })
+    const camera = buildCamera(
+      scene.drawCalls,
+      options.width * options.supersampling,
+      options.height * options.supersampling,
+      options.fov,
+      options.camPos,
+      options.lookAt,
+      options.up,
+      options.cameraRotation,
+    )
+    const overlay = getPoppyglErrorOverlayOptions(gltf, camera, {
+      width: options.width,
+      height: options.height,
+      supersampling: options.supersampling,
+      debugFontSize: options.debugFontSize ?? undefined,
+    })
+    expect(overlay).toBeDefined()
+    const { bitmap } = renderSceneFromGLTF(scene, { ...options, ...overlay })
+    const png = await encodePNG(bitmap)
     context.drawImage(await loadImage(png), index * tileWidth, heading)
     context.fillStyle = "#28323c"
     context.font = "20px sans-serif"

@@ -78,9 +78,8 @@ test("glTF and GLB store screen overlay metadata while preserving all geometry a
     showErrors: true,
     boardTextureResolution: 128,
   })) as any
-  const overlay = visible.scenes[visible.scene].extras.poppygl.textOverlay
-  expect(overlay.title).toBe("Circuit JSON errors (2)")
-  expect(overlay.messages).toEqual(
+  const messages = visible.scenes[visible.scene].extras.tscircuit.errorMessages
+  expect(messages).toEqual(
     input.flatMap((element) => ("message" in element ? [element.message] : [])),
   )
   // The metadata is the entire difference. It adds no nodes, meshes, materials,
@@ -103,8 +102,9 @@ test("glTF and GLB store screen overlay metadata while preserving all geometry a
     })) as ArrayBuffer,
   )
   expect(
-    visibleGlb.json.scenes[visibleGlb.json.scene].extras.poppygl.textOverlay,
-  ).toEqual(overlay)
+    visibleGlb.json.scenes[visibleGlb.json.scene].extras.tscircuit
+      .errorMessages,
+  ).toEqual(messages)
   expect(visibleGlb.binary).toEqual(hiddenGlb.binary)
   expect({
     ...visibleGlb.json,
@@ -132,7 +132,7 @@ test("unlocated source errors survive export even before board or component geom
   expect(json.nodes).toEqual([])
   expect(json.meshes).toEqual([])
   expect(binary.byteLength).toBe(0)
-  expect(json.scenes[json.scene].extras.poppygl.textOverlay.messages).toEqual(
+  expect(json.scenes[json.scene].extras.tscircuit.errorMessages).toEqual(
     scene.errorMessages,
   )
 })
@@ -157,7 +157,7 @@ test("the browser entry supports pre-geometry errors when showErrors is enabled"
       showErrors: true,
     })) as ArrayBuffer,
   )
-  expect(json.scenes[json.scene].extras.poppygl.textOverlay.messages).toEqual(
+  expect(json.scenes[json.scene].extras.tscircuit.errorMessages).toEqual(
     scene.errorMessages,
   )
   expect(binary.byteLength).toBe(0)
@@ -180,12 +180,12 @@ test("long multiline Unicode error messages remain intact in exported metadata",
   const messages = [...scene.errorMessages!]
   const gltf = (await convertSceneToGLTF(scene)) as any
   scene.errorMessages!.push("Later change to source scene")
-  expect(gltf.scenes[gltf.scene].extras.poppygl.textOverlay.messages).toEqual(
+  expect(gltf.scenes[gltf.scene].extras.tscircuit.errorMessages).toEqual(
     messages,
   )
-  expect(gltf.scenes[gltf.scene].extras.poppygl.textOverlay.title).toBe(
-    "Circuit JSON errors (1)",
-  )
+  expect(gltf.scenes[gltf.scene].extras).toEqual({
+    tscircuit: { errorMessages: messages },
+  })
 })
 
 test("exporter fold warnings do not become Circuit JSON error records", async () => {

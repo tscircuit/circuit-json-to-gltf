@@ -1,5 +1,11 @@
 // Browser-safe exports that don't include Node.js dependencies
 
+export {
+  getPoppyglErrorOverlayOptions,
+  type PoppyglErrorOverlay,
+  type PoppyglErrorOverlayOptions,
+} from "./utils/poppygl-error-overlay"
+
 export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
 export { clearSTLCache, loadSTL } from "./loaders/stl"

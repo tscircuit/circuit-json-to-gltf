@@ -23,8 +23,8 @@ export interface GLTFScene {
   name?: string
   nodes?: number[]
   extras?: {
-    poppygl?: {
-      textOverlay?: { title?: string; messages: string[] }
+    tscircuit?: {
+      errorMessages?: string[]
     }
   }
 }
