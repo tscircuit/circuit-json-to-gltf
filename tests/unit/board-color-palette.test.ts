@@ -51,3 +51,77 @@ test("uses pcb_board colors and supports the soldermask_color alias", () => {
   )
   expect(getBoardColorPalette(canonicalCircuit).silkscreenColor).toBe("#ffffff")
 })
+
+const flexBoard = {
+  type: "pcb_board" as const,
+  pcb_board_id: "flex_board",
+  center: { x: 0, y: 0 },
+  width: 20,
+  height: 10,
+  thickness: 0.12,
+  num_layers: 2,
+  material: "flex" as const,
+}
+
+test("flex material defaults to the viewer's polyimide amber", () => {
+  for (const solderMaskColor of [undefined, "not_specified"]) {
+    const circuit: CircuitJson = [
+      { ...flexBoard, solder_mask_color: solderMaskColor },
+    ]
+    const original = structuredClone(circuit)
+    expect(getBoardColorPalette(circuit)).toEqual({
+      backgroundColor: "#cc9c33",
+      boardSideColor: "#cc9c33",
+      solderMaskWithCopperColor: "#937025",
+      silkscreenColor: "#111827",
+    })
+    expect(circuit).toEqual(original)
+  }
+  const legacyUnset = [
+    { ...flexBoard, soldermask_color: "not_specified" },
+  ] as unknown as CircuitJson
+  expect(getBoardColorPalette(legacyUnset).backgroundColor).toBe("#cc9c33")
+  for (const solderMaskColor of ["not_specified", "", " "]) {
+    expect(getBoardColorPalette([flexBoard], { solderMaskColor })).toEqual(
+      getBoardColorPalette([flexBoard]),
+    )
+  }
+})
+
+test("explicit flex mask, legacy mask and silkscreen colors retain precedence", () => {
+  const board = {
+    ...flexBoard,
+    solder_mask_color: "#aeb8c6",
+    silkscreen_color: "white",
+  }
+  expect(getBoardColorPalette([board])).toEqual(
+    deriveBoardColorPalette("#aeb8c6", "white"),
+  )
+  const legacy = [
+    {
+      ...board,
+      solder_mask_color: "not_specified",
+      soldermask_color: "#aeb8c6",
+    },
+  ] as unknown as CircuitJson
+  expect(getBoardColorPalette(legacy)).toEqual(getBoardColorPalette([board]))
+  expect(
+    getBoardColorPalette([board], {
+      solderMaskColor: "#123456",
+      silkscreenColor: "#abcdef",
+    }),
+  ).toEqual(deriveBoardColorPalette("#123456", "#abcdef"))
+  expect(
+    getBoardColorPalette([{ ...flexBoard, silkscreen_color: "white" }])
+      .silkscreenColor,
+  ).toBe("#ffffff")
+})
+
+test("FR4 and unspecified materials keep their existing default palette", () => {
+  for (const material of ["fr4", undefined]) {
+    const circuit = [{ ...flexBoard, material }] as CircuitJson
+    expect(getBoardColorPalette(circuit)).toEqual({
+      silkscreenColor: undefined,
+    })
+  }
+})

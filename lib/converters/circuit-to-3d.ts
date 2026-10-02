@@ -57,6 +57,7 @@ import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import {
   colorToCssString,
   getBoardColorPalette,
+  getSpecifiedColor,
 } from "../utils/board-color-palette"
 import { renderBoardTextures } from "./board-renderer"
 
@@ -95,7 +96,6 @@ export async function convertCircuitJsonTo3D(
   options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
   const {
-    pcbColor = "rgba(0,140,0,0.8)",
     boardSideColor,
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
@@ -131,15 +131,19 @@ export async function convertCircuitJsonTo3D(
   const db: any = cju(circuitJson)
   const boxes: Box3D[] = []
 
+  const pcbColorOverride =
+    typeof options.pcbColor === "string"
+      ? getSpecifiedColor(options.pcbColor)
+      : options.pcbColor
   const palette = getBoardColorPalette(circuitJson, {
     solderMaskColor:
-      options.pcbColor !== undefined
-        ? colorToCssString(options.pcbColor)
+      pcbColorOverride !== undefined
+        ? colorToCssString(pcbColorOverride)
         : undefined,
     silkscreenColor,
   })
   const resolvedPcbColor =
-    options.pcbColor ?? palette.backgroundColor ?? pcbColor
+    pcbColorOverride ?? palette.backgroundColor ?? "rgba(0,140,0,0.8)"
   const resolvedBoardSideColor = boardSideColor ?? palette.boardSideColor
 
   const boardTextureColors = {
