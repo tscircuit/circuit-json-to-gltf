@@ -19,6 +19,9 @@ test.beforeEach(async ({ page }) => {
     }),
   )
   await page.goto(`/renderer.html?fixtureId=${fixtureId}&locked=true`)
+  // The fixture converts on mount. An initially enabled button can precede
+  // that effect, so wait for its completed result before uploading a file.
+  await expect(page.getByRole("link", { name: "Download GLTF" })).toBeVisible()
   await expect(
     page.getByRole("button", { name: "Convert to GLTF" }),
   ).toBeEnabled()
@@ -89,6 +92,9 @@ test("file picker supports replacement and recovery from invalid input", async (
       mimeType: "application/json",
       buffer: Buffer.from(contents),
     })
+    await expect(
+      page.getByRole("status", { name: "Selected circuit file" }),
+    ).toContainText("circuit.json")
     await page.getByRole("button", { name: "Convert to GLTF" }).click()
     await expect(page.getByRole("alert")).toBeVisible()
   }

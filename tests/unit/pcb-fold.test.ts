@@ -126,7 +126,7 @@ test("invalid or unsupported folds and rigid objects crossing zones fail explici
       [bend, { ...bend, start: { x: -10, y: 0 }, end: { x: 10, y: 0 } }],
       0.15,
     ),
-  ).toThrow("parallel")
+  ).toThrow("outline")
   expect(() =>
     createPcbFold([bend], 0.15).assertRigid(
       [

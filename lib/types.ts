@@ -19,6 +19,8 @@ export interface ConversionOptions {
   format?: "gltf" | "glb"
   boardTextureResolution?: number
   showPcbNotes?: boolean
+  /** Include full Circuit JSON error messages for screen overlay renderers. Defaults to false. */
+  showErrors?: boolean
   boardDrillQuality?: "high" | "fast"
   drawFauxBoard?: boolean
   includeModels?: boolean
@@ -136,6 +138,8 @@ export interface Scene3D {
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]
+  /** Full Circuit JSON error messages, independent of geometry and camera. */
+  errorMessages?: string[]
 }
 
 export interface Camera3D {
@@ -167,7 +171,7 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
-  /** Override folding for parallel, non-overlapping bends. Undefined follows CAD is_on_folded_board. */
+  /** Override folding for supported PCB bend regions. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color
   boardSideColor?: Color
@@ -183,6 +187,8 @@ export interface CircuitTo3DOptions {
   renderBoardTextures?: boolean
   textureResolution?: number
   showPcbNotes?: boolean
+  /** Include full Circuit JSON error messages for screen overlay renderers. Defaults to false. */
+  showErrors?: boolean
   coordinateTransform?: CoordinateTransformConfig
   showBoundingBoxes?: boolean
   projectBaseUrl?: string

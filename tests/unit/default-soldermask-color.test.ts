@@ -76,3 +76,31 @@ test("explicit texture color overrides still control mask and copper separately"
     expect(rendered.pours).toContainEqual([186, 184, 175, 255])
   }
 })
+
+test("flex textures use polyimide amber when background options are unspecified", async () => {
+  const circuit = createCircuit().map((element) =>
+    element.type === "pcb_board"
+      ? { ...element, material: "flex" as const }
+      : element,
+  )
+  for (const backgroundColor of [undefined, "", "not_specified"]) {
+    const textures = await renderBoardTextures(circuit, {
+      resolution: 400,
+      backgroundColor,
+    })
+    for (const layer of ["top", "bottom"] as const) {
+      expect((await pixels(textures[layer])).mask).toEqual([204, 156, 51, 255])
+      expect(
+        (
+          await pixels(
+            await renderBoardLayer(circuit, {
+              layer,
+              resolution: 400,
+              backgroundColor,
+            }),
+          )
+        ).mask,
+      ).toEqual([204, 156, 51, 255])
+    }
+  }
+})

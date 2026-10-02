@@ -1,16 +1,21 @@
 import {
   createStiffenerMesh,
-  getCadFoldContext,
+  tryFoldStiffenerMesh,
   transformCircuitJsonCadComponents,
+  type PcbFoldIssue,
+  type Point2,
 } from "@tscircuit/flex-utils"
 import { swapMeshFrame } from "../utils/pcb-fold"
 import {
-  createPcbFold,
   foldBoardMesh,
+  tryCreatePcbFold,
+  tryFoldBoardMesh,
+  type PcbFold,
   type PcbBendRecord,
   type PcbStiffenerRecord,
 } from "../utils/pcb-fold"
-import { foldRigidBox } from "../utils/fold-rigid-box"
+import { tryFoldRigidBox } from "../utils/fold-rigid-box"
+import { withCircuitJsonErrors } from "../utils/circuit-json-errors"
 import { cju, findBoundsAndCenter } from "@tscircuit/circuit-json-util"
 import type {
   CadComponent,
@@ -55,6 +60,7 @@ import { createPanelMesh } from "../utils/pcb-panel-geometry"
 import {
   colorToCssString,
   getBoardColorPalette,
+  getSpecifiedColor,
 } from "../utils/board-color-palette"
 import { renderBoardTextures } from "./board-renderer"
 
@@ -93,7 +99,6 @@ export async function convertCircuitJsonTo3D(
   options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
   const {
-    pcbColor = "rgba(0,140,0,0.8)",
     boardSideColor,
     componentColor = "rgba(128,128,128,0.5)",
     copperColor = "#C87B4B",
@@ -148,15 +153,19 @@ export async function convertCircuitJsonTo3D(
     hole_diameter: via.hole_diameter,
   }))
 
+  const pcbColorOverride =
+    typeof options.pcbColor === "string"
+      ? getSpecifiedColor(options.pcbColor)
+      : options.pcbColor
   const palette = getBoardColorPalette(circuitJson, {
     solderMaskColor:
-      options.pcbColor !== undefined
-        ? colorToCssString(options.pcbColor)
+      pcbColorOverride !== undefined
+        ? colorToCssString(pcbColorOverride)
         : undefined,
     silkscreenColor,
   })
   const resolvedPcbColor =
-    options.pcbColor ?? palette.backgroundColor ?? pcbColor
+    pcbColorOverride ?? palette.backgroundColor ?? "rgba(0,140,0,0.8)"
   const resolvedBoardSideColor = boardSideColor ?? palette.boardSideColor
 
   const boardTextureColors = {
@@ -191,10 +200,14 @@ export async function convertCircuitJsonTo3D(
       "PCB flex rendering requires exactly one board, matching board references, and no panel",
     )
   }
-  const fold =
-    foldPcbs && bends.length
-      ? createPcbFold(bends, pcbBoard?.thickness ?? boardThickness)
-      : undefined
+  // Set the active fold only after both construction and board deformation
+  // succeed. CAD and stiffeners then share the board's resolved fold state.
+  let fold: PcbFold | undefined
+  const reportFoldIssue = (label: string, issue: PcbFoldIssue) => {
+    console.warn(
+      `Unable to fold ${label}; keeping flat geometry: ${issue.message}`,
+    )
+  }
 
   // Panels don't have thickness, so always use board's thickness as fallback
   const effectiveBoardThickness = pcbBoard?.thickness ?? boardThickness
@@ -301,6 +314,31 @@ export async function convertCircuitJsonTo3D(
     const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
     const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
 
+    let foldedBoardMesh = boardMesh
+    if (foldPcbs && bends.length) {
+      const foldResult = tryCreatePcbFold(bends, effectiveBoardThickness, {
+        // Match flex-utils' getCadFoldContext: translate circuit-world XY mm
+        // into board-local +Z-up points before the shared surface deformation.
+        outline: pcbBoard.outline?.map((point: Point2) => ({
+          x: point.x - pcbBoard.center.x,
+          y: point.y - pcbBoard.center.y,
+        })),
+      })
+      if (foldResult.ok) {
+        const meshResult = tryFoldBoardMesh(boardMesh, foldResult.value)
+        if (meshResult.ok) {
+          fold = foldResult.value
+          foldedBoardMesh = meshResult.value
+        } else {
+          reportFoldIssue(
+            `PCB board ${pcbBoard.pcb_board_id}`,
+            meshResult.issue,
+          )
+        }
+      } else {
+        reportFoldIssue(`PCB board ${pcbBoard.pcb_board_id}`, foldResult.issue)
+      }
+    }
     const boardBox: Box3D = {
       center: {
         x: pcbBoard.center.x,
@@ -312,7 +350,7 @@ export async function convertCircuitJsonTo3D(
         y: effectiveBoardThickness,
         z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
       },
-      mesh: fold ? foldBoardMesh(boardMesh, fold) : boardMesh,
+      mesh: foldedBoardMesh,
       color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
     }
@@ -561,12 +599,13 @@ export async function convertCircuitJsonTo3D(
       box.meshType = meshType as any
     }
 
-    // Flex inputs share the same missing-rotation convention as core/viewer
-    // pose conversion, including legacy bottom-layer CAD without a rotation.
+    // Matches flex-utils' getCadFoldContext.defaultRotation in Circuit JSON
+    // (+Z up, intrinsic XYZ degrees). Resolving this flat layer convention
+    // does not require constructing an unsupported board fold.
     const cadRotation =
       cad.rotation ??
-      (bends.length
-        ? getCadFoldContext(cad, circuitJson)?.defaultRotation
+      (bends.length && pcbComponent
+        ? { x: isBottomLayer ? 180 : 0, y: 0, z: 0 }
         : undefined)
     // Add rotation if specified
     if (cadRotation) {
@@ -705,11 +744,13 @@ export async function convertCircuitJsonTo3D(
       box.color = componentColor
     }
 
-    boxes.push(
+    const result =
       fold && pcbComponent
-        ? foldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)
-        : box,
-    )
+        ? tryFoldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)
+        : undefined
+    if (result && !result.ok)
+      reportFoldIssue(`CAD component ${cad.cad_component_id}`, result.issue)
+    boxes.push(result?.ok ? result.value : box)
   }
 
   // Add generic boxes for components without 3D models (only if showBoundingBoxes is true)
@@ -747,20 +788,32 @@ export async function convertCircuitJsonTo3D(
         label: sourceComponent?.name ?? "?",
         labelColor: "white",
       }
-      boxes.push(
-        fold ? foldRigidBox(box, fold, pcbBoard.center, component.center) : box,
-      )
+      const result = fold
+        ? tryFoldRigidBox(box, fold, pcbBoard.center, component.center)
+        : undefined
+      if (result && !result.ok)
+        reportFoldIssue(
+          `PCB component ${component.pcb_component_id}`,
+          result.issue,
+        )
+      boxes.push(result?.ok ? result.value : box)
     }
   }
 
   for (const stiffener of stiffeners) {
-    const mesh = swapMeshFrame(
-      createStiffenerMesh({
-        stiffener: stiffener,
-        boardThickness: effectiveBoardThickness,
-        fold: fold,
-      }),
-    )
+    const flatMesh = createStiffenerMesh({
+      stiffener,
+      boardThickness: effectiveBoardThickness,
+    })
+    const result = fold
+      ? tryFoldStiffenerMesh(flatMesh, stiffener, fold)
+      : undefined
+    if (result && !result.ok)
+      reportFoldIssue(
+        `PCB stiffener ${stiffener.pcb_stiffener_id}`,
+        result.issue,
+      )
+    const mesh = swapMeshFrame(result?.ok ? result.value : flatMesh)
     boxes.push({
       center: { x: pcbBoard.center.x, y: 0, z: pcbBoard.center.y },
       size: getBoundingBoxSize(mesh.boundingBox),
@@ -903,9 +956,12 @@ export async function convertCircuitJsonTo3D(
     },
   ]
 
-  return {
+  const scene: Scene3D = {
     boxes,
     camera,
     lights,
   }
+  return options.showErrors
+    ? withCircuitJsonErrors(scene, inputCircuitJson)
+    : scene
 }

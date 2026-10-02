@@ -22,6 +22,11 @@ export interface GLTF {
 export interface GLTFScene {
   name?: string
   nodes?: number[]
+  extras?: {
+    tscircuit?: {
+      errorMessages?: string[]
+    }
+  }
 }
 
 export interface GLTFNode {
