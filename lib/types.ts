@@ -170,7 +170,7 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
-  /** Override folding for parallel, non-overlapping bends. Undefined follows CAD is_on_folded_board. */
+  /** Override folding for supported PCB bend regions. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color
   boardSideColor?: Color

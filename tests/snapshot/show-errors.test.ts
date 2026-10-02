@@ -16,16 +16,16 @@ import type { CircuitJsonWithPcbFlex } from "../../lib/types"
 import { createCircuitJsonErrors } from "../fixtures/circuit-json-errors"
 import {
   createBendZoneFlex,
-  createNonparallelFlex,
+  createCrossingFlex,
 } from "../fixtures/invalid-flex"
 
 test("Circuit JSON errors appear as screen overlays in translated and invalid-flex GLB scenes", async () => {
-  const nonparallel = createNonparallelFlex()
+  const crossing = createCrossingFlex()
   const bendZone = createBendZoneFlex(true)
   for (const [input, message] of [
     [
-      nonparallel,
-      "Unable to fold PCB board flex_board; CAD remains flat: PCB bending requires parallel bend lines.",
+      crossing,
+      "Unable to fold PCB board flex_board; CAD remains flat: Overlapping PCB bend zones or incompatible moving regions are not supported.",
     ],
     [
       bendZone,
@@ -41,7 +41,7 @@ test("Circuit JSON errors appear as screen overlays in translated and invalid-fl
   }
   const inputs: CircuitJsonWithPcbFlex[] = [
     createCircuitJsonErrors(),
-    nonparallel,
+    crossing,
     bendZone,
   ]
   const tileWidth = 820
@@ -109,7 +109,7 @@ test("Circuit JSON errors appear as screen overlays in translated and invalid-fl
     context.fillText(
       [
         "Translated board: PCB and unlocated source errors",
-        "Nonparallel bends: visible placement error",
+        "Crossing bends: visible placement error",
         "Bend-zone mount: error and folded valid geometry",
       ][index]!,
       index * tileWidth + 16,

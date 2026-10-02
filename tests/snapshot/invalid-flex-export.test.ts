@@ -4,7 +4,7 @@ import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
 import {
   createBendZoneFlex,
-  createNonparallelFlex,
+  createCrossingFlex,
 } from "../fixtures/invalid-flex"
 
 test("invalid flex inputs retain exportable geometry with visible flat fallbacks", async () => {
@@ -16,7 +16,7 @@ test("invalid flex inputs retain exportable geometry with visible flat fallbacks
   context.fillStyle = "#f2f3f5"
   context.fillRect(0, 0, canvas.width, canvas.height)
   for (const [index, input] of [
-    createNonparallelFlex(),
+    createCrossingFlex(),
     createBendZoneFlex(true),
   ].entries()) {
     const glb = await convertCircuitJsonToGltf(input, {
@@ -41,7 +41,7 @@ test("invalid flex inputs retain exportable geometry with visible flat fallbacks
     context.font = "20px sans-serif"
     context.fillText(
       index === 0
-        ? "Unsupported bends: board and R1/R2 stay flat"
+        ? "Crossing bends: board and R1/R2 stay flat"
         : "Bend-zone R1/stiffener stay flat; board and R3 fold",
       index * tileWidth + 18,
       27,
