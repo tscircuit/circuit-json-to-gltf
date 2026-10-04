@@ -35,4 +35,6 @@ jobs:
           path: |
             tests/snapshot/**/*.snap.png
             tests/snapshot/**/*.diff.png
+            tests/repro/**/*.snap.png
+            tests/repro/**/*.diff.png
           retention-days: 7
