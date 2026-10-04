@@ -361,6 +361,12 @@ export function createMeshFromOBJ(
     : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
 }
 
+/** Transform points (mm) and normals (directions) in the internal scene frame
+ * (+X circuit X, +Y circuit Z, +Z circuit Y). Rotation angles are radians with
+ * axes remapped by circuit-to-3d. Apply circuit Z, then Y, then X, matching
+ * 3d-viewer's getBaseCadRotation / THREE.Euler(..., "XYZ"). The axis swap
+ * changes handedness, hence the negative scene-axis rotations below.
+ */
 export function transformMesh(
   mesh: MeshData,
   translation: Point3,
@@ -399,19 +405,19 @@ export function transformMesh(
       x = rx
       z = rz
 
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const ry = y * cosX + z * sinX
-      const rz2 = -y * sinX + z * cosX
-      y = ry
-      z = rz2
-
       const cosZ = Math.cos(rotation.z)
       const sinZ = Math.sin(rotation.z)
       const rx2 = x * cosZ + y * sinZ
       const ry2 = -x * sinZ + y * cosZ
       x = rx2
       y = ry2
+
+      const cosX = Math.cos(rotation.x)
+      const sinX = Math.sin(rotation.x)
+      const ry = y * cosX + z * sinX
+      const rz2 = -y * sinX + z * cosX
+      y = ry
+      z = rz2
     }
 
     // Apply translation
@@ -434,19 +440,19 @@ export function transformMesh(
       nx = rnx
       nz = rnz
 
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
-      const rny = ny * cosX + nz * sinX
-      const rnz2 = -ny * sinX + nz * cosX
-      ny = rny
-      nz = rnz2
-
       const cosZ = Math.cos(rotation.z)
       const sinZ = Math.sin(rotation.z)
       const rnx2 = nx * cosZ + ny * sinZ
       const rny2 = -nx * sinZ + ny * cosZ
       nx = rnx2
       ny = rny2
+
+      const cosX = Math.cos(rotation.x)
+      const sinX = Math.sin(rotation.x)
+      const rny = ny * cosX + nz * sinX
+      const rnz2 = -ny * sinX + nz * cosX
+      ny = rny
+      nz = rnz2
 
       result.normals[i] = nx
       result.normals[i + 1] = ny
