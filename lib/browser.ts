@@ -60,6 +60,7 @@ export async function convertCircuitJsonTo3D(
       !circuitJson.some((element) => element.type === "pcb_board")) ||
     circuitJson.some(
       (e) =>
+        e.type === "cad_cable" ||
         e.type === "pcb_stiffener" ||
         e.type === "pcb_bend" ||
         (e.type === "pcb_board" && e.material === "flex"),

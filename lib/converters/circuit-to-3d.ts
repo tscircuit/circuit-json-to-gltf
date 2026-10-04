@@ -27,6 +27,7 @@ import type {
 import { loadFootprinterModel } from "../loaders/footprinter"
 import { loadGLB } from "../loaders/glb"
 import { loadGLTF } from "../loaders/gltf"
+import { loadCable } from "../loaders/cable"
 import { loadJscadPlan } from "../loaders/jscad-plan"
 import { loadOBJ } from "../loaders/obj"
 import { loadSTEP } from "../loaders/step"
@@ -756,6 +757,12 @@ export async function convertCircuitJsonTo3D(
             : "#b8bdc4",
       label: stiffener.pcb_stiffener_id,
     })
+  }
+
+  for (const cable of circuitJson.filter(
+    (element) => element.type === "cad_cable",
+  )) {
+    boxes.push(...loadCable(cable))
   }
 
   // Create a default camera positioned to view the board or components
