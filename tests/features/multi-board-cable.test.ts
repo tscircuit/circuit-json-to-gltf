@@ -35,3 +35,23 @@ test("browser export retains multiple boards without a cable", async () => {
     -60, 60,
   ])
 })
+
+test("exported boards keep distinct top and bottom texture materials", async () => {
+  const gltf = (await convertCircuitJsonToGltf(json, { format: "gltf" })) as any
+  const boardNodes = gltf.nodes.filter(
+    (node: any) => node.name === "Box0" || node.name === "Box1",
+  )
+  expect(boardNodes).toHaveLength(2)
+  const textures = boardNodes.map((node: any) => {
+    const primitives = gltf.meshes[node.mesh].primitives
+    return primitives
+      .slice(0, 2)
+      .map(
+        (primitive: any) =>
+          gltf.materials[primitive.material].pbrMetallicRoughness
+            .baseColorTexture.index,
+      )
+  })
+  expect(textures[0][0]).not.toBe(textures[1][0])
+  expect(textures[0][1]).not.toBe(textures[1][1])
+})

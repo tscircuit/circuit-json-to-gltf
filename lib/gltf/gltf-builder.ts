@@ -303,9 +303,13 @@ export class GLTFBuilder {
 
     // Top material with texture
     if (topTriangles.length > 0 && box.texture?.top) {
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
       const topMaterialIndex = this.addMaterial({
         name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
+          ...(textureIndex !== -1
+            ? { baseColorTexture: { index: textureIndex } }
+            : {}),
           baseColorFactor: [1.0, 1.0, 1.0, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
@@ -313,16 +317,6 @@ export class GLTFBuilder {
         alphaMode: "OPAQUE",
         doubleSided: true,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-      if (textureIndex !== -1) {
-        const material = this.materials[topMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       materials.push({
         triangles: topTriangles,
         materialIndex: topMaterialIndex,
@@ -331,9 +325,13 @@ export class GLTFBuilder {
 
     // Bottom material with texture
     if (bottomTriangles.length > 0 && box.texture?.bottom) {
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
       const bottomMaterialIndex = this.addMaterial({
         name: `BottomMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
+          ...(textureIndex !== -1
+            ? { baseColorTexture: { index: textureIndex } }
+            : {}),
           // baseColorFactor: [     0.04,
           //   0.16,
           //   0.08, 1.0],
@@ -343,16 +341,6 @@ export class GLTFBuilder {
         alphaMode: "OPAQUE",
         doubleSided: true,
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
-      if (textureIndex !== -1) {
-        const material = this.materials[bottomMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       materials.push({
         triangles: bottomTriangles,
         materialIndex: bottomMaterialIndex,
@@ -513,25 +501,19 @@ export class GLTFBuilder {
 
     // Top face - use texture if available
     if (box.texture?.top) {
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
       const topMaterialIndex = this.addMaterial({
         name: `TopMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
+          ...(textureIndex !== -1
+            ? { baseColorTexture: { index: textureIndex } }
+            : {}),
           baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
         alphaMode: "OPAQUE",
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.top)
-      if (textureIndex !== -1) {
-        const material = this.materials[topMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       faceMaterials.top = topMaterialIndex
     } else {
       faceMaterials.top = defaultMaterialIndex
@@ -539,25 +521,19 @@ export class GLTFBuilder {
 
     // Bottom face - use texture if available
     if (box.texture?.bottom) {
+      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
       const bottomMaterialIndex = this.addMaterial({
         name: `BottomMaterial_${this.materials.length}`,
         pbrMetallicRoughness: {
+          ...(textureIndex !== -1
+            ? { baseColorTexture: { index: textureIndex } }
+            : {}),
           baseColorFactor: [0.04, 0.16, 0.08, 1.0],
           metallicFactor: 0.0,
           roughnessFactor: 0.8,
         },
         alphaMode: "OPAQUE",
       })
-
-      const textureIndex = await this.addTextureFromDataUrl(box.texture.bottom)
-      if (textureIndex !== -1) {
-        const material = this.materials[bottomMaterialIndex]!
-        if (material.pbrMetallicRoughness) {
-          material.pbrMetallicRoughness.baseColorTexture = {
-            index: textureIndex,
-          }
-        }
-      }
       faceMaterials.bottom = bottomMaterialIndex
     } else {
       faceMaterials.bottom = defaultMaterialIndex
