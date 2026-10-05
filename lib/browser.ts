@@ -55,6 +55,7 @@ export async function convertCircuitJsonTo3D(
   } = options
 
   if (
+    circuitJson.filter((element) => element.type === "pcb_board").length > 1 ||
     options.foldPcbs === true ||
     (options.showErrors === true &&
       !circuitJson.some((element) => element.type === "pcb_board")) ||
