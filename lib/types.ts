@@ -1,4 +1,5 @@
 import type { CircuitJson, PcbBoard } from "circuit-json"
+import type { MaterialOptions } from "jscad-planner"
 import type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
 
 /** Accept unreleased flex records alongside existing Circuit JSON elements. */
@@ -70,6 +71,8 @@ export interface Size3 {
 }
 
 export interface Triangle {
+  /** Authored JSCAD appearance; color tuples use linear 0–1 RGB. */
+  material?: MaterialOptions
   /** Original PCB surface identity, retained after folding. */
   pcbFace?: "top" | "bottom" | "side"
   /** Flat PCB texture coordinates, retained/interpolated during tessellation. */
