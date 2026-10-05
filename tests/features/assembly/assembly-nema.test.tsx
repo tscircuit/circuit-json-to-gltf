@@ -12,7 +12,10 @@ for (const [model, width, length, shaftLength] of [
     circuit.add(
       <assembly.device name="motor-controller">
         <board width={42.3} height={42.3} routingDisabled />
-        <assembly.subassembly name="MOTOR" cadModel={model} />
+        <assembly.subassembly
+          name="MOTOR"
+          cadModel={`${model}_nowires_plainbackface`}
+        />
       </assembly.device>,
     )
     await circuit.renderUntilSettled()
@@ -20,7 +23,7 @@ for (const [model, width, length, shaftLength] of [
     const cad = circuit.db.cad_component.list()[0]!
     expect(cad.pcb_component_id).toBeUndefined()
     expect(circuit.db.pcb_component.list()).toHaveLength(0)
-    expect(cad.footprinter_string).toBe(model)
+    expect(cad.footprinter_string).toBe(`${model}_nowires_plainbackface`)
 
     const scene = await convertCircuitJsonTo3D(json, {
       renderBoardTextures: false,
