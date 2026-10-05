@@ -159,7 +159,8 @@ export async function convertCircuitJsonTo3D(
   }
 
   const pcbPanel = db.pcb_panel?.list?.()[0] as PcbPanel | undefined
-  const pcbBoard = db.pcb_board?.list?.()[0]
+  const pcbBoards = db.pcb_board?.list?.() ?? []
+  const pcbBoard = pcbBoards[0]
   const pcbComponents = db.pcb_component?.list?.() ?? []
   const bends = inputCircuitJson.filter(
     (e): e is PcbBendRecord => e.type === "pcb_bend",
@@ -250,91 +251,113 @@ export async function convertCircuitJsonTo3D(
     }
 
     boxes.push(panelBox)
-  } else if (pcbBoard) {
-    // Create the main PCB board box
-    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
-    const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
-      []) as PcbPlatedHole[]
-    const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
-    const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
-
-    const boardMesh = createBoardMesh(pcbBoard, {
-      thickness: effectiveBoardThickness,
-      holes: pcbHoles,
-      platedHoles: pcbPlatedHoles,
-      cutouts: boardCutouts,
-      drillQuality: boardDrillQuality,
-    })
-
-    const meshWidth = boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
-    const meshHeight = boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
-
-    let foldedBoardMesh = boardMesh
-    if (foldPcbs && bends.length) {
-      const foldResult = tryCreatePcbFold(bends, effectiveBoardThickness, {
-        // Match flex-utils' getCadFoldContext: translate circuit-world XY mm
-        // into board-local +Z-up points before the shared surface deformation.
-        outline: pcbBoard.outline?.map((point: Point2) => ({
-          x: point.x - pcbBoard.center.x,
-          y: point.y - pcbBoard.center.y,
-        })),
+  } else if (pcbBoards.length) {
+    for (const pcbBoard of pcbBoards) {
+      const effectiveBoardThickness = pcbBoard.thickness ?? boardThickness
+      const boardCircuitJson = circuitJson.filter((element: any) => {
+        if (element.type === "pcb_board")
+          return element.pcb_board_id === pcbBoard.pcb_board_id
+        if (!element.type.startsWith("pcb_")) return true
+        if (element.pcb_board_id)
+          return element.pcb_board_id === pcbBoard.pcb_board_id
+        return (
+          pcbBoards.length === 1 ||
+          element.subcircuit_id === pcbBoard.subcircuit_id
+        )
       })
-      if (foldResult.ok) {
-        const meshResult = tryFoldBoardMesh(boardMesh, foldResult.value)
-        if (meshResult.ok) {
-          fold = foldResult.value
-          foldedBoardMesh = meshResult.value
+      const boardDb = cju(boardCircuitJson)
+      // Create each PCB at its circuit-world XY position, using the existing
+      // single-board mapping to glTF +Y-up below.
+
+      const pcbHoles = (boardDb.pcb_hole?.list?.() ?? []) as PcbHole[]
+      const pcbPlatedHoles = (boardDb.pcb_plated_hole?.list?.() ??
+        []) as PcbPlatedHole[]
+      const pcbCutouts = (boardDb.pcb_cutout?.list?.() ?? []) as PcbCutout[]
+      const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
+
+      const boardMesh = createBoardMesh(pcbBoard, {
+        thickness: effectiveBoardThickness,
+        holes: pcbHoles,
+        platedHoles: pcbPlatedHoles,
+        cutouts: boardCutouts,
+        drillQuality: boardDrillQuality,
+      })
+
+      const meshWidth =
+        boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
+      const meshHeight =
+        boardMesh.boundingBox.max.z - boardMesh.boundingBox.min.z
+
+      let foldedBoardMesh = boardMesh
+      if (foldPcbs && bends.length) {
+        const foldResult = tryCreatePcbFold(bends, effectiveBoardThickness, {
+          // Match flex-utils' getCadFoldContext: translate circuit-world XY mm
+          // into board-local +Z-up points before the shared surface deformation.
+          outline: pcbBoard.outline?.map((point: Point2) => ({
+            x: point.x - pcbBoard.center.x,
+            y: point.y - pcbBoard.center.y,
+          })),
+        })
+        if (foldResult.ok) {
+          const meshResult = tryFoldBoardMesh(boardMesh, foldResult.value)
+          if (meshResult.ok) {
+            fold = foldResult.value
+            foldedBoardMesh = meshResult.value
+          } else {
+            reportFoldIssue(
+              `PCB board ${pcbBoard.pcb_board_id}`,
+              meshResult.issue,
+            )
+          }
         } else {
           reportFoldIssue(
             `PCB board ${pcbBoard.pcb_board_id}`,
-            meshResult.issue,
+            foldResult.issue,
           )
         }
-      } else {
-        reportFoldIssue(`PCB board ${pcbBoard.pcb_board_id}`, foldResult.issue)
       }
-    }
-    const boardBox: Box3D = {
-      center: {
-        x: pcbBoard.center.x,
-        y: 0,
-        z: pcbBoard.center.y,
-      },
-      size: {
-        x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
-        y: effectiveBoardThickness,
-        z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
-      },
-      mesh: foldedBoardMesh,
-      color: resolvedPcbColor,
-      sideColor: resolvedBoardSideColor,
-    }
+      const boardBox: Box3D = {
+        center: {
+          x: pcbBoard.center.x,
+          y: 0,
+          z: pcbBoard.center.y,
+        },
+        size: {
+          x: Number.isFinite(meshWidth) ? meshWidth : pcbBoard.width,
+          y: effectiveBoardThickness,
+          z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
+        },
+        mesh: foldedBoardMesh,
+        color: resolvedPcbColor,
+        sideColor: resolvedBoardSideColor,
+      }
 
-    // Render board textures if requested and resolution > 0
-    if (shouldRenderTextures && textureResolution > 0) {
-      try {
-        const textures = await renderBoardTextures(circuitJson, {
-          resolution: textureResolution,
-          showPcbNotes,
-          ...boardTextureColors,
-        })
-        boardBox.texture = {
-          top: textures.top,
-          bottom: textures.bottom,
+      // Render board textures if requested and resolution > 0
+      if (shouldRenderTextures && textureResolution > 0) {
+        try {
+          const textures = await renderBoardTextures(boardCircuitJson, {
+            resolution: textureResolution,
+            showPcbNotes,
+            ...boardTextureColors,
+          })
+          boardBox.texture = {
+            top: textures.top,
+            bottom: textures.bottom,
+          }
+        } catch (error) {
+          console.warn("Failed to render board textures:", error)
+          // If texture rendering fails, use the fallback color
+          boardBox.color = resolvedPcbColor
         }
-      } catch (error) {
-        console.warn("Failed to render board textures:", error)
-        // If texture rendering fails, use the fallback color
+      } else {
+        // No textures requested, use solid color
         boardBox.color = resolvedPcbColor
       }
-    } else {
-      // No textures requested, use solid color
-      boardBox.color = resolvedPcbColor
-    }
 
-    if (fold && boardBox.mesh)
-      boardBox.size = getBoundingBoxSize(boardBox.mesh.boundingBox)
-    boxes.push(boardBox)
+      if (fold && boardBox.mesh)
+        boardBox.size = getBoundingBoxSize(boardBox.mesh.boundingBox)
+      boxes.push(boardBox)
+    }
   } else if (drawFauxBoard) {
     const hasComponentBounds = pcbComponents.length > 0
     const componentBounds = hasComponentBounds
