@@ -1,4 +1,6 @@
-import type { Scene3D, Box3D, Color, OBJMesh } from "../types"
+import type { MaterialOptions } from "jscad-planner"
+import { colors } from "@jscad/modeling"
+import type { Scene3D, Box3D, Color, OBJMesh, Triangle } from "../types"
 import type {
   GLTF,
   GLTFScene,
@@ -111,6 +113,11 @@ export class GLTFBuilder {
       return
     }
 
+    if (box.mesh?.triangles.some((triangle) => triangle.material)) {
+      this.addJscadMeshWithMaterials(box)
+      return
+    }
+
     // Fallback to original single-material approach
     let meshData: MeshData
 
@@ -162,6 +169,120 @@ export class GLTFBuilder {
 
     // Add node to scene
     this.gltf.scenes![0]!.nodes!.push(nodeIndex)
+  }
+
+  private addJscadMeshWithMaterials(box: Box3D): void {
+    const mesh = box.mesh!
+    const groups = new Map<number, Triangle[]>()
+    for (const triangle of mesh.triangles) {
+      const authored = triangle.material ?? {}
+      const base = this.jscadColor(authored.color, [0.7, 0.7, 0.7])
+      const opacity = authored.opacity ?? (box.isTranslucent ? 0.5 : 1)
+      const transparent =
+        authored.transparent ?? (opacity < 1 || !!box.isTranslucent)
+      const strength = authored.emissiveIntensity ?? 1
+      const index = this.addMaterial({
+        pbrMetallicRoughness: {
+          baseColorFactor: [...base, opacity],
+          metallicFactor: authored.metalness ?? 0.1,
+          roughnessFactor: authored.roughness ?? 0.9,
+        },
+        emissiveFactor: this.jscadColor(authored.emissive, [0, 0, 0]),
+        ...(strength !== 1
+          ? {
+              extensions: {
+                KHR_materials_emissive_strength: { emissiveStrength: strength },
+              },
+            }
+          : {}),
+        alphaMode: transparent ? "BLEND" : "OPAQUE",
+        doubleSided: transparent || undefined,
+      })
+      if (strength !== 1)
+        this.gltf.extensionsUsed = ["KHR_materials_emissive_strength"]
+      const group = groups.get(index) ?? []
+      group.push(triangle)
+      groups.set(index, group)
+    }
+    const primitives = [...groups].map(([material, triangles]) => ({
+      material,
+      // Match addBox: preserve its scene-frame rotation and canonical export orientation.
+      meshData: convertMeshToGLTFOrientation(
+        transformMesh(
+          createMeshFromSTL({ triangles, boundingBox: mesh.boundingBox }),
+          { x: 0, y: 0, z: 0 },
+          box.rotation,
+        ),
+      ),
+    }))
+    const meshIndex = this.addMultiPrimitiveMesh(
+      primitives,
+      box.label || `JscadMesh${this.meshes.length}`,
+      "jscad",
+    )
+    const nodeIndex = this.nodes.length
+    this.nodes.push({
+      name: box.label || `Box${nodeIndex}`,
+      mesh: meshIndex,
+      translation: this.toGltfTranslation(box.center),
+      ...this.getPoppyglNodeExtras(box),
+    })
+    this.gltf.scenes![0]!.nodes!.push(nodeIndex)
+  }
+
+  private jscadColor(
+    color: MaterialOptions["color"],
+    fallback: [number, number, number],
+  ): [number, number, number] {
+    if (color === undefined) return fallback
+    // Numeric and CSS colors are sRGB, matching Three.Color.set; RGB tuples are linear.
+    if (Array.isArray(color)) return [...color]
+    let rgb: number[]
+    if (typeof color === "number")
+      rgb = [
+        ((color >> 16) & 255) / 255,
+        ((color >> 8) & 255) / 255,
+        (color & 255) / 255,
+      ]
+    else {
+      const css = color.trim().toLowerCase()
+      if (css.startsWith("#")) {
+        const hex = css.slice(1)
+        rgb = colors.hexToRgb(
+          hex.length === 3 || hex.length === 4
+            ? `#${[...hex].map((digit) => digit + digit).join("")}`
+            : css,
+        )
+      } else if (/^rgba?\(/.test(css)) {
+        rgb = css
+          .slice(css.indexOf("(") + 1, -1)
+          .split(/[,\s/]+/)
+          .slice(0, 3)
+          .map(
+            (channel) =>
+              parseFloat(channel) / (channel.endsWith("%") ? 100 : 255),
+          )
+      } else if (/^hsla?\(/.test(css)) {
+        const [h, s, l] = css.slice(css.indexOf("(") + 1, -1).split(/[,\s/]+/)
+        rgb = colors.hslToRgb(
+          (((parseFloat(h!) % 360) + 360) % 360) / 360,
+          parseFloat(s!) / 100,
+          parseFloat(l!) / 100,
+        )
+      } else rgb = colors.colorNameToRgb(css)
+      if (
+        !rgb ||
+        rgb.length < 3 ||
+        rgb.some((value) => !Number.isFinite(value))
+      ) {
+        throw new Error(`Unsupported JSCAD material color: ${color}`)
+      }
+    }
+    return rgb
+      .slice(0, 3)
+      .map((value) =>
+        value <= 0.04045 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4,
+      ) as [number, number, number]
   }
 
   private async addOBJMeshWithMaterials(

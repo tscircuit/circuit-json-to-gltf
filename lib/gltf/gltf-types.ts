@@ -17,6 +17,7 @@ export interface GLTF {
   textures?: GLTFTexture[]
   images?: GLTFImage[]
   samplers?: GLTFSampler[]
+  extensionsUsed?: string[]
 }
 
 export interface GLTFScene {
@@ -86,6 +87,9 @@ export interface GLTFAccessor {
 }
 
 export interface GLTFMaterial {
+  extensions?: {
+    KHR_materials_emissive_strength?: { emissiveStrength: number }
+  }
   name?: string
   pbrMetallicRoughness?: {
     baseColorFactor?: [number, number, number, number]
