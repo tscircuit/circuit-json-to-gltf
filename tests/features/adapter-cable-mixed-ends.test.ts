@@ -13,7 +13,11 @@ test("generic adapter strings render mixed connector families and native contact
       name: "ADAPTER",
       from_source_component_id: "a",
       to_source_component_id: "b",
-      cableprinter_string: `adaptercable_a(${a})_b(${b})`,
+      // Named ends preserve their meaning even when written in reverse order.
+      cableprinter_string:
+        count === 4
+          ? `adaptercable_b(${b})_a(${a})`
+          : `adaptercable_a(${a})_b(${b})`,
       path: [
         { x: 0, y: 0, z: 0 },
         { x: 0, y: 0, z: 70 },
