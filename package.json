@@ -22,7 +22,7 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
-    "@tscircuit/cableprinter": "https://pkg.pr.new/tscircuit/cableprinter/@tscircuit/cableprinter@e7b28af",
+    "@tscircuit/cableprinter": "https://pkg.pr.new/tscircuit/cableprinter/@tscircuit/cableprinter@5a4a697",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
     "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@b21b030",
@@ -58,7 +58,8 @@
     "react-dom": "^19.1.1",
     "tscircuit": "^0.0.2611",
     "tsup": "^8.5.0",
-    "vite": "^7.1.1"
+    "vite": "^7.1.1",
+    "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@21c4785"
   },
   "peerDependencies": {
     "typescript": "^5",

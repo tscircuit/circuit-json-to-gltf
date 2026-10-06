@@ -9,7 +9,8 @@ test("3.5 mm to 4 mm adapter GLBs preserve separate socket sizes and all three w
     name: "BLDC_PHASE_LEADS",
     from_source_component_id: "motor",
     to_source_component_id: "controller",
-    cableprinter_string: "bullet3_da3.5mm_db4mm_afemale_bfemale",
+    cableprinter_string:
+      "adaptercable_a(bullet3_d3.5mm_gfemale)_b(bullet3_d4mm_gfemale)",
     path: [
       { x: 0, y: 0, z: 0 },
       { x: 0, y: 0, z: 60 },
