@@ -19,6 +19,22 @@ export function loadCable(cable: CadCable): Box3D[] {
   const meshes = createCableMeshes({
     definition: parseCableString(cable.cableprinter_string),
     path: cable.path.map(({ x, y, z }) => [x, y, z]),
+    // These are circuit-world directions, just like the path. Pass them
+    // through before the paired CIRCUIT_Z_UP_TO_SCENE_Y_UP mesh transform.
+    startWidthDirection: cable.from_connector_width_direction
+      ? [
+          cable.from_connector_width_direction.x,
+          cable.from_connector_width_direction.y,
+          cable.from_connector_width_direction.z,
+        ]
+      : undefined,
+    endWidthDirection: cable.to_connector_width_direction
+      ? [
+          cable.to_connector_width_direction.x,
+          cable.to_connector_width_direction.y,
+          cable.to_connector_width_direction.z,
+        ]
+      : undefined,
   })
   return meshes.map((mesh): Box3D => {
     const circuitTriangles: Triangle[] = []
