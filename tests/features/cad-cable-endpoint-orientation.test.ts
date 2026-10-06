@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import type { CadCable, CircuitJson } from "circuit-json"
 import { loadCable } from "../../lib/loaders/cable"
 
-test("plug widths follow footprint pins across rotations and mirrored layers without cable metadata", () => {
+test("plug pin 1 sides follow footprint pins across rotations and mirrored layers", () => {
   const cable: CadCable = {
     type: "cad_cable",
     cad_cable_id: "cable",
@@ -45,6 +45,8 @@ test("plug widths follow footprint pins across rotations and mirrored layers wit
           )
         }
       }
+      // Inference must use pin identity, not insertion order or a width axis.
+      context.reverse()
       const boxes = loadCable(cable, context)
       for (const [end, rotation] of [
         ["A", angle],
@@ -64,6 +66,25 @@ test("plug widths follow footprint pins across rotations and mirrored layers wit
           13.8,
           5,
         )
+        const wire = boxes.find((box) => box.label === "PH / wire-1")!
+        const cap = wire
+          .mesh!.triangles.flatMap((t) => t.vertices)
+          .filter((v) => Math.abs(v.y - (end === "A" ? 0 : 30)) < 1e-6)
+        const id = end === "A" ? "from" : "to"
+        const pin1 = context.find(
+          (e) => e.type === "pcb_port" && e.source_port_id === `${id}_1`,
+        )!
+        if (pin1.type !== "pcb_port") throw new Error("Missing pin 1")
+        for (const [axis, expected] of [
+          ["x", pin1.x],
+          ["z", pin1.y],
+        ] as const) {
+          const values = cap.map((v) => v[axis])
+          expect((Math.min(...values) + Math.max(...values)) / 2).toBeCloseTo(
+            expected,
+            5,
+          )
+        }
       }
     }
   }

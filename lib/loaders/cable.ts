@@ -8,7 +8,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
-import { inferCableEndpointWidth } from "./infer-cable-endpoint-width"
+import { inferCableEndpointPin1Side } from "./infer-cable-endpoint-pin1-side"
 import { getBoundingBoxSize } from "../utils/mesh-scale"
 
 /** Consume resolved circuit-world points in mm (+X right, +Y top, +Z above).
@@ -24,8 +24,8 @@ export function loadCable(
     definition: parseCableString(cable.cableprinter_string),
     path: cable.path.map(({ x, y, z }) => [x, y, z]),
     // Infer in circuit Z-up before the paired mesh transform to scene Y-up.
-    startWidthDirection: inferCableEndpointWidth(cable, circuitJson, "from"),
-    endWidthDirection: inferCableEndpointWidth(cable, circuitJson, "to"),
+    startPin1Side: inferCableEndpointPin1Side(cable, circuitJson, "from"),
+    endPin1Side: inferCableEndpointPin1Side(cable, circuitJson, "to"),
   })
   return meshes.map((mesh): Box3D => {
     const circuitTriangles: Triangle[] = []

@@ -25,7 +25,7 @@
     "@tscircuit/cableprinter": "^0.0.4",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
-    "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@5cafba8",
+    "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@18d80ab",
     "jscad-planner": "^0.0.19",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
