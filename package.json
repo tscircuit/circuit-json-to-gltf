@@ -47,7 +47,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
-    "circuit-json": "^0.0.516",
+    "circuit-json": "https://pkg.pr.new/tscircuit/circuit-json@4ce543c",
     "circuit-to-svg": "^0.0.429",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
@@ -78,6 +78,6 @@
   },
   "overrides": {
     "@tscircuit/core": "^0.0.1955",
-    "circuit-json": "^0.0.516"
+    "circuit-json": "https://pkg.pr.new/tscircuit/circuit-json@4ce543c"
   }
 }

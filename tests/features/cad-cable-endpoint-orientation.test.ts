@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
-import type { CadCable, CircuitJson } from "circuit-json"
+import type { CadCable, Point3 } from "circuit-json"
 import { loadCable } from "../../lib/loaders/cable"
 
-test("plug pin 1 sides follow footprint pins across rotations and mirrored layers", () => {
-  const cable: CadCable = {
+test("plugs consume resolved absolute pin 1 points without source or footprint context", () => {
+  const legacy: CadCable = {
     type: "cad_cable",
     cad_cable_id: "cable",
     name: "PH",
@@ -15,52 +15,38 @@ test("plug pin 1 sides follow footprint pins across rotations and mirrored layer
       { x: 7, y: 11, z: 30 },
     ],
   }
-  for (const layer of ["top", "bottom"] as const) {
+  for (const mirrored of [false, true]) {
     for (const angle of [0, 35, 90, 180, 270]) {
-      const context: CircuitJson = []
-      for (const [id, rotation] of [
-        ["from", angle],
-        ["to", angle + 90],
-      ] as const) {
-        for (let pin = 1; pin <= 6; pin++) {
-          const radians = (rotation * Math.PI) / 180
-          const offset = (pin - 3.5) * 2 * (layer === "bottom" ? -1 : 1)
-          context.push(
-            {
-              type: "source_port",
-              source_port_id: `${id}_${pin}`,
-              source_component_id: id,
-              name: `contact${pin}`,
-              pin_number: angle === 35 ? undefined : pin,
-              port_hints: [String(pin)],
-            },
-            {
-              type: "pcb_port",
-              pcb_port_id: `${id}_${pin}`,
-              source_port_id: `${id}_${pin}`,
-              pcb_component_id: id,
-              layers: [layer],
-              x: 7 + Math.cos(radians) * offset,
-              y: 11 + Math.sin(radians) * offset,
-            },
-          )
+      const position = (rotation: number, z: number): Point3 => {
+        const radians = (rotation * Math.PI) / 180
+        const offset = mirrored ? 5 : -5
+        return {
+          x: 7 + Math.cos(radians) * offset,
+          y: 11 + Math.sin(radians) * offset,
+          z,
         }
       }
-      // Inference must use pin identity, not insertion order or a width axis.
-      context.reverse()
-      const boxes = loadCable(cable, context)
-      for (const [end, rotation] of [
-        ["A", angle],
-        ["B", angle + 90],
+      const cable: CadCable = {
+        ...legacy,
+        // Pin 1 is on each mating face, displaced axially from the path's
+        // wire exit. Absolute coordinates include a nonzero translation.
+        from_connector_pin1_position: position(angle, -6.85),
+        to_connector_pin1_position: position(angle + 90, 36.85),
+      }
+      const boxes = loadCable(cable)
+      for (const [end, rotation, pin1] of [
+        ["A", angle, cable.from_connector_pin1_position!],
+        ["B", angle + 90, cable.to_connector_pin1_position!],
       ] as const) {
         const housing = boxes.find(
           (box) => box.label === `PH / ${end}-housing`,
         )!
         const radians = (rotation * Math.PI) / 180
-        // Circuit Y maps to scene Z. Measure actual mesh, not inferred values.
-        const projection = housing.mesh!.triangles.flatMap((t) =>
-          t.vertices.map(
-            (v) => v.x * Math.cos(radians) + v.z * Math.sin(radians),
+        // Circuit Y maps to scene Z. Measure emitted geometry, not the helper.
+        const projection = housing.mesh!.triangles.flatMap((triangle) =>
+          triangle.vertices.map(
+            (vertex) =>
+              vertex.x * Math.cos(radians) + vertex.z * Math.sin(radians),
           ),
         )
         expect(Math.max(...projection) - Math.min(...projection)).toBeCloseTo(
@@ -69,18 +55,15 @@ test("plug pin 1 sides follow footprint pins across rotations and mirrored layer
         )
         const wire = boxes.find((box) => box.label === "PH / wire-1")!
         const cap = wire
-          .mesh!.triangles.flatMap((t) => t.vertices)
-          .filter((v) => Math.abs(v.y - (end === "A" ? 0 : 30)) < 1e-6)
-        const id = end === "A" ? "from" : "to"
-        const pin1 = context.find(
-          (e) => e.type === "pcb_port" && e.source_port_id === `${id}_1`,
-        )!
-        if (pin1.type !== "pcb_port") throw new Error("Missing pin 1")
+          .mesh!.triangles.flatMap((triangle) => triangle.vertices)
+          .filter(
+            (vertex) => Math.abs(vertex.y - (end === "A" ? 0 : 30)) < 1e-6,
+          )
         for (const [axis, expected] of [
           ["x", pin1.x],
           ["z", pin1.y],
         ] as const) {
-          const values = cap.map((v) => v[axis])
+          const values = cap.map((vertex) => vertex[axis])
           expect((Math.min(...values) + Math.max(...values)) / 2).toBeCloseTo(
             expected,
             5,
@@ -89,8 +72,7 @@ test("plug pin 1 sides follow footprint pins across rotations and mirrored layer
       }
     }
   }
-  // Missing footprint context preserves standalone cad_cable rendering.
-  const legacyEnd = loadCable(cable).find(
+  const legacyEnd = loadCable(legacy).find(
     (box) => box.label === "PH / B-housing",
   )!
   expect(legacyEnd.size.x).toBeCloseTo(13.8, 6)

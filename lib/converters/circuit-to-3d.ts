@@ -785,7 +785,7 @@ export async function convertCircuitJsonTo3D(
   for (const cable of circuitJson.filter(
     (element) => element.type === "cad_cable",
   )) {
-    boxes.push(...loadCable(cable, circuitJson))
+    boxes.push(...loadCable(cable))
   }
 
   // Create a default camera positioned to view the board or components
