@@ -10,7 +10,7 @@ test("bullet3 cables export three insulated wires and three pin/socket pairs per
       name: `BULLET3_${diameter}`,
       from_source_component_id: `from_${index}`,
       to_source_component_id: `to_${index}`,
-      cableprinter_string: `bullet3_${diameter}mm_male_female`,
+      cableprinter_string: `bullet3_d${diameter}mm_amale_bfemale`,
       path: [
         { x: index * 50, y: 0, z: 0 },
         { x: index * 50, y: 0, z: 60 },

@@ -10,7 +10,7 @@ test("bullet strings produce distinct gold pin and socket meshes in GLB exports"
       name: `BULLET_${diameter}`,
       from_source_component_id: `from_${index}`,
       to_source_component_id: `to_${index}`,
-      cableprinter_string: `bullet_${diameter}mm_male_female`,
+      cableprinter_string: `bullet_d${diameter}mm_amale_bfemale`,
       path: [
         { x: index * 40, y: 0, z: 0 },
         { x: index * 40, y: 0, z: 60 },

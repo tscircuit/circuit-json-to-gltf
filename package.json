@@ -22,7 +22,7 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
-    "@tscircuit/cableprinter": "https://pkg.pr.new/tscircuit/cableprinter/@tscircuit/cableprinter@5e55404",
+    "@tscircuit/cableprinter": "https://pkg.pr.new/tscircuit/cableprinter/@tscircuit/cableprinter@6ee67c3",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
     "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@b21b030",
