@@ -1,40 +1,76 @@
 import { expect, test } from "bun:test"
-import type { CadCable } from "circuit-json"
+import type { CadCable, CircuitJson } from "circuit-json"
 import { loadCable } from "../../lib/loaders/cable"
 
-test("endpoint width directions orient both plugs before the circuit-to-scene frame conversion", () => {
+test("plug widths follow footprint pins across rotations and mirrored layers without cable metadata", () => {
   const cable: CadCable = {
     type: "cad_cable",
-    cad_cable_id: "cad_cable_1",
+    cad_cable_id: "cable",
     name: "PH",
-    from_source_component_id: "source_from",
-    to_source_component_id: "source_to",
+    from_source_component_id: "from",
+    to_source_component_id: "to",
     cableprinter_string: "jst_ph_pins6",
-    // Circuit world: +Z up, mm. Two plugs on a vertical straight path
-    // have deliberately different width axes (X vs Y).
     path: [
       { x: 7, y: 11, z: 0 },
       { x: 7, y: 11, z: 30 },
     ],
-    from_connector_width_direction: { x: 1, y: 0, z: 0 },
-    to_connector_width_direction: { x: 0, y: 1, z: 0 },
   }
-  const boxes = loadCable(cable)
-  const start = boxes.find((box) => box.label === "PH / A-housing")!
-  const end = boxes.find((box) => box.label === "PH / B-housing")!
-  expect(start.size.x).toBeCloseTo(13.8, 6)
-  // Scene3D maps circuit Y to scene Z, and circuit Z to scene Y.
-  expect(end.size.z).toBeCloseTo(start.size.x, 6)
-  expect(end.size.x).toBeCloseTo(start.size.z, 6)
-  expect(start.mesh!.boundingBox.min.x + start.size.x / 2).toBeCloseTo(7, 6)
-  expect(end.mesh!.boundingBox.min.z + end.size.z / 2).toBeCloseTo(11, 6)
-
-  const legacy = loadCable({
-    ...cable,
-    from_connector_width_direction: undefined,
-    to_connector_width_direction: undefined,
-  })
-  const legacyEnd = legacy.find((box) => box.label === "PH / B-housing")!
+  for (const layer of ["top", "bottom"] as const) {
+    for (const angle of [0, 35, 90, 180, 270]) {
+      const context: CircuitJson = []
+      for (const [id, rotation] of [
+        ["from", angle],
+        ["to", angle + 90],
+      ] as const) {
+        for (let pin = 1; pin <= 6; pin++) {
+          const radians = (rotation * Math.PI) / 180
+          const offset = (pin - 3.5) * 2 * (layer === "bottom" ? -1 : 1)
+          context.push(
+            {
+              type: "source_port",
+              source_port_id: `${id}_${pin}`,
+              source_component_id: id,
+              name: `pin${pin}`,
+              pin_number: pin,
+            },
+            {
+              type: "pcb_port",
+              pcb_port_id: `${id}_${pin}`,
+              source_port_id: `${id}_${pin}`,
+              pcb_component_id: id,
+              layers: [layer],
+              x: 7 + Math.cos(radians) * offset,
+              y: 11 + Math.sin(radians) * offset,
+            },
+          )
+        }
+      }
+      const boxes = loadCable(cable, context)
+      for (const [end, rotation] of [
+        ["A", angle],
+        ["B", angle + 90],
+      ] as const) {
+        const housing = boxes.find(
+          (box) => box.label === `PH / ${end}-housing`,
+        )!
+        const radians = (rotation * Math.PI) / 180
+        // Circuit Y maps to scene Z. Measure actual mesh, not inferred values.
+        const projection = housing.mesh!.triangles.flatMap((t) =>
+          t.vertices.map(
+            (v) => v.x * Math.cos(radians) + v.z * Math.sin(radians),
+          ),
+        )
+        expect(Math.max(...projection) - Math.min(...projection)).toBeCloseTo(
+          13.8,
+          5,
+        )
+      }
+    }
+  }
+  // Missing footprint context preserves standalone cad_cable rendering.
+  const legacyEnd = loadCable(cable).find(
+    (box) => box.label === "PH / B-housing",
+  )!
   expect(legacyEnd.size.x).toBeCloseTo(13.8, 6)
   expect(legacyEnd.size.z).toBeCloseTo(4.5, 6)
 })

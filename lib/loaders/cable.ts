@@ -1,4 +1,4 @@
-import type { CadCable } from "circuit-json"
+import type { CadCable, CircuitJson } from "circuit-json"
 import { parseCableString } from "@tscircuit/cableprinter"
 import { createCableMeshes } from "jscad-electronics/cables"
 import { vec3 } from "gl-matrix"
@@ -8,6 +8,7 @@ import {
   COORDINATE_TRANSFORMS,
   transformTriangles,
 } from "../utils/coordinate-transform"
+import { inferCableEndpointWidth } from "./infer-cable-endpoint-width"
 import { getBoundingBoxSize } from "../utils/mesh-scale"
 
 /** Consume resolved circuit-world points in mm (+X right, +Y top, +Z above).
@@ -15,26 +16,16 @@ import { getBoundingBoxSize } from "../utils/mesh-scale"
  * No routing or sag is generated here. The GLTF builder handles its own final
  * Scene3D -> glTF mapping and triangle winding, as for every other mesh.
  */
-export function loadCable(cable: CadCable): Box3D[] {
+export function loadCable(
+  cable: CadCable,
+  circuitJson: CircuitJson = [],
+): Box3D[] {
   const meshes = createCableMeshes({
     definition: parseCableString(cable.cableprinter_string),
     path: cable.path.map(({ x, y, z }) => [x, y, z]),
-    // These are circuit-world directions, just like the path. Pass them
-    // through before the paired CIRCUIT_Z_UP_TO_SCENE_Y_UP mesh transform.
-    startWidthDirection: cable.from_connector_width_direction
-      ? [
-          cable.from_connector_width_direction.x,
-          cable.from_connector_width_direction.y,
-          cable.from_connector_width_direction.z,
-        ]
-      : undefined,
-    endWidthDirection: cable.to_connector_width_direction
-      ? [
-          cable.to_connector_width_direction.x,
-          cable.to_connector_width_direction.y,
-          cable.to_connector_width_direction.z,
-        ]
-      : undefined,
+    // Infer in circuit Z-up before the paired mesh transform to scene Y-up.
+    startWidthDirection: inferCableEndpointWidth(cable, circuitJson, "from"),
+    endWidthDirection: inferCableEndpointWidth(cable, circuitJson, "to"),
   })
   return meshes.map((mesh): Box3D => {
     const circuitTriangles: Triangle[] = []
