@@ -5,9 +5,5 @@ export default defineConfig({
   format: ["esm"],
   dts: { resolve: ["@tscircuit/flex-utils"] },
   outDir: "dist",
-  noExternal: [
-    "@tscircuit/cableprinter",
-    "@jscad/modeling",
-    "@tscircuit/flex-utils",
-  ],
+  noExternal: ["@jscad/modeling", "@tscircuit/flex-utils"],
 })
