@@ -22,10 +22,10 @@
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
-    "@tscircuit/cableprinter": "^0.0.5",
+    "@tscircuit/cableprinter": "https://pkg.pr.new/tscircuit/cableprinter/@tscircuit/cableprinter@5e55404",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
-    "jscad-electronics": "^0.0.189",
+    "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@b21b030",
     "jscad-planner": "^0.0.19",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
@@ -47,7 +47,7 @@
     "@types/react-dom": "^19.1.7",
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
-    "circuit-json": "^0.0.518",
+    "circuit-json": "https://pkg.pr.new/circuit-json@a2aa046",
     "circuit-to-svg": "^0.0.429",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
@@ -78,7 +78,6 @@
   },
   "overrides": {
     "@tscircuit/core": "^0.0.1955",
-    "circuit-json": "^0.0.518"
+    "circuit-json": "https://pkg.pr.new/circuit-json@a2aa046"
   }
 }
-
