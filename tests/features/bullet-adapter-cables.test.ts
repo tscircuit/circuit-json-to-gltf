@@ -25,6 +25,8 @@ test("3.5 mm to 4 mm adapter GLBs preserve separate socket sizes and all three w
     )
   expect(sockets("A")).toHaveLength(3)
   expect(sockets("B")).toHaveLength(3)
+  for (const socket of sockets("A")) expect(socket.size.x).toBeCloseTo(4.5)
+  for (const socket of sockets("B")) expect(socket.size.x).toBeCloseTo(5)
   expect(
     scene.boxes.filter((box) => /wire-[1-3]$/.test(box.label ?? "")),
   ).toHaveLength(3)
