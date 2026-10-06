@@ -37,13 +37,11 @@ export function inferCableEndpointPin1Side(
   )
   const pinNumber = (port: (typeof sourcePorts)[number]) => {
     if (port.type !== "source_port") return Infinity
-    return (
-      port.pin_number ??
-      Number(
-        port.port_hints?.find((hint) => /^pin\d+$/.test(hint))?.slice(3) ??
-          Infinity,
-      )
+    if (port.pin_number !== undefined) return port.pin_number
+    const hint = [port.name, ...(port.port_hints ?? [])].find((name) =>
+      /^(?:pin)?\d+$/.test(name),
     )
+    return hint ? Number(hint.replace(/^pin/, "")) : Infinity
   }
   const pins = sourcePorts.flatMap((source) => {
     if (source.type !== "source_port") return []

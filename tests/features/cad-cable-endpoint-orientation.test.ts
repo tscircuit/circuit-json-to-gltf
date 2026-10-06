@@ -30,8 +30,9 @@ test("plug pin 1 sides follow footprint pins across rotations and mirrored layer
               type: "source_port",
               source_port_id: `${id}_${pin}`,
               source_component_id: id,
-              name: `pin${pin}`,
-              pin_number: pin,
+              name: `contact${pin}`,
+              pin_number: angle === 35 ? undefined : pin,
+              port_hints: [String(pin)],
             },
             {
               type: "pcb_port",
