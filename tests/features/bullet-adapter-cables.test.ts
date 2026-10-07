@@ -1,0 +1,41 @@
+import { expect, test } from "bun:test"
+import type { CadCable } from "circuit-json"
+import { convertCircuitJsonTo3D, convertCircuitJsonToGltf } from "../../lib"
+
+test("3.5 mm to 4 mm adapter GLBs preserve separate socket sizes and all three wires", async () => {
+  const cable: CadCable = {
+    type: "cad_cable",
+    cad_cable_id: "cad_cable_adapter",
+    name: "BLDC_PHASE_LEADS",
+    from_source_component_id: "motor",
+    to_source_component_id: "controller",
+    cableprinter_string:
+      "adaptercable_a(bullet3_d3.5mm_gfemale)_b(bullet3_d4mm_gfemale)",
+    path: [
+      { x: 0, y: 0, z: 0 },
+      { x: 0, y: 0, z: 60 },
+    ],
+  }
+  const scene = await convertCircuitJsonTo3D([cable], {
+    drawFauxBoard: false,
+    renderBoardTextures: false,
+  })
+  const sockets = (end: "A" | "B") =>
+    scene.boxes.filter((box) =>
+      new RegExp(`${end}-bullet-socket-[1-3]$`).test(box.label ?? ""),
+    )
+  expect(sockets("A")).toHaveLength(3)
+  expect(sockets("B")).toHaveLength(3)
+  for (const socket of sockets("A")) expect(socket.size.x).toBeCloseTo(4.5)
+  for (const socket of sockets("B")) expect(socket.size.x).toBeCloseTo(5)
+  expect(
+    scene.boxes.filter((box) => /wire-[1-3]$/.test(box.label ?? "")),
+  ).toHaveLength(3)
+  const glb = await convertCircuitJsonToGltf([cable], {
+    format: "glb",
+    drawFauxBoard: false,
+  })
+  if (!(glb instanceof ArrayBuffer)) throw new Error("Expected binary GLB")
+  expect(new DataView(glb).getUint32(0, true)).toBe(0x46546c67)
+  expect(new DataView(glb).getUint32(8, true)).toBe(glb.byteLength)
+})
