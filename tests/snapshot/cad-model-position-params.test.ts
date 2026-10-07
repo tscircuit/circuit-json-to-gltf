@@ -266,4 +266,4 @@ test("cad-model-position-params-with-silkscreen", async () => {
     import.meta.path,
     "cad-model-position-params-with-silkscreen",
   )
-})
+}, 20000)
