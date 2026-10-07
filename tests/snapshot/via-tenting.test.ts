@@ -31,10 +31,12 @@ test("GLB via tenting preserves pad openings and overlapping silkscreen text", a
   expect(bottom(8, 2)).toEqual(white)
 
   expect(top(5, -4.2)).toEqual(top(3.5, -4.2))
-  expect(top(6.2, -4.2)).toEqual(top(-6, -4.2))
+  expect(top(6.2, -4.2)).toEqual(top(-5.5, -4.2))
+  expect(top(5.9, -4.2)).toEqual(top(-6, -4.2))
   expect(top(3.5, -4.2)).not.toEqual(top(-6, -4.2))
   expect(bottom(5, -4.2)).toEqual(bottom(3.5, -4.2))
-  expect(bottom(6.2, -4.2)).toEqual(bottom(-6, -4.2))
+  expect(bottom(6.2, -4.2)).toEqual(bottom(-5.5, -4.2))
+  expect(bottom(5.9, -4.2)).toEqual(bottom(-6, -4.2))
   expect(bottom(3.5, -4.2)).not.toEqual(bottom(-6, -4.2))
 
   const glb = await convertCircuitJsonToGltf(circuitJson, {
