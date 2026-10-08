@@ -10,7 +10,7 @@ import {
 } from "../gltf/geometry"
 import type { Box3D, Point3, Triangle } from "../types"
 import { boundsOfTriangles } from "./bounding-box"
-import { type PcbFold, swapPcbSceneAxes } from "./pcb-fold"
+import { type PcbFold, swapMeshFrame, swapPcbSceneAxes } from "./pcb-fold"
 
 /** Rigidly carry a Scene3D box (+Y up, mm) with its board. The board center and
  * mount are Circuit JSON XY points. Existing format/layer rotations are baked
@@ -59,7 +59,8 @@ export function tryFoldRigidBox(
     )
   const boardLocalTriangles: Triangle[] = []
   for (let i = 0; i < rotated.indices.length; i += 3) {
-    // Undo createMeshFromSTL's export winding swap; GLTFBuilder applies it once later.
+    // Match pcb-fold.swapMeshFrame: Scene3D +Y-up -> board-local +Z-up
+    // swaps axes, so reverse winding once to preserve outward faces.
     const indices = [
       rotated.indices[i]!,
       rotated.indices[i + 2]!,
@@ -76,10 +77,19 @@ export function tryFoldRigidBox(
       y: rotated.normals[j + 1]!,
       z: rotated.normals[j + 2]!,
     })
+    const sourceTriangle = box.mesh?.triangles[i / 3]
     boardLocalTriangles.push({
-      ...box.mesh?.triangles[i / 3],
+      ...sourceTriangle,
       vertices,
       normal,
+      ...(sourceTriangle?.uvs || !box.mesh
+        ? {
+            uvs: indices.map((index) => ({
+              u: rotated.texcoords[index * 2]!,
+              v: rotated.texcoords[index * 2 + 1]!,
+            })) as Triangle["uvs"],
+          }
+        : {}),
     })
   }
   const result = tryFoldRigidMesh(
@@ -101,18 +111,20 @@ export function tryFoldRigidBox(
   const movedCenter = fold.point(center, anchor)
   // The shared mesh is absolute board-local +Z up. Restore model-local +Y up
   // around its moved center so GLTFBuilder still adds the translation once.
-  const triangles: Triangle[] = result.value.triangles.map((triangle) => ({
+  const localTriangles: Triangle[] = result.value.triangles.map((triangle) => ({
     ...triangle,
-    vertices: triangle.vertices.map((p) =>
-      swapPcbSceneAxes({
-        x: p.x - movedCenter.x,
-        y: p.y - movedCenter.y,
-        z: p.z - movedCenter.z,
-      }),
-    ) as Triangle["vertices"],
-    normal: swapPcbSceneAxes(triangle.normal),
+    vertices: triangle.vertices.map((p) => ({
+      x: p.x - movedCenter.x,
+      y: p.y - movedCenter.y,
+      z: p.z - movedCenter.z,
+    })) as Triangle["vertices"],
   }))
-  const boundingBox = boundsOfTriangles(triangles)
+  // The reverse boundary is the same reflection: preserve winding and the
+  // association between each vertex and its UV, as foldBoardMesh does.
+  const { triangles, boundingBox } = swapMeshFrame({
+    triangles: localTriangles,
+    boundingBox: boundsOfTriangles(localTriangles),
+  })
   return {
     ok: true,
     value: {

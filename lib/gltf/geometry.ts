@@ -292,28 +292,29 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
   return result
 }
 
-export function createMeshFromSTL(stlMesh: STLMesh): MeshData {
+/** Serialize outward-wound Scene3D (+Y up, mm) triangles without changing
+ * orientation. Authored UVs stay attached to their vertices on every path. */
+export function createMeshFromSTL(
+  stlMesh: STLMesh,
+  opts?: {
+    getDefaultUv?: (vertex: Point3) => { u: number; v: number }
+  },
+): MeshData {
+  const getDefaultUv =
+    opts?.getDefaultUv ?? ((vertex: Point3) => ({ u: vertex.x, v: vertex.z }))
   const positions: number[] = []
   const normals: number[] = []
   const texcoords: number[] = []
   const indices: number[] = []
-
-  let vertexIndex = 0
-
   for (const triangle of stlMesh.triangles) {
-    // Add vertices
-    for (const vertex of triangle.vertices) {
+    for (const [i, vertex] of triangle.vertices.entries()) {
+      indices.push(positions.length / 3)
       positions.push(vertex.x, vertex.y, vertex.z)
       normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
-      // Simple planar UV mapping
-      texcoords.push(vertex.x, vertex.z)
+      const uv = triangle.uvs?.[i] ?? getDefaultUv(vertex)
+      texcoords.push(uv.u, uv.v)
     }
-
-    // Add indices (reverse winding for correct face orientation)
-    indices.push(vertexIndex, vertexIndex + 2, vertexIndex + 1)
-    vertexIndex += 3
   }
-
   return { positions, normals, texcoords, indices }
 }
 
@@ -323,48 +324,20 @@ export function createMeshFromOBJ(
   if (!objMesh.materials || objMesh.materials.size === 0) {
     return [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
   }
-
-  const materialMeshes = new Map<number, MeshData>()
-
+  const groups = new Map<number, STLMesh["triangles"]>()
   for (const triangle of objMesh.triangles) {
     const materialIndex = triangle.materialIndex ?? -1
-
-    if (!materialMeshes.has(materialIndex)) {
-      materialMeshes.set(materialIndex, {
-        positions: [],
-        normals: [],
-        texcoords: [],
-        indices: [],
-      })
-    }
-
-    const targetMesh = materialMeshes.get(materialIndex)!
-    const baseIndex = targetMesh.positions.length / 3
-
-    for (const vertex of triangle.vertices) {
-      targetMesh.positions.push(vertex.x, vertex.y, vertex.z)
-      targetMesh.normals.push(
-        triangle.normal.x,
-        triangle.normal.y,
-        triangle.normal.z,
-      )
-      targetMesh.texcoords.push(vertex.x, vertex.z)
-    }
-
-    targetMesh.indices.push(baseIndex, baseIndex + 2, baseIndex + 1)
+    const triangles = groups.get(materialIndex) ?? []
+    triangles.push(triangle)
+    groups.set(materialIndex, triangles)
   }
-
-  const result: { meshData: MeshData; materialIndex: number }[] = []
-
-  for (const [materialIndex, meshData] of materialMeshes) {
-    if (meshData.positions.length > 0) {
-      result.push({ meshData, materialIndex })
-    }
+  if (groups.size === 0) {
+    return [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
   }
-
-  return result.length > 0
-    ? result
-    : [{ meshData: createMeshFromSTL(objMesh), materialIndex: -1 }]
+  return [...groups].map(([materialIndex, triangles]) => ({
+    materialIndex,
+    meshData: createMeshFromSTL({ ...objMesh, triangles }),
+  }))
 }
 
 /** Transform points (mm) and normals (directions) in the internal scene frame
