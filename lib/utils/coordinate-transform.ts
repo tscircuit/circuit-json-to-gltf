@@ -1,4 +1,9 @@
 import type { CoordinateTransformConfig, Point3, Triangle } from "../types"
+import {
+  linearTransformFromPointTransform,
+  transformTriangle,
+  assertInvertibleLinearTransform,
+} from "./mesh-orientation"
 
 export function applyCoordinateTransform(
   point: Point3,
@@ -81,17 +86,20 @@ function getAxisValue(original: Point3, mapping: string): number {
   }
 }
 
+/** Convert source-frame triangles into the configured frame, in the same mm
+ * units. Reflections preserve outward faces by swapping winding and vertex UVs;
+ * normals are unit inverse-transpose directions, including nonuniform flips.
+ * Matches pcb-fold.swapMeshFrame for the Circuit Z-up -> Scene Y-up reflection.
+ */
 export function transformTriangles(
   triangles: Triangle[],
   config: CoordinateTransformConfig,
 ): Triangle[] {
-  return triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((v) =>
-      applyCoordinateTransform(v, config),
-    ) as [Point3, Point3, Point3],
-    normal: applyCoordinateTransform(triangle.normal, config),
-  }))
+  const matrix = linearTransformFromPointTransform((point) =>
+    applyCoordinateTransform(point, config),
+  )
+  assertInvertibleLinearTransform(matrix)
+  return triangles.map((triangle) => transformTriangle(triangle, matrix))
 }
 
 // Predefined transformation configs for common model orientations

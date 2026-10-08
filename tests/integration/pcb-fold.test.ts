@@ -151,8 +151,8 @@ test("exported off-axis model geometry follows folds after all existing rotation
             {
               vertices: [
                 { x: -0.8, y: 0.2, z: 0.3 },
-                { x: 0.9, y: 0.2, z: 0.4 },
                 { x: 0.1, y: 0.2, z: 1.2 },
+                { x: 0.9, y: 0.2, z: 0.4 },
               ],
               normal: { x: 0, y: 1, z: 0 },
               color: [1, 0, 0, 1],
