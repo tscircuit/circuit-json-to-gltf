@@ -30,24 +30,26 @@ test("reference surfaces are opt-in world-space frames with labels, normals, and
   for (const convert of [convertCircuitJsonTo3D, convertBrowserScene]) {
     const scene = await convert(circuit, { showReferenceSurfaces: true })
     expect(scene.boxes).toHaveLength(1)
-    const box = scene.boxes[0]
+    const box = scene.boxes[0]!
     expect(box.label).toBe("SHADE.mount")
     const plane = box.mesh!.triangles.slice(0, 2)
-    const points = plane[0].vertices.map((vertex) => ({
+    const points = plane[0]!.vertices.map((vertex) => ({
       x: vertex.x + box.center.x,
       y: vertex.y + box.center.y,
       z: vertex.z + box.center.z,
     }))
     // Actual corners in Scene3D: circuit (x,y,z) -> (x,z,y).
-    expect(points[0].x).toBeCloseTo(3)
-    expect(points[0].y).toBeCloseTo(20.8)
-    expect(points[0].z).toBeCloseTo(-5.4)
-    expect(points[2].x).toBeCloseTo(11)
-    expect(points[2].y).toBeCloseTo(17.2)
-    expect(points[2].z).toBeCloseTo(-0.6)
-    expect(plane[0].normal).toEqual({ x: 0, y: 0.8, z: 0.6 })
+    expect(points[0]!.x).toBeCloseTo(3)
+    expect(points[0]!.y).toBeCloseTo(20.8)
+    expect(points[0]!.z).toBeCloseTo(-5.4)
+    expect(points[2]!.x).toBeCloseTo(11)
+    expect(points[2]!.y).toBeCloseTo(17.2)
+    expect(points[2]!.z).toBeCloseTo(-0.6)
+    expect(plane[0]!.normal).toEqual({ x: 0, y: 0.8, z: 0.6 })
     const arrow = box
-      .mesh!.triangles.filter((t) => t.material?.color?.[0] === 1)
+      .mesh!.triangles.filter(
+        (t) => Array.isArray(t.material?.color) && t.material.color[0] === 1,
+      )
       .flatMap((t) => t.vertices)
     expect(Math.max(...arrow.map((p) => p.y + box.center.y))).toBeGreaterThan(
       21.1,
@@ -75,7 +77,7 @@ test("unbounded reference frames use a 10mm diagnostic rectangle", async () => {
     [{ ...surface, width: undefined, height: undefined }],
     { showReferenceSurfaces: true },
   )
-  const box = scene.boxes[0]
+  const box = scene.boxes[0]!
   const vertices = box.mesh!.triangles.slice(0, 2).flatMap((t) => t.vertices)
   expect(
     Math.max(...vertices.map((p) => p.x)) -
