@@ -1,21 +1,10 @@
-import type { BoundingBox, OBJMesh, Point3, STLMesh, Triangle } from "../types"
+import type { BoundingBox, OBJMesh, Point3, STLMesh } from "../types"
 import { boundsOfTriangles } from "./bounding-box"
-
-function scalePoint(point: Point3, scale: number): Point3 {
-  return {
-    x: point.x * scale,
-    y: point.y * scale,
-    z: point.z * scale,
-  }
-}
-
-function scalePointByAxis(point: Point3, scale: Point3): Point3 {
-  return {
-    x: point.x * scale.x,
-    y: point.y * scale.y,
-    z: point.z * scale.z,
-  }
-}
+import {
+  assertInvertibleLinearTransform,
+  type LinearTransform3,
+  transformTriangle,
+} from "./mesh-orientation"
 
 export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
   let { x, y, z } = point
@@ -53,17 +42,6 @@ export function rotatePoint(point: Point3, rotationDeg: Point3): Point3 {
   return { x, y, z }
 }
 
-function scaleTriangle(triangle: Triangle, scale: number): Triangle {
-  return {
-    ...triangle,
-    vertices: triangle.vertices.map((vertex) => scalePoint(vertex, scale)) as [
-      Point3,
-      Point3,
-      Point3,
-    ],
-  }
-}
-
 export function scaleMesh<T extends STLMesh | OBJMesh>(
   mesh: T,
   scale: number,
@@ -72,20 +50,7 @@ export function scaleMesh<T extends STLMesh | OBJMesh>(
     return mesh
   }
 
-  const scaledTriangles = mesh.triangles.map((triangle) =>
-    scaleTriangle(triangle, scale),
-  )
-
-  const scaledBoundingBox = {
-    min: scalePoint(mesh.boundingBox.min, scale),
-    max: scalePoint(mesh.boundingBox.max, scale),
-  }
-
-  return {
-    ...mesh,
-    triangles: scaledTriangles,
-    boundingBox: scaledBoundingBox,
-  } as T
+  return scaleMeshByAxis(mesh, { x: scale, y: scale, z: scale })
 }
 
 export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
@@ -101,12 +66,14 @@ export function scaleMeshByAxis<T extends STLMesh | OBJMesh>(
     return mesh
   }
 
-  const scaledTriangles = mesh.triangles.map((triangle) => ({
-    ...triangle,
-    vertices: triangle.vertices.map((vertex) =>
-      scalePointByAxis(vertex, scale),
-    ) as [Point3, Point3, Point3],
-  }))
+  // Like geometry.transformMesh, scaling is a linear map in the mesh's current
+  // frame. Inverse-transpose normals stay perpendicular under unequal scales,
+  // and a reflected scale swaps vertex order with its corresponding UVs.
+  const matrix: LinearTransform3 = [scale.x, 0, 0, 0, scale.y, 0, 0, 0, scale.z]
+  assertInvertibleLinearTransform(matrix)
+  const scaledTriangles = mesh.triangles.map((triangle) =>
+    transformTriangle(triangle, matrix),
+  )
 
   return {
     ...mesh,

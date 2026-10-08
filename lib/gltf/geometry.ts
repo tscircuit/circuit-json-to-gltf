@@ -1,5 +1,11 @@
 import type { BoundingBox, OBJMesh, Point3, Size3, STLMesh } from "../types"
 import { boundsOfPositions } from "../utils/bounding-box"
+import {
+  assertInvertibleLinearTransform,
+  getLinearTransformDeterminant,
+  type LinearTransform3,
+  transformNormal,
+} from "../utils/mesh-orientation"
 
 export interface MeshData {
   positions: number[]
@@ -382,6 +388,44 @@ export function transformMesh(
 
   if (mesh.colors) {
     result.colors = [...mesh.colors]
+  }
+
+  if (scale) {
+    // Paired with mesh-scale.scaleMeshByAxis: normals are directions in this
+    // scene frame, transformed with the inverse transpose before rotation.
+    const matrix: LinearTransform3 = [
+      scale.x,
+      0,
+      0,
+      0,
+      scale.y,
+      0,
+      0,
+      0,
+      scale.z,
+    ]
+    assertInvertibleLinearTransform(matrix)
+    for (let i = 0; i < result.normals.length; i += 3) {
+      const normal = transformNormal(
+        {
+          x: result.normals[i]!,
+          y: result.normals[i + 1]!,
+          z: result.normals[i + 2]!,
+        },
+        matrix,
+      )
+      result.normals[i] = normal.x
+      result.normals[i + 1] = normal.y
+      result.normals[i + 2] = normal.z
+    }
+    if (getLinearTransformDeterminant(matrix) < 0) {
+      for (let i = 0; i < result.indices.length; i += 3) {
+        ;[result.indices[i + 1], result.indices[i + 2]] = [
+          result.indices[i + 2]!,
+          result.indices[i + 1]!,
+        ]
+      }
+    }
   }
 
   // Apply transformations to positions
