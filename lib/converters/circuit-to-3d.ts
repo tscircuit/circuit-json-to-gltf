@@ -5,7 +5,11 @@ import {
   type PcbFoldIssue,
   type Point2,
 } from "@tscircuit/flex-utils"
-import { swapMeshFrame } from "../utils/pcb-fold"
+import {
+  COORDINATE_TRANSFORMS,
+  transformTriangles,
+} from "../utils/coordinate-transform"
+import { boundsOfTriangles } from "../utils/bounding-box"
 import {
   tryCreatePcbFold,
   tryFoldBoardMesh,
@@ -767,7 +771,20 @@ export async function convertCircuitJsonTo3D(
         `PCB stiffener ${stiffener.pcb_stiffener_id}`,
         result.issue,
       )
-    const mesh = swapMeshFrame(result?.ok ? result.value : flatMesh)
+    const stiffenerMesh = result?.ok ? result.value : flatMesh
+    // Match loadJscadPlan: board-local +Z-up mm -> Scene3D +Y-up mm.
+    // Keep the reflected winding here; createMeshFromSTL reverses it at export.
+    // swapMeshFrame also reverses winding, which made this solid face inward
+    // and exposed its board-contact face as a coplanar rendering artifact.
+    const triangles = transformTriangles(
+      stiffenerMesh.triangles,
+      COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP,
+    )
+    const mesh = {
+      ...stiffenerMesh,
+      triangles,
+      boundingBox: boundsOfTriangles(triangles),
+    }
     boxes.push({
       center: { x: pcbBoard.center.x, y: 0, z: pcbBoard.center.y },
       size: getBoundingBoxSize(mesh.boundingBox),
