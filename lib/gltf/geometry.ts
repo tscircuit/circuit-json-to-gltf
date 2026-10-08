@@ -296,11 +296,12 @@ export function createBoxMeshByFaces(size: Size3): FaceMeshData {
  * orientation. Authored UVs stay attached to their vertices on every path. */
 export function createMeshFromSTL(
   stlMesh: STLMesh,
-  getDefaultUv: (vertex: Point3) => { u: number; v: number } = (vertex) => ({
-    u: vertex.x,
-    v: vertex.z,
-  }),
+  opts?: {
+    getDefaultUv?: (vertex: Point3) => { u: number; v: number }
+  },
 ): MeshData {
+  const getDefaultUv =
+    opts?.getDefaultUv ?? ((vertex: Point3) => ({ u: vertex.x, v: vertex.z }))
   const positions: number[] = []
   const normals: number[] = []
   const texcoords: number[] = []

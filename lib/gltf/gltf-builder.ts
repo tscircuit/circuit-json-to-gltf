@@ -518,10 +518,12 @@ export class GLTFBuilder {
       // Share the winding and authored-UV contract with untextured/CAD meshes.
       const meshData = createMeshFromSTL(
         { triangles, boundingBox: box.mesh!.boundingBox },
-        (vertex) => ({
-          u: sizeX > 0 ? (vertex.x - minX) / sizeX : 0.5,
-          v: sizeZ > 0 ? 1 - (vertex.z - minZ) / sizeZ : 0.5,
-        }),
+        {
+          getDefaultUv: (vertex) => ({
+            u: sizeX > 0 ? (vertex.x - minX) / sizeX : 0.5,
+            v: sizeZ > 0 ? 1 - (vertex.z - minZ) / sizeZ : 0.5,
+          }),
+        },
       )
       const transformedMeshData = convertMeshToGLTFOrientation(
         transformMesh(meshData, { x: 0, y: 0, z: 0 }, box.rotation),
