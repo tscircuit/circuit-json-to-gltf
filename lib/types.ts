@@ -119,6 +119,8 @@ export interface Box3D {
   rotation?: Point3
   color?: Color
   sideColor?: Color
+  /** Explicit CAD color override, distinct from the fallback mesh color. */
+  materialColorOverride?: string
   texture?: {
     top?: string
     bottom?: string

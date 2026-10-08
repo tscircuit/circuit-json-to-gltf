@@ -698,6 +698,11 @@ export async function convertCircuitJsonTo3D(
       box.color = componentColor
     }
 
+    if (cad.color !== undefined) {
+      box.color = cad.color
+      box.materialColorOverride = cad.color
+    }
+
     const result =
       fold && pcbComponent
         ? tryFoldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)

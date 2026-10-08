@@ -108,7 +108,12 @@ export class GLTFBuilder {
     }
 
     // Handle OBJ meshes with materials
-    if (box.mesh && "materials" in box.mesh && box.mesh.materials) {
+    if (
+      box.mesh &&
+      "materials" in box.mesh &&
+      box.mesh.materials &&
+      !box.materialColorOverride
+    ) {
       await this.addOBJMeshWithMaterials(box, box.mesh as OBJMesh)
       return
     }
@@ -176,7 +181,10 @@ export class GLTFBuilder {
     const groups = new Map<number, Triangle[]>()
     for (const triangle of mesh.triangles) {
       const authored = triangle.material ?? {}
-      const base = this.jscadColor(authored.color, [0.7, 0.7, 0.7])
+      const base = this.jscadColor(
+        box.materialColorOverride ?? authored.color,
+        [0.7, 0.7, 0.7],
+      )
       const opacity = authored.opacity ?? (box.isTranslucent ? 0.5 : 1)
       const transparent =
         authored.transparent ?? (opacity < 1 || !!box.isTranslucent)
