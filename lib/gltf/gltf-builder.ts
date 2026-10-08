@@ -515,29 +515,14 @@ export class GLTFBuilder {
     const sizeZ = maxZ - minZ
 
     for (const { triangles, materialIndex } of materials) {
-      const positions: number[] = []
-      const normals: number[] = []
-      const texcoords: number[] = []
-      const indices: number[] = []
-      let vertexIndex = 0
-
-      for (const triangle of triangles) {
-        for (const [vertexNumber, v] of triangle.vertices.entries()) {
-          positions.push(v.x, v.y, v.z)
-          normals.push(triangle.normal.x, triangle.normal.y, triangle.normal.z)
-
-          // Generate UV coordinates based on X/Z position for top/bottom faces
-          const u = sizeX > 0 ? (v.x - minX) / sizeX : 0.5
-          const v_coord = sizeZ > 0 ? (v.z - minZ) / sizeZ : 0.5
-          const uv = triangle.uvs?.[vertexNumber]
-          texcoords.push(uv?.u ?? u, uv?.v ?? 1 - v_coord) // Flat UVs survive folding
-        }
-
-        indices.push(vertexIndex, vertexIndex + 1, vertexIndex + 2)
-        vertexIndex += 3
-      }
-
-      const meshData: MeshData = { positions, normals, texcoords, indices }
+      // Share the winding and authored-UV contract with untextured/CAD meshes.
+      const meshData = createMeshFromSTL(
+        { triangles, boundingBox: box.mesh!.boundingBox },
+        (vertex) => ({
+          u: sizeX > 0 ? (vertex.x - minX) / sizeX : 0.5,
+          v: sizeZ > 0 ? 1 - (vertex.z - minZ) / sizeZ : 0.5,
+        }),
+      )
       const transformedMeshData = convertMeshToGLTFOrientation(
         transformMesh(meshData, { x: 0, y: 0, z: 0 }, box.rotation),
       )
@@ -566,7 +551,7 @@ export class GLTFBuilder {
       const indicesAccessorIndex = this.addAccessor(
         transformedMeshData.indices,
         "SCALAR",
-        indices.length > 65535
+        transformedMeshData.indices.length > 65535
           ? COMPONENT_TYPE.UNSIGNED_INT
           : COMPONENT_TYPE.UNSIGNED_SHORT,
         TARGET.ELEMENT_ARRAY_BUFFER,
