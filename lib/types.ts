@@ -72,6 +72,10 @@ export interface Size3 {
   z: number
 }
 
+/** Geometry uses outward counterclockwise winding, with normals agreeing with
+ * the vertex order. Scene3D triangles use +Y up and mm; source geometry may use
+ * another frame until its loader converts it. Reflections reverse vertex order
+ * and attached UVs once; rotations leave winding unchanged. */
 export interface Triangle {
   /** Authored JSCAD appearance; color tuples use linear 0–1 RGB. */
   material?: MaterialOptions
@@ -94,6 +98,8 @@ export interface BoundingBox {
   max: Point3
 }
 
+/** Loader and Scene3D meshes use +Y-up mm and outward-wound triangles.
+ * Exporters preserve their order; the final glTF X reflection owns its reversal. */
 export interface STLMesh {
   triangles: Triangle[]
   boundingBox: BoundingBox
