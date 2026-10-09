@@ -17,12 +17,6 @@ Converts circuit JSON to 3D GLTF files. Used for exporting circuits as 3D models
 - Automatic component positioning and generic 3D representations
 - Customizable camera, lighting, and material settings
 
-An optional `cad_component.color` overrides the component's mesh color. For
-native JSCAD materials it replaces the authored color while retaining metalness,
-roughness, emissive settings, and opacity. Omitting it preserves existing material
-behavior. The source printed-part `material` classification is manufacturing
-metadata and does not select a rendering color.
-
 ## Installation
 
 ```bash
