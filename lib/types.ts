@@ -32,6 +32,8 @@ export interface ConversionOptions {
   silkscreenColor?: string
   solderMaskWithCopperColor?: string
   drillColor?: string
+  /** Show named CAD reference surfaces as diagnostic frames. Defaults to false. */
+  showReferenceSurfaces?: boolean
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
@@ -119,6 +121,8 @@ export interface Box3D {
   rotation?: Point3
   color?: Color
   sideColor?: Color
+  /** Explicit CAD color override, distinct from the fallback mesh color. */
+  materialColorOverride?: string
   texture?: {
     top?: string
     bottom?: string
@@ -192,6 +196,8 @@ export interface CircuitTo3DOptions {
   /** Include full Circuit JSON error messages for screen overlay renderers. Defaults to false. */
   showErrors?: boolean
   coordinateTransform?: CoordinateTransformConfig
+  /** Show named CAD reference surfaces as diagnostic frames. Defaults to false. */
+  showReferenceSurfaces?: boolean
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders

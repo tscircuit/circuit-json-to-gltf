@@ -76,6 +76,7 @@ convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions):
 - `silkscreenColor`: Silkscreen color in board textures; overrides `pcb_board.silkscreen_color`
 - `solderMaskWithCopperColor`: Color of traces and copper covered by solder mask; otherwise derived from the solder-mask color
 - `drillColor`: Drill opening color in board textures
+- `showReferenceSurfaces`: Render `cad_reference_surface` records as translucent rectangles with outlines, outward normal arrows, and `PART.surface` labels (default: `false`). Explicit width/height are respected; frames without extents use a 10 mm diagnostic rectangle. Works without an owner CAD model.
 - `showBoundingBoxes`: Show bounding boxes for debugging (default: `false`)
 - `projectBaseUrl`: Optional base URL used to resolve `node_modules` model assets via `/package_files/download`
 - `authHeaders`: Optional auth headers for model downloads, e.g. `{ Authorization: "Bearer ..." }`

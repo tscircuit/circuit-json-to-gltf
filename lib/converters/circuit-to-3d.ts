@@ -1,3 +1,4 @@
+import { createReferenceSurfaceBox } from "./reference-surface"
 import {
   createStiffenerMesh,
   tryFoldStiffenerMesh,
@@ -698,6 +699,11 @@ export async function convertCircuitJsonTo3D(
       box.color = componentColor
     }
 
+    if (cad.color !== undefined) {
+      box.color = cad.color
+      box.materialColorOverride = cad.color
+    }
+
     const result =
       fold && pcbComponent
         ? tryFoldRigidBox(box, fold, pcbBoard.center, pcbComponent.center)
@@ -705,6 +711,16 @@ export async function convertCircuitJsonTo3D(
     if (result && !result.ok)
       reportFoldIssue(`CAD component ${cad.cad_component_id}`, result.issue)
     boxes.push(result?.ok ? result.value : box)
+  }
+
+  if (options.showReferenceSurfaces) {
+    for (const surface of inputCircuitJson) {
+      if (surface.type !== "cad_reference_surface") continue
+      const owner = db.source_component.get(surface.source_component_id)
+      boxes.push(
+        createReferenceSurfaceBox(surface, owner?.name ?? "unnamed part"),
+      )
+    }
   }
 
   // Add generic boxes for components without 3D models (only if showBoundingBoxes is true)

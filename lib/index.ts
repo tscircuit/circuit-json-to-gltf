@@ -41,6 +41,7 @@ export async function convertCircuitJsonToGltf(
     drillColor,
     coordinateTransform: options.coordinateTransform,
     showBoundingBoxes,
+    showReferenceSurfaces: options.showReferenceSurfaces,
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
   })
