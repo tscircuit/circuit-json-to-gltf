@@ -1,35 +1,55 @@
 import { expect, test } from "bun:test"
 import { Resvg } from "@resvg/resvg-js"
-import type { CircuitJson } from "circuit-json"
+import { Circuit } from "@tscircuit/core"
 import { convertCircuitJsonTo3D, convertSceneToGLTF } from "../../lib"
 import { renderGlbToPng } from "../renderGlbToPng"
 
 test.failing("a through via leaves no substrate across its drill axis", async () => {
-  const circuitJson: CircuitJson = [
-    {
-      type: "pcb_board",
-      pcb_board_id: "board",
-      center: { x: 0, y: 0 },
-      width: 10,
-      height: 8,
-      thickness: 1.6,
-      num_layers: 4,
-      material: "fr4",
-    },
-    {
-      type: "pcb_via",
-      pcb_via_id: "via",
-      x: 1,
-      y: 1,
-      outer_diameter: 3,
-      hole_diameter: 2,
-      layers: ["top", "inner1", "inner2", "bottom"],
-      from_layer: "top",
-      to_layer: "bottom",
-      tented_on_top: false,
-      tented_on_bottom: false,
-    },
-  ]
+  const circuit = new Circuit()
+  circuit.add(
+    <board
+      width={10}
+      height={8}
+      thickness={1.6}
+      layers={4}
+      routingDisabled
+      schematicDisabled
+    >
+      <via
+        name="V1"
+        pcbX={1}
+        pcbY={1}
+        holeDiameter={2}
+        outerDiameter={3}
+        fromLayer="top"
+        toLayer="bottom"
+        tented={false}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const vias = circuitJson.filter((element) => element.type === "pcb_via")
+  expect(vias).toHaveLength(1)
+  expect(vias[0]).toMatchObject({
+    x: 1,
+    y: 1,
+    hole_diameter: 2,
+    outer_diameter: 3,
+    layers: ["top", "inner1", "inner2", "bottom"],
+    from_layer: "top",
+    to_layer: "bottom",
+    tented_on_top: false,
+    tented_on_bottom: false,
+  })
+  expect(
+    circuitJson.find((element) => element.type === "pcb_board"),
+  ).toMatchObject({
+    width: 10,
+    height: 8,
+    thickness: 1.6,
+    num_layers: 4,
+  })
   const scene = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: false,
   })
