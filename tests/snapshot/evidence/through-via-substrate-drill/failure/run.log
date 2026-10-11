@@ -1,0 +1,22 @@
+bun test v1.3.14 (0d9b296a)
+
+tests/snapshot/through-via-substrate-drill.test.ts:
+25 |   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="white"/><g fill="#222" font-family="sans-serif" font-size="17" text-anchor="middle"><text x="400" y="30">GLTF converts Circuit JSON to a 3D PCB substrate.</text><text x="400" y="60">2 mm through drill: ${coveringFaces.length} substrate faces cover its axis. Expected 0.</text></g><image y="90" width="800" height="400" href="data:image/png;base64,${Buffer.from(boardPng).toString("base64")}"/></svg>`
+26 |   if (process.env.EVIDENCE_DIR) {
+27 |     await Bun.write(`${process.env.EVIDENCE_DIR}/observed.png`, new Resvg(svg).render().asPng())
+28 |     await Bun.write(`${process.env.EVIDENCE_DIR}/mesh.json`, JSON.stringify(mesh))
+29 |   }
+30 |   expect(coveringFaces).toHaveLength(0)
+                             ^
+error: expect(received).toHaveLength(expected)
+
+Expected length: 0
+Received length: 1
+
+      at <anonymous> (/Users/ankan/Documents/Codex/2026-10-11/tsx-saved-route-bug-reproductions/work/gltf/tests/snapshot/through-via-substrate-drill.test.ts:30:25)
+(fail) a through via leaves no substrate across its drill axis [434.23ms]
+
+ 0 pass
+ 1 fail
+ 1 expect() calls
+Ran 1 test across 1 file. [1.63s]
