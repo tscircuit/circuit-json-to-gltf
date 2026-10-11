@@ -55,14 +55,10 @@ test.failing("a through via leaves no substrate across its drill axis", async ()
     { direction: [0, 1, -0.001], ortho: true, aspectRatio: 2 },
   )
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="white"/><g fill="#222" font-family="sans-serif" font-size="17" text-anchor="middle"><text x="400" y="30">GLTF converts Circuit JSON to a 3D PCB substrate.</text><text x="400" y="60">2 mm through drill: ${coveringFaces.length} substrate faces cover its axis. Expected 0.</text></g><image y="90" width="800" height="400" href="data:image/png;base64,${Buffer.from(boardPng).toString("base64")}"/></svg>`
-  if (process.env.EVIDENCE_DIR) {
+  if (process.env.SNAPSHOT_DIR) {
     await Bun.write(
-      `${process.env.EVIDENCE_DIR}/observed.png`,
+      `${process.env.SNAPSHOT_DIR}/through-via-substrate-drill.failure.png`,
       new Resvg(svg).render().asPng(),
-    )
-    await Bun.write(
-      `${process.env.EVIDENCE_DIR}/mesh.json`,
-      JSON.stringify(mesh),
     )
   }
   expect(coveringFaces).toHaveLength(0)
