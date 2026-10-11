@@ -1,10 +1,11 @@
 import { expect, test } from "bun:test"
 import { Resvg } from "@resvg/resvg-js"
+import type { STLMesh } from "../../lib/types"
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonTo3D, convertSceneToGLTF } from "../../lib"
 import { renderGlbToPng } from "../renderGlbToPng"
 
-test.failing("a through via leaves no substrate across its drill axis", async () => {
+test("a through via leaves no substrate across its drill axis", async () => {
   const circuitJson: CircuitJson = [
     {
       type: "pcb_board",
@@ -35,18 +36,39 @@ test.failing("a through via leaves no substrate across its drill axis", async ()
   })
   const mesh = scene.boxes[0]!.mesh!
   // Scene coordinates are +Y-up mm: Circuit JSON +Y maps to scene +Z.
-  const coveringFaces = mesh.triangles.filter((triangle) => {
-    if (!triangle.vertices.every((vertex) => Math.abs(vertex.y - 0.8) < 1e-6))
-      return false
-    const signs = triangle.vertices.map((a, index) => {
-      const b = triangle.vertices[(index + 1) % 3]!
-      return (b.x - a.x) * (1 - a.z) - (b.z - a.z) * (1 - a.x)
+  const facesAcrossDrill = (mesh: STLMesh, surfaceY: number) =>
+    mesh.triangles.filter((triangle) => {
+      if (
+        !triangle.vertices.every(
+          (vertex) => Math.abs(vertex.y - surfaceY) < 1e-6,
+        )
+      )
+        return false
+      const signs = triangle.vertices.map((a, index) => {
+        const b = triangle.vertices[(index + 1) % 3]!
+        return (b.x - a.x) * (1 - a.z) - (b.z - a.z) * (1 - a.x)
+      })
+      return (
+        signs.every((sign) => sign >= -1e-9) ||
+        signs.every((sign) => sign <= 1e-9)
+      )
     })
-    return (
-      signs.every((sign) => sign >= -1e-9) ||
-      signs.every((sign) => sign <= 1e-9)
-    )
-  })
+  const coveringFaces = facesAcrossDrill(mesh, 0.8)
+  const blindScene = await convertCircuitJsonTo3D(
+    [
+      circuitJson[0]!,
+      {
+        ...circuitJson[1]!,
+        layers: ["top", "inner1"],
+        from_layer: "top",
+        to_layer: "inner1",
+      } as CircuitJson[number],
+    ],
+    { renderBoardTextures: false },
+  )
+  expect(
+    facesAcrossDrill(blindScene.boxes[0]!.mesh!, -0.8).length,
+  ).toBeGreaterThan(0)
   const glb = (await convertSceneToGLTF(scene, { binary: true })) as ArrayBuffer
   const boardPng = await renderGlbToPng(
     glb,
@@ -55,15 +77,14 @@ test.failing("a through via leaves no substrate across its drill axis", async ()
     { direction: [0, 1, -0.001], ortho: true, aspectRatio: 2 },
   )
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="white"/><g fill="#222" font-family="sans-serif" font-size="17" text-anchor="middle"><text x="400" y="30">GLTF converts Circuit JSON to a 3D PCB substrate.</text><text x="400" y="60">2 mm through drill: ${coveringFaces.length} substrate faces cover its axis. Expected 0.</text></g><image y="90" width="800" height="400" href="data:image/png;base64,${Buffer.from(boardPng).toString("base64")}"/></svg>`
+  const png = new Resvg(svg).render().asPng()
   if (process.env.EVIDENCE_DIR) {
-    await Bun.write(
-      `${process.env.EVIDENCE_DIR}/observed.png`,
-      new Resvg(svg).render().asPng(),
-    )
+    await Bun.write(`${process.env.EVIDENCE_DIR}/observed.png`, png)
     await Bun.write(
       `${process.env.EVIDENCE_DIR}/mesh.json`,
       JSON.stringify(mesh),
     )
   }
   expect(coveringFaces).toHaveLength(0)
+  await expect(png).toMatchPngSnapshot(import.meta.path)
 }, 30_000)

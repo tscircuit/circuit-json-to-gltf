@@ -3,3 +3,5 @@ The public 3D converter constructs a drilled PCB substrate, including non-plated
 Run `bun test tests/snapshot/through-via-substrate-drill.test.ts`. Remove only `.failing` to expose the assertion failure. `failure/run.log` is the unannotated exit-1 run; `observed.png` is a real GLB render on white with a centered caption and `mesh.json` is the actual returned mesh. It is not a passing baseline. Regenerate with `EVIDENCE_DIR=debug-output/via-drill`.
 
 Verified upstream main `737ee0843c03a18e01786a971a93f10286ff2d49` (0.0.152) on 2026-10-11. This tests substrate geometry, not copper barrel plating, blind-via cavities or production drill qualification.
+
+The fix passes physical through-via drills through the existing substrate round-hole path for boards and panels. Partial layer spans remain closed at the far board face, verified through actual public-converter geometry. The original assertion passes without test.failing; fixed-run PNG and a separate passing baseline are captured. Eight neighboring geometry, panel and tenting tests and bunx tsc --noEmit pass.

@@ -1,0 +1,9 @@
+bun test v1.3.14 (0d9b296a)
+
+tests/snapshot/through-via-substrate-drill.test.ts:
+(pass) a through via leaves no substrate across its drill axis [573.59ms]
+
+ 1 pass
+ 0 fail
+ 3 expect() calls
+Ran 1 test across 1 file. [936.00ms]

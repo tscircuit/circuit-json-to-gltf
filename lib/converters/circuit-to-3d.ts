@@ -62,6 +62,7 @@ import {
   getSpecifiedColor,
 } from "../utils/board-color-palette"
 import { renderBoardTextures } from "./board-renderer"
+import { getThroughViaDrillHoles } from "../utils/through-via-drill-holes"
 
 const DEFAULT_BOARD_THICKNESS = 1.6 // mm
 const DEFAULT_COMPONENT_HEIGHT = 2 // mm
@@ -195,7 +196,10 @@ export async function convertCircuitJsonTo3D(
 
   // Render panel if present (panel takes priority)
   if (pcbPanel) {
-    const pcbHoles = (db.pcb_hole?.list?.() ?? []) as PcbHole[]
+    const pcbHoles: PcbHole[] = [
+      ...(db.pcb_hole?.list?.() ?? []),
+      ...getThroughViaDrillHoles(db.pcb_via?.list?.() ?? []),
+    ]
     const pcbPlatedHoles = (db.pcb_plated_hole?.list?.() ??
       []) as PcbPlatedHole[]
     const pcbCutouts = (db.pcb_cutout?.list?.() ?? []) as PcbCutout[]
@@ -270,7 +274,10 @@ export async function convertCircuitJsonTo3D(
       // Create each PCB at its circuit-world XY position, using the existing
       // single-board mapping to glTF +Y-up below.
 
-      const pcbHoles = (boardDb.pcb_hole?.list?.() ?? []) as PcbHole[]
+      const pcbHoles: PcbHole[] = [
+        ...(boardDb.pcb_hole?.list?.() ?? []),
+        ...getThroughViaDrillHoles(boardDb.pcb_via?.list?.() ?? []),
+      ]
       const pcbPlatedHoles = (boardDb.pcb_plated_hole?.list?.() ??
         []) as PcbPlatedHole[]
       const pcbCutouts = (boardDb.pcb_cutout?.list?.() ?? []) as PcbCutout[]
