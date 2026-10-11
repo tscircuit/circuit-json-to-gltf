@@ -1,9 +1,0 @@
-The public 3D converter constructs a drilled PCB substrate, including non-plated and plated holes. A through `pcb_via` also declares a physical drill. Here a 10 x 8 mm four-layer board has one untented through via with a 2 mm drill. Textures are disabled so a painted hole cannot hide solid substrate. Expected: no top substrate triangle intersects its drill axis. Observed: one does, and the actual rendered board is solid there.
-
-Run `bun test tests/snapshot/through-via-substrate-drill.test.ts`. Remove only `.failing` to expose the assertion failure. `failure/run.log` is the unannotated exit-1 run; `observed.png` is a real GLB render on white with a centered caption and `mesh.json` is the actual returned mesh. It is not a passing baseline. Regenerate with `EVIDENCE_DIR=debug-output/via-drill`.
-
-Verified upstream main `737ee0843c03a18e01786a971a93f10286ff2d49` (0.0.152) on 2026-10-11. This tests substrate geometry, not copper barrel plating, blind-via cavities or production drill qualification.
-
-The fix passes physical through-via drills through the existing substrate round-hole path for boards and panels. Partial layer spans remain closed at the far board face, verified through actual public-converter geometry. The original assertion passes without test.failing; fixed-run PNG and a separate passing baseline are captured. Eight neighboring geometry, panel and tenting tests and bunx tsc --noEmit pass.
-
-Formatting passes after formatting the captured JSON without changing its values. GitHub's complete test run reports 376 passes and one failure in the existing `reference-surfaces.test.ts` (expected Y=17.2, received 20.799999). That test fails identically with the unmodified main converter locally, and also fails on the reproduction branch before this production fix. Its unrelated expectation remains unchanged.
