@@ -3,6 +3,7 @@ import { Resvg } from "@resvg/resvg-js"
 import { Circuit } from "@tscircuit/core"
 import { convertCircuitJsonTo3D, convertSceneToGLTF } from "../../lib"
 import { renderGlbToPng } from "../renderGlbToPng"
+import { renderPcbLayers } from "../fixtures/render-pcb-layers"
 
 test.failing("a through via leaves no substrate across its drill axis", async () => {
   const circuit = new Circuit()
@@ -81,5 +82,14 @@ test.failing("a through via leaves no substrate across its drill axis", async ()
       new Resvg(svg).render().asPng(),
     )
   }
+  expect(
+    renderPcbLayers(
+      circuitJson,
+      `2 mm through drill: 3D has ${coveringFaces.length} covering face(s) (expected 0).`,
+    ),
+  ).toMatchSvgSnapshot(
+    import.meta.path,
+    "through-via-substrate-drill-pcb-layers",
+  )
   expect(coveringFaces).toHaveLength(0)
 }, 30_000)
