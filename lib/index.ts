@@ -77,6 +77,8 @@ export { loadJscadPlan } from "./loaders/jscad-plan"
 export { clearOBJCache, loadOBJ } from "./loaders/obj"
 // Re-export loaders
 export { clearSTLCache, loadSTL } from "./loaders/stl"
+export { initializeStepImporterWasm } from "./loaders/step"
+export { initializeSvgToPngWasm } from "./utils/svg-to-png-browser"
 // Re-export types
 export type {
   CircuitJsonWithPcbFlex,

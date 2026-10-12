@@ -4,8 +4,35 @@ import tscircuitFont from "@tscircuit/alphabet/base64font"
 let wasmInitialized = false
 let Resvg: typeof import("@resvg/resvg-wasm").Resvg
 let initWasm: typeof import("@resvg/resvg-wasm").initWasm
+let suppliedWasmPromise: Promise<void> | undefined
+let suppliedWasmFailed = false
+
+/** Call before rendering board textures to use bundled or cached WASM bytes. */
+export async function initializeSvgToPngWasm(
+  wasmBinary: Uint8Array | ArrayBuffer,
+): Promise<void> {
+  if (wasmInitialized || (suppliedWasmPromise && !suppliedWasmFailed)) {
+    throw new Error("SVG renderer WASM has already been initialized")
+  }
+  suppliedWasmFailed = false
+  suppliedWasmPromise = (async () => {
+    const resvgModule = await import("@resvg/resvg-wasm")
+    await resvgModule.initWasm(new Uint8Array(wasmBinary))
+    Resvg = resvgModule.Resvg
+    initWasm = resvgModule.initWasm
+    wasmInitialized = true
+  })().catch((error) => {
+    suppliedWasmFailed = true
+    throw error
+  })
+  await suppliedWasmPromise
+}
 
 async function ensureWasmInitialized() {
+  if (suppliedWasmPromise) {
+    await suppliedWasmPromise
+    return
+  }
   if (!wasmInitialized) {
     try {
       // Check if we're in a Node.js/Bun environment
