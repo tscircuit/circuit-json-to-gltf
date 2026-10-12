@@ -20,22 +20,27 @@ export async function loadSTL({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchImpl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: typeof fetch
 }): Promise<STLMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (stlCache.has(cacheKey)) {
+  if (!fetchImpl && stlCache.has(cacheKey)) {
     return stlCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchImpl,
+  })
   const buffer = await response.arrayBuffer()
   const mesh = parseSTL(buffer, transform)
-  stlCache.set(cacheKey, mesh)
+  if (!fetchImpl) stlCache.set(cacheKey, mesh)
   return mesh
 }
 

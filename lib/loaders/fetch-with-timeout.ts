@@ -7,9 +7,11 @@ export async function fetchWithTimeout(
   {
     authHeaders,
     timeoutMs = DEFAULT_FETCH_TIMEOUT_MS,
+    fetch: fetchImpl = globalThis.fetch,
   }: {
     authHeaders?: AuthHeaders
     timeoutMs?: number
+    fetch?: typeof fetch
   } = {},
 ): Promise<Response> {
   const controller = new AbortController()
@@ -21,7 +23,7 @@ export async function fetchWithTimeout(
   }, timeoutMs)
 
   try {
-    return await fetch(url, {
+    return await fetchImpl(url, {
       headers: authHeaders,
       signal: controller.signal,
     })

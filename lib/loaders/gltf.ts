@@ -11,8 +11,12 @@ import { resolveModelUrl } from "./resolve-model-url"
 async function fetchAsArrayBuffer(
   url: string,
   authHeaders?: AuthHeaders,
+  fetchImpl?: typeof fetch,
 ): Promise<ArrayBuffer> {
-  const response = await fetchWithTimeout(url, { authHeaders })
+  const response = await fetchWithTimeout(url, {
+    authHeaders,
+    fetch: fetchImpl,
+  })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
   }
@@ -33,8 +37,12 @@ function dataUriToArrayBuffer(uri: string): ArrayBuffer {
 export async function fetchGltfAndConvertToGlb(
   url: string,
   authHeaders?: AuthHeaders,
+  fetchImpl?: typeof fetch,
 ): Promise<ArrayBuffer> {
-  const gltfResponse = await fetchWithTimeout(url, { authHeaders })
+  const gltfResponse = await fetchWithTimeout(url, {
+    authHeaders,
+    fetch: fetchImpl,
+  })
   if (!gltfResponse.ok) {
     throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
   }
@@ -48,7 +56,9 @@ export async function fetchGltfAndConvertToGlb(
           bufferPromises.push(Promise.resolve(dataUriToArrayBuffer(buffer.uri)))
         } else {
           const bufferUrl = new URL(buffer.uri, url).toString()
-          bufferPromises.push(fetchAsArrayBuffer(bufferUrl, authHeaders))
+          bufferPromises.push(
+            fetchAsArrayBuffer(bufferUrl, authHeaders, fetchImpl),
+          )
         }
       }
     }
@@ -125,13 +135,19 @@ export async function loadGLTF({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchImpl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: typeof fetch
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const glb_buffer = await fetchGltfAndConvertToGlb(resolvedUrl, authHeaders)
+  const glb_buffer = await fetchGltfAndConvertToGlb(
+    resolvedUrl,
+    authHeaders,
+    fetchImpl,
+  )
   return parseGLB(glb_buffer, transform)
 }
