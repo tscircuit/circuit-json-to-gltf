@@ -1,0 +1,47 @@
+import type { CircuitJson } from "circuit-json"
+
+export const padOverlappingVia: CircuitJson = [
+  {
+    type: "pcb_board",
+    pcb_board_id: "board",
+    center: { x: 10, y: 5 },
+    width: 6,
+    height: 4,
+    thickness: 1.6,
+    num_layers: 2,
+    material: "fr4",
+  },
+  {
+    type: "pcb_smtpad",
+    pcb_smtpad_id: "pad",
+    pcb_component_id: "component",
+    shape: "rect",
+    x: 9.3,
+    y: 5,
+    width: 1.4,
+    height: 2,
+    layer: "top",
+  },
+  {
+    type: "pcb_via",
+    pcb_via_id: "overlap",
+    x: 10,
+    y: 5,
+    hole_diameter: 1,
+    outer_diameter: 1.5,
+    layers: ["top", "bottom"],
+    tented_on_top: true,
+    tented_on_bottom: true,
+  },
+  {
+    type: "pcb_via",
+    pcb_via_id: "control",
+    x: 12,
+    y: 6.2,
+    hole_diameter: 1,
+    outer_diameter: 1.5,
+    layers: ["top", "bottom"],
+    tented_on_top: true,
+    tented_on_bottom: true,
+  },
+]
