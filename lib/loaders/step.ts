@@ -18,10 +18,13 @@ import { resolveModelUrl } from "./resolve-model-url"
 const stepCache = new Map<string, STLMesh | OBJMesh>()
 
 let occtModulePromise: Promise<any> | null = null
+let occtInitializationFailed = false
 
-async function getOcctModule(): Promise<any> {
-  if (!occtModulePromise) {
+function initializeOcctModule(wasmBinary?: Uint8Array): Promise<any> {
+  occtInitializationFailed = false
+  occtModulePromise = (async () => {
     const occtimportjs = (await import("occt-import-js" as string)).default
+    if (wasmBinary) return occtimportjs({ wasmBinary })
     const isBrowser =
       typeof window !== "undefined" || typeof self !== "undefined"
 
@@ -35,15 +38,32 @@ async function getOcctModule(): Promise<any> {
         wasmUrl = undefined
       }
 
-      occtModulePromise = occtimportjs({
+      return occtimportjs({
         locateFile: (path: string) =>
           path.endsWith(".wasm") && wasmUrl ? wasmUrl : path,
       })
     } else {
-      occtModulePromise = occtimportjs()
+      return occtimportjs()
     }
-  }
+  })().catch((error) => {
+    occtInitializationFailed = true
+    throw error
+  })
   return occtModulePromise
+}
+
+/** Call before loading STEP models to use bundled or cached WASM bytes. */
+export async function initializeStepImporterWasm(
+  wasmBinary: Uint8Array | ArrayBuffer,
+): Promise<void> {
+  if (occtModulePromise && !occtInitializationFailed) {
+    throw new Error("STEP importer WASM has already been initialized")
+  }
+  await initializeOcctModule(new Uint8Array(wasmBinary))
+}
+
+async function getOcctModule(): Promise<any> {
+  return occtModulePromise ?? initializeOcctModule()
 }
 
 export async function loadSTEP({
