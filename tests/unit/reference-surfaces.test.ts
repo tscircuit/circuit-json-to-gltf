@@ -33,19 +33,36 @@ test("reference surfaces are opt-in world-space frames with labels, normals, and
     const box = scene.boxes[0]!
     expect(box.label).toBe("SHADE.mount")
     const plane = box.mesh!.triangles.slice(0, 2)
-    const points = plane[0]!.vertices.map((vertex) => ({
-      x: vertex.x + box.center.x,
-      y: vertex.y + box.center.y,
-      z: vertex.z + box.center.z,
-    }))
+    const points = plane
+      .flatMap((triangle) => triangle.vertices)
+      .map((vertex) => ({
+        x: vertex.x + box.center.x,
+        y: vertex.y + box.center.y,
+        z: vertex.z + box.center.z,
+      }))
     // Actual corners in Scene3D: circuit (x,y,z) -> (x,z,y).
-    expect(points[0]!.x).toBeCloseTo(3)
-    expect(points[0]!.y).toBeCloseTo(20.8)
-    expect(points[0]!.z).toBeCloseTo(-5.4)
-    expect(points[2]!.x).toBeCloseTo(11)
-    expect(points[2]!.y).toBeCloseTo(17.2)
-    expect(points[2]!.z).toBeCloseTo(-0.6)
-    expect(plane[0]!.normal).toEqual({ x: 0, y: 0.8, z: 0.6 })
+    // This reflection reverses winding (transformTriangles), so check world
+    // positions independently of the triangle's vertex order.
+    for (const [x, y, z] of [
+      [3, 20.8, -5.4],
+      [11, 20.8, -5.4],
+      [11, 17.2, -0.6],
+      [3, 17.2, -0.6],
+    ]) {
+      expect(
+        points.some((p) => Math.hypot(p.x - x!, p.y - y!, p.z - z!) < 1e-5),
+      ).toBe(true)
+    }
+    for (const triangle of plane) {
+      expect(triangle.normal.x).toBeCloseTo(0)
+      expect(triangle.normal.y).toBeCloseTo(0.8)
+      expect(triangle.normal.z).toBeCloseTo(0.6)
+      const [a, b, c] = triangle.vertices
+      // Both faces must retain outward winding after the axis reflection.
+      const crossY = (b.z - a.z) * (c.x - a.x) - (b.x - a.x) * (c.z - a.z)
+      const crossZ = (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
+      expect(crossY * 0.8 + crossZ * 0.6).toBeGreaterThan(0)
+    }
     const arrow = box
       .mesh!.triangles.filter(
         (t) => Array.isArray(t.material?.color) && t.material.color[0] === 1,
