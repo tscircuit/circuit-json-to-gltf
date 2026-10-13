@@ -2,6 +2,28 @@ import type { Vec2Point } from "./geometry-loops"
 
 const LOOP_CONTAINMENT_EPSILON = 1e-8
 
+/** Earcut requires disjoint holes. Conservatively use the existing boolean
+ * subtraction when hole bounds overlap, so merged drills have no interior wall. */
+export const hasOverlappingHoleLoops = (loops: Vec2Point[][]): boolean => {
+  const bounds = loops
+    .map((loop) => ({
+      minX: Math.min(...loop.map((p) => p.x)),
+      maxX: Math.max(...loop.map((p) => p.x)),
+      minY: Math.min(...loop.map((p) => p.y)),
+      maxY: Math.max(...loop.map((p) => p.y)),
+    }))
+    .sort((a, b) => a.minX - b.minX)
+  for (let i = 0; i < bounds.length; i++) {
+    const a = bounds[i]!
+    for (let j = i + 1; j < bounds.length; j++) {
+      const b = bounds[j]!
+      if (b.minX > a.maxX) break
+      if (b.minY <= a.maxY && b.maxY >= a.minY) return true
+    }
+  }
+  return false
+}
+
 export const hasBoundaryCrossingLoops = (
   outerLoop: Vec2Point[],
   innerLoops: Vec2Point[][],

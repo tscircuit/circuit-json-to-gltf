@@ -17,7 +17,10 @@ import type {
 } from "circuit-json"
 import type { BoundingBox, STLMesh, Triangle } from "../types"
 import { cutBoardMeshOutsideBoardBoundary } from "./cut-board-mesh-outside-board-boundary"
-import { hasBoundaryCrossingLoops } from "./has-boundary-crossing-loops"
+import {
+  hasBoundaryCrossingLoops,
+  hasOverlappingHoleLoops,
+} from "./has-boundary-crossing-loops"
 import { normalizeLoop, signedArea, type Vec2Point } from "./geometry-loops"
 import { createEllipseLoop } from "./geometry-loops"
 import type { BoardCutout } from "./pcb-board-cutouts"
@@ -45,6 +48,7 @@ export interface BoardGeometryOptions {
   platedHoles?: PcbPlatedHole[]
   cutouts?: BoardCutout[]
   drillQuality?: "high" | "fast"
+  mergeOverlappingHoles?: boolean
 }
 
 const getHoleSegments = (
@@ -427,7 +431,10 @@ export const createBoardMesh = (
     }),
   ]
 
-  if (hasBoundaryCrossingLoops(outerLoop, holeLoops)) {
+  if (
+    hasBoundaryCrossingLoops(outerLoop, holeLoops) ||
+    (options.mergeOverlappingHoles && hasOverlappingHoleLoops(holeLoops))
+  ) {
     return cutBoardMeshOutsideBoardBoundary({
       board,
       center,

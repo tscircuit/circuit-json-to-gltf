@@ -1,3 +1,8 @@
+import {
+  getPadOverlappingVias,
+  viaDrills,
+  splitViaWalls,
+} from "../utils/pad-overlapping-vias"
 import { createReferenceSurfaceBox } from "./reference-surface"
 import {
   createStiffenerMesh,
@@ -202,14 +207,20 @@ export async function convertCircuitJsonTo3D(
     // For panels, include cutouts that don't have a specific board ID (global cutouts)
     const panelCutouts = pcbCutouts.filter((cutout) => !cutout.pcb_board_id)
 
-    const panelMesh = createPanelMesh(pcbPanel, {
+    const openVias = getPadOverlappingVias(circuitJson as CircuitJson)
+    const drilledPanel = createPanelMesh(pcbPanel, {
       thickness: effectiveBoardThickness,
-      holes: pcbHoles,
+      holes: [...pcbHoles, ...viaDrills(openVias)],
       platedHoles: pcbPlatedHoles,
       cutouts: panelCutouts,
       drillQuality: boardDrillQuality,
     })
 
+    const { board: panelMesh, copper: viaMesh } = splitViaWalls(
+      drilledPanel,
+      pcbPanel.center,
+      openVias,
+    )
     const meshWidth = panelMesh.boundingBox.max.x - panelMesh.boundingBox.min.x
     const meshHeight = panelMesh.boundingBox.max.z - panelMesh.boundingBox.min.z
 
@@ -252,6 +263,14 @@ export async function convertCircuitJsonTo3D(
     }
 
     boxes.push(panelBox)
+    if (viaMesh.triangles.length)
+      boxes.push({
+        ...panelBox,
+        texture: undefined,
+        mesh: viaMesh,
+        color: boardTextureColors.copperColor ?? "#ffe066",
+        label: "Via Plating",
+      })
   } else if (pcbBoards.length) {
     for (const pcbBoard of pcbBoards) {
       const effectiveBoardThickness = pcbBoard.thickness ?? boardThickness
@@ -276,14 +295,21 @@ export async function convertCircuitJsonTo3D(
       const pcbCutouts = (boardDb.pcb_cutout?.list?.() ?? []) as PcbCutout[]
       const boardCutouts = filterCutoutsForBoard(pcbCutouts, pcbBoard)
 
-      const boardMesh = createBoardMesh(pcbBoard, {
+      const openVias = getPadOverlappingVias(boardCircuitJson as CircuitJson)
+      const drilledBoard = createBoardMesh(pcbBoard, {
         thickness: effectiveBoardThickness,
-        holes: pcbHoles,
+        mergeOverlappingHoles: openVias.length > 0,
+        holes: [...pcbHoles, ...viaDrills(openVias)],
         platedHoles: pcbPlatedHoles,
         cutouts: boardCutouts,
         drillQuality: boardDrillQuality,
       })
 
+      const { board: boardMesh, copper: viaMesh } = splitViaWalls(
+        drilledBoard,
+        pcbBoard.center,
+        openVias,
+      )
       const meshWidth =
         boardMesh.boundingBox.max.x - boardMesh.boundingBox.min.x
       const meshHeight =
@@ -358,6 +384,16 @@ export async function convertCircuitJsonTo3D(
       if (fold && boardBox.mesh)
         boardBox.size = getBoundingBoxSize(boardBox.mesh.boundingBox)
       boxes.push(boardBox)
+      if (viaMesh.triangles.length) {
+        const copperMesh = fold ? tryFoldBoardMesh(viaMesh, fold) : undefined
+        boxes.push({
+          ...boardBox,
+          texture: undefined,
+          mesh: copperMesh?.ok ? copperMesh.value : viaMesh,
+          color: boardTextureColors.copperColor ?? "#ffe066",
+          label: "Via Plating",
+        })
+      }
     }
   } else if (drawFauxBoard) {
     const hasComponentBounds = pcbComponents.length > 0
