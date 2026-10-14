@@ -537,45 +537,59 @@ function getAccessorData(
 
   const totalComponents = count * componentsPerElement
 
-  // Convert to Float32Array based on component type
-  if (componentType === 5126) {
-    // FLOAT
+  const componentSize =
+    componentType === 5120 || componentType === 5121
+      ? 1
+      : componentType === 5122 || componentType === 5123
+        ? 2
+        : 4
+  const elementSize = componentSize * componentsPerElement
+  const stride = bufferView.byteStride ?? elementSize
+
+  // Keep the zero-copy path for tightly packed FLOAT attributes.
+  if (componentType === 5126 && stride === elementSize) {
     return new Float32Array(binaryBuffer, byteOffset, totalComponents)
-  } else if (componentType === 5123) {
-    // UNSIGNED_SHORT
-    const uint16Array = new Uint16Array(
-      binaryBuffer,
-      byteOffset,
-      totalComponents,
-    )
-    return new Float32Array(uint16Array)
-  } else if (componentType === 5125) {
-    // UNSIGNED_INT
-    const uint32Array = new Uint32Array(
-      binaryBuffer,
-      byteOffset,
-      totalComponents,
-    )
-    return new Float32Array(uint32Array)
-  } else if (componentType === 5122) {
-    // SHORT
-    const int16Array = new Int16Array(binaryBuffer, byteOffset, totalComponents)
-    return new Float32Array(int16Array)
-  } else if (componentType === 5124) {
-    // INT
-    const int32Array = new Int32Array(binaryBuffer, byteOffset, totalComponents)
-    return new Float32Array(int32Array)
-  } else if (componentType === 5121) {
-    // UNSIGNED_BYTE
-    const uint8Array = new Uint8Array(binaryBuffer, byteOffset, totalComponents)
-    return new Float32Array(uint8Array)
-  } else if (componentType === 5120) {
-    // BYTE
-    const int8Array = new Int8Array(binaryBuffer, byteOffset, totalComponents)
-    return new Float32Array(int8Array)
   }
 
-  throw new Error(`Unsupported component type: ${componentType}`)
+  const view = new DataView(binaryBuffer)
+  const result = new Float32Array(totalComponents)
+  for (let element = 0; element < count; element++) {
+    for (let component = 0; component < componentsPerElement; component++) {
+      const offset = byteOffset + element * stride + component * componentSize
+      let value: number
+      switch (componentType) {
+        case 5120: // BYTE
+          value = view.getInt8(offset)
+          if (accessor.normalized) value = Math.max(value / 127, -1)
+          break
+        case 5121: // UNSIGNED_BYTE
+          value = view.getUint8(offset)
+          if (accessor.normalized) value /= 255
+          break
+        case 5122: // SHORT
+          value = view.getInt16(offset, true)
+          if (accessor.normalized) value = Math.max(value / 32767, -1)
+          break
+        case 5123: // UNSIGNED_SHORT
+          value = view.getUint16(offset, true)
+          if (accessor.normalized) value /= 65535
+          break
+        case 5124: // INT (retained for compatibility)
+          value = view.getInt32(offset, true)
+          break
+        case 5125: // UNSIGNED_INT
+          value = view.getUint32(offset, true)
+          break
+        case 5126: // FLOAT
+          value = view.getFloat32(offset, true)
+          break
+        default:
+          throw new Error(`Unsupported component type: ${componentType}`)
+      }
+      result[element * componentsPerElement + component] = value
+    }
+  }
+  return result
 }
 
 function computeNormal(v0: Point3, v1: Point3, v2: Point3): Point3 {
