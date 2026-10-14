@@ -46,8 +46,8 @@ for (const [name, render] of [
     }
     expect(glyphs).toHaveLength(label.replaceAll(" ", "").length)
     const [v, one, , zero] = glyphs.slice(-4)
-    // The old embedded font places v about 20 pixels above the baseline at
-    // this size. Allow a few pixels for optical overshoot and rasterization.
+    // A lowercase v should use the x-height while sharing the digit baseline.
+    // Allow a few pixels for optical overshoot and rasterization.
     expect(v!.top).toBeGreaterThan(one!.top + 10)
     expect(Math.abs(v!.bottom - one!.bottom)).toBeLessThanOrEqual(4)
     expect(Math.abs(v!.bottom - zero!.bottom)).toBeLessThanOrEqual(4)

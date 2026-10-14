@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "@jscad/modeling": "^2.12.6",
-    "@tscircuit/alphabet": "^0.0.25",
+    "@tscircuit/alphabet": "https://pkg.pr.new/@tscircuit/alphabet@f344544",
     "@tscircuit/cableprinter": "^0.0.6",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
