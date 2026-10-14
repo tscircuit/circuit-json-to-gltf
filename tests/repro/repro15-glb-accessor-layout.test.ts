@@ -10,7 +10,7 @@ import {
 
 // Left column is frozen from 89013a1; right column always uses the current loader.
 // Identical input cubes, PCB placement and camera expose both bugs without auto-fit.
-test("repro15: interleaved and quantized GLB cubes reproduce issue #255", async () => {
+test("repro15: interleaved and quantized GLB cubes keep their 1 mm dimensions", async () => {
   GlobalFonts.register(Buffer.from(tscircuitFont, "base64"), "AccessorRepro")
   const width = accessorCubeCamera.width
   const rowHeight = accessorCubeCamera.height + 45
@@ -76,16 +76,8 @@ test("repro15: interleaved and quantized GLB cubes reproduce issue #255", async 
   await expect(canvas.toBuffer("image/png")).toMatchPngSnapshot(
     import.meta.path,
   )
-  // Pin the reported broken extents here; the stacked fix changes each to 1 mm.
-  const brokenDimensions = [
-    [1, 1, 1],
-    [0, 1, 1],
-    [32767, 32767, 32767],
-  ]
-  for (const [row, dimensions] of exportedDimensions.entries()) {
+  for (const dimensions of exportedDimensions) {
     expect(dimensions).toHaveLength(3)
-    for (const [axis, dimension] of dimensions.entries()) {
-      expect(dimension).toBeCloseTo(brokenDimensions[row]![axis]!, 5)
-    }
+    for (const dimension of dimensions) expect(dimension).toBeCloseTo(1, 5)
   }
 }, 60_000)
