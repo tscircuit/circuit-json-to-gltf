@@ -46,6 +46,32 @@ test("GLB via tenting preserves pad openings and overlapping silkscreen text", a
     showPcbNotes: true,
   })
   expect(glb).toBeInstanceOf(ArrayBuffer)
+
+  // Inspect the exported images too: callers consume the GLB, not the separate
+  // texture renderer. Silkscreen must survive over the via on both board faces.
+  const view = new DataView(glb as ArrayBuffer)
+  const jsonLength = view.getUint32(12, true)
+  const gltf = JSON.parse(
+    new TextDecoder().decode(
+      new Uint8Array(glb as ArrayBuffer, 20, jsonLength),
+    ),
+  )
+  const binaryOffset = 20 + jsonLength + 8
+  expect(gltf.images).toHaveLength(2)
+  for (const image of gltf.images) {
+    const imageView = gltf.bufferViews[image.bufferView]
+    const png = new Uint8Array(
+      glb as ArrayBuffer,
+      binaryOffset + (imageView.byteOffset ?? 0),
+      imageView.byteLength,
+    )
+    const texture = readTexture(
+      `data:image/png;base64,${Buffer.from(png).toString("base64")}`,
+    )
+    expect(texture(8, 2)).toEqual(white)
+    // The exposed via remains exposed; this is not a global white overlay.
+    expect(texture(0, 2)).not.toEqual(white)
+  }
   // Use the top_down preset's +Y-up view, with its tilt reversed so labels read upright.
   const camera = getBestCameraPosition(circuitJson, {
     direction: [0, 1, -1e-3],

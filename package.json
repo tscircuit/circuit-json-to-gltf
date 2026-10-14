@@ -23,6 +23,7 @@
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
     "@tscircuit/cableprinter": "^0.0.6",
+    "circuit-to-svg": "^0.0.445",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
     "jscad-electronics": "^0.0.210",
@@ -48,7 +49,6 @@
     "@vitejs/plugin-react": "^5.0.0",
     "bun-match-svg": "^0.0.12",
     "circuit-json": "https://pkg.pr.new/circuit-json@90e54bd",
-    "circuit-to-svg": "^0.0.445",
     "graphics-debug": "^0.0.96",
     "looks-same": "^9.0.1",
     "poppygl": "0.0.32",
@@ -64,7 +64,6 @@
     "typescript": "^5",
     "@resvg/resvg-wasm": "2",
     "@resvg/resvg-js": "2",
-    "circuit-to-svg": ">=0.0.445",
     "@tscircuit/circuit-json-util": "*",
     "circuit-json": "*"
   },
