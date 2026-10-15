@@ -43,26 +43,45 @@ export async function fetchGltfAndConvertToGlb(
   const bufferPromises: Promise<ArrayBuffer>[] = []
   if (gltf.buffers) {
     for (const buffer of gltf.buffers) {
-      if (buffer.uri) {
-        if (buffer.uri.startsWith("data:")) {
-          bufferPromises.push(Promise.resolve(dataUriToArrayBuffer(buffer.uri)))
-        } else {
-          const bufferUrl = new URL(buffer.uri, url).toString()
-          bufferPromises.push(fetchAsArrayBuffer(bufferUrl, authHeaders))
-        }
+      if (!buffer.uri) {
+        throw new Error("Cannot load a glTF buffer without a URI")
+      }
+      if (buffer.uri.startsWith("data:")) {
+        bufferPromises.push(Promise.resolve(dataUriToArrayBuffer(buffer.uri)))
+      } else {
+        const bufferUrl = new URL(buffer.uri, url).toString()
+        bufferPromises.push(fetchAsArrayBuffer(bufferUrl, authHeaders))
       }
     }
   }
 
   const buffers = await Promise.all(bufferPromises)
 
-  let binaryBuffer = new ArrayBuffer(0)
-  if (buffers.length > 0 && buffers[0]) {
-    binaryBuffer = buffers[0]
+  const bufferOffsets: number[] = []
+  let binaryLength = 0
+  for (const buffer of buffers) {
+    const start = Math.ceil(binaryLength / 4) * 4
+    bufferOffsets.push(start)
+    binaryLength = start + buffer.byteLength
+  }
+  const binaryBuffer = new ArrayBuffer(binaryLength)
+  const binaryBytes = new Uint8Array(binaryBuffer)
+  buffers.forEach((buffer, index) => {
+    binaryBytes.set(new Uint8Array(buffer), bufferOffsets[index]!)
+  })
+
+  // parseGLB reads one BIN chunk, so relocate every view into that chunk.
+  if (buffers.length > 1) {
+    for (const bufferView of gltf.bufferViews ?? []) {
+      bufferView.byteOffset =
+        bufferOffsets[bufferView.buffer]! + (bufferView.byteOffset ?? 0)
+      bufferView.buffer = 0
+    }
   }
 
   // Update JSON to point to the new binary chunk
   if (gltf.buffers && gltf.buffers.length > 0) {
+    gltf.buffers = [gltf.buffers[0]]
     delete gltf.buffers[0].uri
     gltf.buffers[0].byteLength = binaryBuffer.byteLength
   }
