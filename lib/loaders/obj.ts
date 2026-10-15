@@ -22,21 +22,26 @@ export async function loadOBJ({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchImpl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: typeof fetch
 }): Promise<OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (objCache.has(cacheKey)) {
+  if (!fetchImpl && objCache.has(cacheKey)) {
     return objCache.get(cacheKey)!
   }
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchImpl,
+  })
   const text = await response.text()
   const mesh = parseOBJ(text, transform)
-  objCache.set(cacheKey, mesh)
+  if (!fetchImpl) objCache.set(cacheKey, mesh)
   return mesh
 }
 

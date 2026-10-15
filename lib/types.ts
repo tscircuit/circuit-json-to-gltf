@@ -38,6 +38,8 @@ export interface ConversionOptions {
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  /** Transport for model assets, including cached responses in offline hosts. */
+  fetch?: typeof fetch
 }
 
 export interface CoordinateTransformConfig {
@@ -207,6 +209,8 @@ export interface CircuitTo3DOptions {
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  /** Transport for model assets, including cached responses in offline hosts. */
+  fetch?: typeof fetch
 }
 
 export interface BoardRenderOptions {

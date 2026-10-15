@@ -24,19 +24,24 @@ export async function loadGLB({
   transform,
   projectBaseUrl,
   authHeaders,
+  fetch: fetchImpl,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fetch?: typeof fetch
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
   const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
-  if (glbCache.has(cacheKey)) {
+  if (!fetchImpl && glbCache.has(cacheKey)) {
     return glbCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, {
+    authHeaders,
+    fetch: fetchImpl,
+  })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch GLB: ${response.status} ${response.statusText}`,
@@ -44,7 +49,7 @@ export async function loadGLB({
   }
   const buffer = await response.arrayBuffer()
   const mesh = parseGLB(buffer, transform)
-  glbCache.set(cacheKey, mesh)
+  if (!fetchImpl) glbCache.set(cacheKey, mesh)
   return mesh
 }
 
