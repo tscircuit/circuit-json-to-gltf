@@ -44,6 +44,7 @@ export async function convertCircuitJsonToGltf(
     showReferenceSurfaces: options.showReferenceSurfaces,
     projectBaseUrl: options.projectBaseUrl,
     authHeaders: options.authHeaders,
+    fs: options.fs,
   })
 
   // Convert 3D scene to GLTF
@@ -86,6 +87,7 @@ export type {
   CircuitTo3DOptions,
   Color,
   ConversionOptions,
+  FilesystemInterface,
   CoordinateTransformConfig,
   GLTFExportOptions,
   Light3D,

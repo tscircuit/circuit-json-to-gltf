@@ -3,6 +3,7 @@ import type {
   CoordinateTransformConfig,
   OBJMesh,
   STLMesh,
+  FilesystemInterface,
 } from "../types"
 import { fetchWithTimeout } from "./fetch-with-timeout"
 import { parseGLB } from "./glb"
@@ -11,8 +12,9 @@ import { resolveModelUrl } from "./resolve-model-url"
 async function fetchAsArrayBuffer(
   url: string,
   authHeaders?: AuthHeaders,
+  fs?: FilesystemInterface,
 ): Promise<ArrayBuffer> {
-  const response = await fetchWithTimeout(url, { authHeaders })
+  const response = await fetchWithTimeout(url, { authHeaders, fs })
   if (!response.ok) {
     throw new Error(`Failed to fetch ${url}: ${response.statusText}`)
   }
@@ -33,8 +35,9 @@ function dataUriToArrayBuffer(uri: string): ArrayBuffer {
 export async function fetchGltfAndConvertToGlb(
   url: string,
   authHeaders?: AuthHeaders,
+  fs?: FilesystemInterface,
 ): Promise<ArrayBuffer> {
-  const gltfResponse = await fetchWithTimeout(url, { authHeaders })
+  const gltfResponse = await fetchWithTimeout(url, { authHeaders, fs })
   if (!gltfResponse.ok) {
     throw new Error(`Failed to fetch glTF file: ${gltfResponse.statusText}`)
   }
@@ -48,7 +51,7 @@ export async function fetchGltfAndConvertToGlb(
           bufferPromises.push(Promise.resolve(dataUriToArrayBuffer(buffer.uri)))
         } else {
           const bufferUrl = new URL(buffer.uri, url).toString()
-          bufferPromises.push(fetchAsArrayBuffer(bufferUrl, authHeaders))
+          bufferPromises.push(fetchAsArrayBuffer(bufferUrl, authHeaders, fs))
         }
       }
     }
@@ -125,13 +128,19 @@ export async function loadGLTF({
   transform,
   projectBaseUrl,
   authHeaders,
+  fs,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const glb_buffer = await fetchGltfAndConvertToGlb(resolvedUrl, authHeaders)
+  const glb_buffer = await fetchGltfAndConvertToGlb(
+    resolvedUrl,
+    authHeaders,
+    fs,
+  )
   return parseGLB(glb_buffer, transform)
 }

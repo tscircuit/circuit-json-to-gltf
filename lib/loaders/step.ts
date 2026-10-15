@@ -6,6 +6,7 @@ import type {
   Point3,
   STLMesh,
   Triangle,
+  FilesystemInterface,
 } from "../types"
 import { boundsOfTriangles } from "../utils/bounding-box"
 import {
@@ -13,6 +14,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { fetchWithTimeout } from "./fetch-with-timeout"
+import { getFilesystemCacheKey } from "./filesystem-cache-key"
 import { resolveModelUrl } from "./resolve-model-url"
 
 const stepCache = new Map<string, STLMesh | OBJMesh>()
@@ -51,19 +53,21 @@ export async function loadSTEP({
   transform,
   projectBaseUrl,
   authHeaders,
+  fs,
 }: {
   url: string
   transform?: CoordinateTransformConfig
   projectBaseUrl?: string
   authHeaders?: AuthHeaders
+  fs?: FilesystemInterface
 }): Promise<STLMesh | OBJMesh> {
   const resolvedUrl = await resolveModelUrl(url, projectBaseUrl)
-  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}`
+  const cacheKey = `${resolvedUrl}:${JSON.stringify(transform ?? {})}:fs=${getFilesystemCacheKey(fs)}`
   if (stepCache.has(cacheKey)) {
     return stepCache.get(cacheKey)!
   }
 
-  const response = await fetchWithTimeout(resolvedUrl, { authHeaders })
+  const response = await fetchWithTimeout(resolvedUrl, { authHeaders, fs })
   if (!response.ok) {
     throw new Error(
       `Failed to fetch STEP file: ${response.status} ${response.statusText}`,

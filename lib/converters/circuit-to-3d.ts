@@ -120,6 +120,7 @@ export async function convertCircuitJsonTo3D(
     showBoundingBoxes = false,
     projectBaseUrl,
     authHeaders,
+    fs,
   } = options
 
   const foldPcbs =
@@ -649,6 +650,7 @@ export async function convertCircuitJsonTo3D(
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
+        fs,
       })
     } else if (model_obj_url) {
       box.mesh = await loadOBJ({
@@ -656,6 +658,7 @@ export async function convertCircuitJsonTo3D(
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
+        fs,
       })
     } else if (model_glb_url) {
       try {
@@ -664,6 +667,7 @@ export async function convertCircuitJsonTo3D(
           transform: defaultTransform,
           projectBaseUrl,
           authHeaders,
+          fs,
         })
       } catch (err) {
         console.error(`Failed to load GLB from ${model_glb_url}:`, err)
@@ -674,6 +678,7 @@ export async function convertCircuitJsonTo3D(
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
+        fs,
       })
     } else if (model_step_url) {
       try {
@@ -682,6 +687,7 @@ export async function convertCircuitJsonTo3D(
           transform: defaultTransform,
           projectBaseUrl,
           authHeaders,
+          fs,
         })
       } catch (err) {
         console.error(`Failed to load STEP from ${model_step_url}:`, err)
