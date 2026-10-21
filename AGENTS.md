@@ -1,4 +1,5 @@
 ---
+
 description: Use Bun instead of Node.js, npm, pnpm, or vite.
 globs: "*.ts, *.tsx, *.html, *.css, *.js, *.jsx, package.json"
 alwaysApply: false
@@ -7,7 +8,6 @@ alwaysApply: false
 Default to using Bun instead of Node.js.
 
 Do not change the README for new features unless explicitly requested or the feature changes an API.
-
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
@@ -32,13 +32,12 @@ test("hello world", () => {
 This package converts between two frames with **different up axes**, and that
 conversion is the single largest source of defects in tscircuit's 3D output.
 
-| Frame | Up | Units |
-| --- | --- | --- |
-| Circuit JSON (input) | **+Z** | mm |
-| glTF / GLB scene (output) | **+Y** | mm |
+| Frame                     | Up     | Units |
+| ------------------------- | ------ | ----- |
+| Circuit JSON (input)      | **+Z** | mm    |
+| glTF / GLB scene (output) | **+Y** | mm    |
 
 Consequences that are easy to get wrong:
-
 - A rotation cannot be copied across the boundary. `circuit-to-3d.ts` remaps a
   component's rotation (`y ← cad.rotation.z`, `z ← cad.rotation.y`) precisely
   because of the swap. Any new rotation path needs the same remap, not a

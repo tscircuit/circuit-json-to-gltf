@@ -42,5 +42,11 @@ test("carries cad_component.show_hidden_edges into PoppyGL node extras", async (
   }
   expect(gltf.nodes.find((node) => node.name === "enclosure")?.extras).toEqual({
     poppygl: { showHiddenEdges: true },
+    tscircuit: {
+      cad_component_id: "cad_enclosure",
+      source_component_id: "source_enclosure",
+      pcb_component_id: "pcb_enclosure",
+      componentName: "enclosure",
+    },
   })
 })

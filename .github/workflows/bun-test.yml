@@ -26,7 +26,7 @@ jobs:
 
       - name: Run tests
         run: bun test
-        
+
       - name: Upload test artifacts (snapshots and diffs)
         uses: actions/upload-artifact@v4
         if: failure()
