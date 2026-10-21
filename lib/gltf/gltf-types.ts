@@ -42,6 +42,12 @@ export interface GLTFNode {
     poppygl?: {
       showHiddenEdges?: boolean
     }
+    tscircuit?: {
+      cad_component_id?: string
+      source_component_id?: string
+      pcb_component_id?: string
+      componentName?: string
+    }
   }
 }
 

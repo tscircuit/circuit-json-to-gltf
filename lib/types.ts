@@ -122,6 +122,13 @@ export interface OBJMaterial {
 export type Color = string | [number, number, number, number]
 
 export interface Box3D {
+  /** Lightweight identity exported as glTF node extras.tscircuit (no geometry). */
+  componentMetadata?: {
+    cad_component_id?: string
+    source_component_id?: string
+    pcb_component_id?: string
+    componentName?: string
+  }
   center: Point3
   size: Size3
   rotation?: Point3

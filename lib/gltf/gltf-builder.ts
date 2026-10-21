@@ -169,7 +169,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
-      ...this.getPoppyglNodeExtras(box),
+      ...this.getNodeExtras(box),
     })
 
     // Add node to scene
@@ -233,7 +233,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
-      ...this.getPoppyglNodeExtras(box),
+      ...this.getNodeExtras(box),
     })
     this.gltf.scenes![0]!.nodes!.push(nodeIndex)
   }
@@ -387,7 +387,7 @@ export class GLTFBuilder {
       name: box.label || `OBJBox${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
-      ...this.getPoppyglNodeExtras(box),
+      ...this.getNodeExtras(box),
     })
 
     // Add node to scene
@@ -592,7 +592,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
-      ...this.getPoppyglNodeExtras(box),
+      ...this.getNodeExtras(box),
     })
 
     // Add node to scene
@@ -736,7 +736,7 @@ export class GLTFBuilder {
       name: box.label || `Box${nodeIndex}`,
       mesh: meshIndex,
       translation: this.toGltfTranslation(box.center),
-      ...this.getPoppyglNodeExtras(box),
+      ...this.getNodeExtras(box),
     })
 
     // Add node to scene
@@ -813,14 +813,13 @@ export class GLTFBuilder {
     return [-center.x, center.y, center.z]
   }
 
-  private getPoppyglNodeExtras(box: Box3D): Partial<Pick<GLTFNode, "extras">> {
-    if (!box.showHiddenEdges) return {}
+  private getNodeExtras(box: Box3D): Partial<Pick<GLTFNode, "extras">> {
+    if (!box.showHiddenEdges && !box.componentMetadata) return {}
 
     return {
       extras: {
-        poppygl: {
-          showHiddenEdges: true,
-        },
+        ...(box.showHiddenEdges ? { poppygl: { showHiddenEdges: true } } : {}),
+        ...(box.componentMetadata ? { tscircuit: box.componentMetadata } : {}),
       },
     }
   }

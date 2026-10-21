@@ -572,6 +572,12 @@ export async function convertCircuitJsonTo3D(
       showHiddenEdges: (cad as CadComponent & { show_hidden_edges?: boolean })
         .show_hidden_edges,
       label: sourceComponent?.name,
+      componentMetadata: {
+        cad_component_id: cad.cad_component_id,
+        source_component_id: cad.source_component_id,
+        pcb_component_id: cad.pcb_component_id,
+        componentName: sourceComponent?.name,
+      },
     }
 
     if (
@@ -792,6 +798,11 @@ export async function convertCircuitJsonTo3D(
         },
         color: componentColor,
         label: sourceComponent?.name ?? "?",
+        componentMetadata: {
+          source_component_id: component.source_component_id,
+          pcb_component_id: component.pcb_component_id,
+          componentName: sourceComponent?.name,
+        },
         labelColor: "white",
       }
       const result = fold
