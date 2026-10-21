@@ -37,16 +37,16 @@ const circuitJson = {
       center: { x: 0, y: 0 },
       width: 80,
       height: 60,
-      thickness: 1.6
+      thickness: 1.6,
     },
     // ... components, traces, etc.
-  ]
+  ],
 }
 
 // Convert to GLTF
 const gltf = await convertCircuitJsonToGltf(circuitJson, {
   format: "gltf", // or "glb" for binary
-  boardTextureResolution: 2048
+  boardTextureResolution: 2048,
 })
 
 // Save the result
@@ -88,7 +88,6 @@ silkscreen colors. Explicit conversion options take precedence.
 ## Architecture
 
 The converter uses a modular architecture:
-
 1. **Circuit to 3D Converter**: Parses circuit JSON and creates a 3D scene representation
 2. **Board Renderer**: Renders PCB layers as textures using circuit-to-svg and resvg
 3. **Model Loaders**: Load STL and OBJ files for component 3D models
@@ -115,3 +114,23 @@ bun run examples/basic-conversion.ts
 - Pure GLTF 2.0 implementation without external 3D library dependencies
 - Supports both JSON (.gltf) and binary (.glb) formats
 - Embeds all assets (textures, buffers) directly in the output
+
+### Component metadata
+
+Both glTF and GLB exports preserve component names as node `name` values and
+include lightweight identity in component node `extras.tscircuit`:
+
+```json
+{
+  "cad_component_id": "cad_component_1",
+  "source_component_id": "source_component_1",
+  "pcb_component_id": "pcb_component_1",
+  "componentName": "U1"
+}
+```
+
+Only available fields are serialized. Each CAD instance keeps its own identity,
+including when instances share a mesh or source component. This allows a viewer
+to show names, hide components, and navigate to a schematic from a pre-rendered
+GLB without embedding the complete Circuit JSON. Existing extras, such as
+`poppygl.showHiddenEdges`, are preserved alongside the metadata.

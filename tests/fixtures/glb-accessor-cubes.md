@@ -18,7 +18,10 @@ copy `tests/fixtures/glb-accessor-cubes.ts` into it, install dependencies with B
 and run this from the checkout root:
 
 ```ts
-import { cubeEncodings, renderAccessorCube } from "./tests/fixtures/glb-accessor-cubes"
+import {
+  cubeEncodings,
+  renderAccessorCube,
+} from "./tests/fixtures/glb-accessor-cubes"
 for (const encoding of cubeEncodings) {
   await Bun.write(
     `tests/assets/glb-accessors-before/${encoding}.png`,
