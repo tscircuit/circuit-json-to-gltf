@@ -165,6 +165,28 @@ export function getBoardColorPalette(
   const board = circuitJson.find(
     (element): element is PcbBoard => element.type === "pcb_board",
   )
+  if (board?.material === "flex" && board.coverlay_color !== undefined) {
+    const coverlayColors = {
+      yellow: { surface: DEFAULT_FLEX_AMBER, coveredCopper: "#b58a2d" },
+      black: { surface: "#111111", coveredCopper: "#111111" },
+      white: { surface: "#ffffff", coveredCopper: "#ffffff" },
+    }
+    const colors = coverlayColors[board.coverlay_color]
+    const surfaceOverride = getSpecifiedColor(overrides.solderMaskColor)
+    if (surfaceOverride) {
+      return deriveBoardColorPalette(
+        surfaceOverride,
+        overrides.silkscreenColor ?? board.silkscreen_color,
+      )
+    }
+    return {
+      backgroundColor: colors.surface,
+      solderMaskWithCopperColor: colors.coveredCopper,
+      boardSideColor: DEFAULT_FLEX_AMBER,
+      silkscreenColor:
+        overrides.silkscreenColor ?? board.silkscreen_color ?? "#ffffff",
+    }
+  }
   const legacyBoard = board as
     | (PcbBoard & { soldermask_color?: string })
     | undefined
