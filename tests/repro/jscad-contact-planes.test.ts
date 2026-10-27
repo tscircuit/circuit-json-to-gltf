@@ -31,7 +31,7 @@ async function loadSolid(model_jscad: unknown) {
 const support = { type: "cuboid", size: [30, 22.2, 1.6], center: [0, 0, 6.4] }
 
 for (const separationMm of [0, 0.00002, -0.0001]) {
-  test(`current conversion of ${separationMm} mm separation`, async () => {
+  test(`independent CAD solids preserve ${separationMm} mm separation`, async () => {
     const first = await loadSolid(support)
     const second = await loadSolid({
       type: "cuboid",
@@ -45,7 +45,7 @@ for (const separationMm of [0, 0.00002, -0.0001]) {
       if (separationMm < 0) {
         expect(intersection.volume()).toBeGreaterThan(0.039)
       } else {
-        expect(intersection.volume()).toBeGreaterThan(0.008)
+        expect(intersection.volume()).toBe(0)
       }
     } finally {
       intersection.delete()
@@ -55,7 +55,7 @@ for (const separationMm of [0, 0.00002, -0.0001]) {
   })
 }
 
-test("current solid triangulation shifts a six-sided cap", () => {
+test("solid triangulation retains the authored bounds of a six-sided cap", () => {
   const mesh = loadJscadPlan(
     {
       type: "cylinder",
@@ -67,11 +67,11 @@ test("current solid triangulation shifts a six-sided cap", () => {
     { conformingTriangles: true },
   )
   // loadJscadPlan returns Y-up mm; authored Z is mesh Y.
-  expect(mesh.boundingBox.min.y).not.toBeCloseTo(5.6, 12)
-  expect(mesh.boundingBox.max.y).not.toBeCloseTo(7.2, 12)
+  expect(mesh.boundingBox.min.y).toBeCloseTo(5.6, 12)
+  expect(mesh.boundingBox.max.y).toBeCloseTo(7.2, 12)
 })
 
-test("current conversion adds a false overlap at speaker face contact", async () => {
+test("published speaker and retainer face contact has no shared volume", async () => {
   // Unmodified model_jscad from ShiboSoftwareDev/linux-gameboy-advance v1.0.134.
   const retainer = await loadSolid(speakerContact.SPK_RETAINER)
   const speaker = await loadSolid(speakerContact.SPK_20MM)
@@ -79,7 +79,7 @@ test("current conversion adds a false overlap at speaker face contact", async ()
   try {
     expect(retainer.status()).toBe("NoError")
     expect(speaker.status()).toBe("NoError")
-    expect(intersection.volume()).toBeGreaterThan(0.008)
+    expect(intersection.volume()).toBeCloseTo(0, 12)
   } finally {
     intersection.delete()
     speaker.delete()

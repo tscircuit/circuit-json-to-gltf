@@ -3,7 +3,7 @@ import measureEpsilon from "@jscad/modeling/src/measurements/measureEpsilon"
 import { conformJscadTriangles } from "./conform-jscad-triangles"
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
-import type { generalize } from "@jscad/modeling/src/operations/modifiers/generalize"
+import { EPS, NEPS } from "@jscad/modeling/src/maths/constants"
 import { executeJscadOperations } from "jscad-planner"
 import type { STLMesh } from "../types"
 import { boundsOfTriangles } from "../utils/bounding-box"
@@ -23,19 +23,17 @@ export const loadJscadPlan = (
     jscadModeling as any,
     plan as any,
   ) as Geom3
-  // Boolean JSCAD polygons can meet at T junctions. Conforming triangulation
-  // preserves that geometry while giving solid consumers matching mesh edges.
-  // The CommonJS barrel types generalize as a namespace, but exports a function.
-  const generalizeGeometry = jscadModeling.modifiers
-    .generalize as unknown as typeof generalize
-  const zUpGeometry = conformingTriangles
-    ? generalizeGeometry({ snap: true, triangulate: true }, plannedGeometry)
-    : plannedGeometry
-  const polygons = geom3.toPolygons(zUpGeometry)
-  const sourceTriangles = geom3ToTriangles(zUpGeometry, polygons)
+  // Triangulate the original polygons. generalize() snaps both surface vertices
+  // and new polygon centers, which can move independently loaded contact faces.
+  const polygons = geom3.toPolygons(plannedGeometry)
+  const sourceTriangles = geom3ToTriangles(plannedGeometry, polygons)
+  // Only numerical collinearity is relevant without snapping. Scale JSCAD's
+  // double-precision NEPS by the same geometry extent used by measureEpsilon.
+  const collinearityEpsilon =
+    NEPS * Math.max(1, measureEpsilon(plannedGeometry) / EPS)
   const triangles = transformTriangles(
     conformingTriangles
-      ? conformJscadTriangles(sourceTriangles, measureEpsilon(plannedGeometry))
+      ? conformJscadTriangles(sourceTriangles, collinearityEpsilon)
       : sourceTriangles,
     JSCAD_PLAN_TRANSFORM,
   )

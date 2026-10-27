@@ -1,15 +1,38 @@
+import { NEPS } from "@jscad/modeling/src/maths/constants"
 import type { Point3, Triangle } from "../types"
 
-/** Keep JSCAD's snapped world-mm surface while subdividing unmatched edges at
- * existing vertices. This closes T-junction topology, never fills an open mesh
- * or adds a surface. The tolerance is the same epsilon used by JSCAD snapping.
+/** Subdivide JSCAD surface edges at existing junctions, without filling holes.
+ * Vertices equal at Float32 consumer precision share one original position;
+ * JSCAD's NEPS also identifies numerical zero at boolean seams.
  */
 export function conformJscadTriangles(
   triangles: Triangle[],
   epsilon: number,
 ): Triangle[] {
-  const key = (p: Point3) => [p.x, p.y, p.z].map(Math.fround).join(",")
+  const key = (p: Point3) =>
+    [p.x, p.y, p.z]
+      .map((coordinate) =>
+        Math.abs(coordinate) < NEPS ? 0 : Math.fround(coordinate),
+      )
+      .join(",")
   const edgeKey = (a: Point3, b: Point3) => [key(a), key(b)].sort().join(":")
+  // Adjacency is compared at the Float32 precision of solid mesh consumers.
+  // Use the same representative at every occurrence of such a vertex.
+  type PointCoordinateKey = string
+  const sharedVertices = new Map<PointCoordinateKey, Point3>()
+  triangles = triangles.map((triangle) => ({
+    ...triangle,
+    vertices: triangle.vertices.map((point) => {
+      const pointKey = key(point)
+      const existingPoint = sharedVertices.get(pointKey)
+      if (existingPoint) return existingPoint
+      sharedVertices.set(pointKey, point)
+      return point
+    }) as [Point3, Point3, Point3],
+  }))
+  triangles = triangles.filter(
+    (triangle) => new Set(triangle.vertices.map(key)).size === 3,
+  )
   const counts = new Map<string, number>()
   for (const triangle of triangles)
     for (let i = 0; i < 3; i++) {
