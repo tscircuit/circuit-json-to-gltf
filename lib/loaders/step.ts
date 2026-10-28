@@ -17,31 +17,67 @@ import { resolveModelUrl } from "./resolve-model-url"
 
 const stepCache = new Map<string, STLMesh | OBJMesh>()
 
+const OCCT_IMPORT_JS_VERSION = "0.0.23"
+const OCCT_IMPORT_JS_CDN_URL = `https://cdn.jsdelivr.net/npm/occt-import-js@${OCCT_IMPORT_JS_VERSION}`
+
+export type OcctImportJsFactory = (moduleArgs?: {
+  locateFile?: (path: string, scriptDirectory: string) => string
+}) => Promise<any>
+
+let occtImportJsFactory: OcctImportJsFactory | undefined
+let occtWasmUrl: string | undefined
 let occtModulePromise: Promise<any> | null = null
+
+/**
+ * Provide occt-import-js for STEP loading, e.g. from your own bundle or a
+ * self-hosted copy. Otherwise it is imported from node_modules under Node and
+ * from a CDN in browsers.
+ */
+export function setOcctImportJs(
+  factory: OcctImportJsFactory,
+  options: { wasmUrl?: string } = {},
+) {
+  occtImportJsFactory = factory
+  occtWasmUrl = options.wasmUrl
+  occtModulePromise = null
+}
+
+const isNode = () =>
+  typeof process !== "undefined" && Boolean(process.versions?.node)
+
+// Importing through a parameter keeps bundlers from following the specifier
+// and packaging occt-import-js and its ~7.6 MB WASM into every consumer
+const importAtRuntime = (specifier: string) =>
+  import(/* @vite-ignore */ /* webpackIgnore: true */ specifier)
+
+async function importOcctImportJs(): Promise<OcctImportJsFactory> {
+  const occtModule = await importAtRuntime(
+    isNode() ? "occt-import-js" : `${OCCT_IMPORT_JS_CDN_URL}/+esm`,
+  )
+  return occtModule.default ?? occtModule
+}
 
 async function getOcctModule(): Promise<any> {
   if (!occtModulePromise) {
-    const occtimportjs = (await import("occt-import-js" as string)).default
-    const isBrowser =
-      typeof window !== "undefined" || typeof self !== "undefined"
-
-    if (isBrowser) {
-      let wasmUrl: string | undefined
-      try {
-        wasmUrl = (
-          await import("occt-import-js/dist/occt-import-js.wasm?url" as string)
-        ).default
-      } catch {
-        wasmUrl = undefined
-      }
-
-      occtModulePromise = occtimportjs({
-        locateFile: (path: string) =>
-          path.endsWith(".wasm") && wasmUrl ? wasmUrl : path,
-      })
-    } else {
-      occtModulePromise = occtimportjs()
-    }
+    occtModulePromise = (async () => {
+      const factory = occtImportJsFactory ?? (await importOcctImportJs())
+      const wasmUrl =
+        occtWasmUrl ??
+        (occtImportJsFactory || isNode()
+          ? undefined
+          : `${OCCT_IMPORT_JS_CDN_URL}/dist/occt-import-js.wasm`)
+      return factory(
+        wasmUrl
+          ? {
+              locateFile: (path, scriptDirectory) =>
+                path.endsWith(".wasm") ? wasmUrl : scriptDirectory + path,
+            }
+          : undefined,
+      )
+    })()
+    occtModulePromise.catch(() => {
+      occtModulePromise = null
+    })
   }
   return occtModulePromise
 }
