@@ -1,4 +1,6 @@
 import * as jscadModeling from "@jscad/modeling"
+import { EPS, NEPS } from "@jscad/modeling/src/maths/constants"
+import measureEpsilon from "@jscad/modeling/src/measurements/measureEpsilon"
 import * as geom3 from "@jscad/modeling/src/geometries/geom3"
 import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import { executeJscadOperations, type MaterialProps } from "jscad-planner"
@@ -9,6 +11,7 @@ import {
   transformTriangles,
 } from "../utils/coordinate-transform"
 import { geom3ToTriangles } from "../utils/pcb-board-geometry"
+import { conformJscadTriangles } from "./conform-jscad-triangles"
 
 const JSCAD_PLAN_TRANSFORM = COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
 
@@ -22,7 +25,7 @@ export const loadJscadPlan = (plan: unknown): STLMesh => {
   const geometries = zUpGeometry.flat(Infinity) as (Geom3 & MaterialProps)[]
   const sourceTriangles = geometries.flatMap((geometry) => {
     const polygons = geom3.toPolygons(geometry)
-    return polygons.flatMap((polygon) => {
+    const triangles = polygons.flatMap((polygon) => {
       const color = polygon.color ?? geometry.color
       const material =
         geometry.material || color
@@ -41,6 +44,8 @@ export const loadJscadPlan = (plan: unknown): STLMesh => {
         material,
       }))
     })
+    const epsilon = NEPS * Math.max(1, measureEpsilon(geometry) / EPS)
+    return conformJscadTriangles(triangles, epsilon)
   })
   const triangles = transformTriangles(sourceTriangles, JSCAD_PLAN_TRANSFORM)
 

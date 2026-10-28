@@ -37,8 +37,14 @@ for (const [name, model_jscad] of [
   ["wire bend", wireBend],
   ["enclosure lid", gameboyLid],
 ] as const) {
-  test(`JSCAD ${name} currently fails closed-solid validation`, async () => {
+  test(`JSCAD ${name} produces a closed solid`, async () => {
     const mesh = loadJscadPlan(model_jscad)
-    expect(() => createJscadMeshSolid(manifold, mesh)).toThrow("Not manifold")
+    const solid = createJscadMeshSolid(manifold, mesh)
+    try {
+      expect(solid.status()).toBe("NoError")
+      expect(solid.volume()).toBeGreaterThan(0)
+    } finally {
+      solid.delete()
+    }
   }, 30_000)
 }
