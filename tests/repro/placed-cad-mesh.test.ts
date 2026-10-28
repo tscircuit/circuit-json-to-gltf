@@ -1,19 +1,11 @@
 import { expect, test } from "bun:test"
-import type { CadComponent } from "circuit-json"
 import loadManifold from "manifold-3d"
-import * as converter from "../../lib"
-import type { MeshData } from "../../lib/gltf/geometry"
+import { loadCadComponentMesh } from "../../lib"
 import { boundsOfPositions } from "../../lib/utils/bounding-box"
 
 // A physics/checks consumer needs assembled Circuit JSON coordinates, rather
 // than a renderer's mesh plus node transform and its final glTF reflection.
-// Expected failure until the public loader is implemented in the next PR.
-test.failing("loadCadComponentMesh exposes indexed world-mm geometry for solid checks", async () => {
-  expect(converter).toHaveProperty("loadCadComponentMesh", expect.any(Function))
-  const loadCadComponentMesh = Reflect.get(
-    converter,
-    "loadCadComponentMesh",
-  ) as (cad: CadComponent) => Promise<Pick<MeshData, "positions" | "indices">>
+test("loadCadComponentMesh exposes indexed world-mm geometry for solid checks", async () => {
   const mesh = await loadCadComponentMesh({
     type: "cad_component",
     cad_component_id: "cad_world_mesh",

@@ -146,7 +146,7 @@ export interface Box3D {
   }
   mesh?: STLMesh | OBJMesh
   meshUrl?: string
-  meshType?: "stl" | "obj" | "glb" | "step"
+  meshType?: "stl" | "obj" | "gltf" | "glb" | "step"
   label?: string
   labelColor?: Color
   isTranslucent?: boolean
