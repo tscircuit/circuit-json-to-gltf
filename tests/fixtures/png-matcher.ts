@@ -1,7 +1,7 @@
 import { expect, type MatcherResult } from "bun:test"
 import * as fs from "node:fs"
 import * as path from "node:path"
-import looksSame from "looks-same"
+import looksSame from "@tscircuit/image-utils/looks-same"
 
 /**
  * Matcher for PNG snapshot testing with cross-platform tolerance.
@@ -49,19 +49,13 @@ async function toMatchPngSnapshot(
 
   const existingSnapshot = fs.readFileSync(filePath)
 
-  const result = await looksSame(
-    Buffer.from(received),
-    Buffer.from(existingSnapshot),
-    {
-      strict: false,
-      tolerance: 5,
-      antialiasingTolerance: 4,
-      ignoreAntialiasing: true,
-      shouldCluster: true,
-      clustersSize: 10,
-      createDiffImage: true,
-    },
-  )
+  const comparisonOptions = {
+    strict: false,
+    tolerance: 5,
+    antialiasingTolerance: 4,
+    ignoreAntialiasing: true,
+  }
+  const result = await looksSame(received, existingSnapshot, comparisonOptions)
   if (updateSnapshot) {
     if (!forceUpdate && result.equal) {
       return {
@@ -84,13 +78,10 @@ async function toMatchPngSnapshot(
     }
   }
 
-  let diffArea = 0
-  for (const cluster of result.diffClusters) {
-    diffArea += (cluster.right - cluster.left) * (cluster.bottom - cluster.top)
-  }
-
   // Calculate diff percentage for cross-platform tolerance
-  const diffFraction = diffArea / result.totalPixels
+  const diffFraction = result.totalPixels
+    ? (result.differentPixels ?? 0) / result.totalPixels
+    : 1
 
   // Allow up to 5% pixel difference for cross-platform rendering variations
   const ACCEPTABLE_DIFF_FRACTION = 0.05
@@ -107,7 +98,15 @@ async function toMatchPngSnapshot(
   }
 
   const diffPath = filePath.replace(/\.snap\.png$/, ".diff.png")
-  result.diffImage.save(diffPath)
+  fs.writeFileSync(
+    diffPath,
+    await looksSame.createDiff({
+      reference: existingSnapshot,
+      current: received,
+      highlightColor: "#ff00ff",
+      ...comparisonOptions,
+    }),
+  )
 
   return {
     message: () =>
