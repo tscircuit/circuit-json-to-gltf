@@ -61,6 +61,25 @@ fs.writeFileSync("circuit.gltf", JSON.stringify(gltf))
 convertCircuitJsonToGltf(circuitJson: CircuitJson, options?: ConversionOptions): Promise<ArrayBuffer | object>
 ```
 
+### CAD geometry for physics and solid checks
+
+```typescript
+import { loadCadComponentMesh } from "circuit-json-to-gltf"
+
+const mesh = await loadCadComponentMesh(cadComponent, {
+  pcbComponent, // Optional PCB context for mounting-layer defaults.
+})
+// mesh.positions: [x, y, z, ...] in Circuit JSON world coordinates, +Z up, mm.
+// mesh.indices: outward counter-clockwise triangle indices.
+```
+
+The loader shares the renderer's model, origin, scale and mounting rules. It
+loads the actual geometry without creating a board or textures. Supply the
+resolved assembled CAD pose for folded designs. Missing, failed and empty
+models throw; open surfaces remain open for the caller's solid validation.
+Model-loading options `projectBaseUrl`, `authHeaders` and `coordinateTransform`
+are also supported. Indexed vertices retain their coordinates without snapping.
+
 ### Options
 
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
