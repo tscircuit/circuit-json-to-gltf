@@ -103,6 +103,7 @@ export {
   type CameraFitOptions,
   getBestCameraPosition,
 } from "./utils/camera-position"
+export { type OcctImportJsFactory, setOcctImportJs } from "./loaders/step"
 // Re-export coordinate transform utilities
 export {
   applyCoordinateTransform,
