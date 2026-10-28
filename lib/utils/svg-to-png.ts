@@ -1,4 +1,4 @@
-import { Resvg, type ResvgRenderOptions } from "@resvg/resvg-js"
+import type { ResvgRenderOptions } from "@resvg/resvg-js"
 import tscircuitFont from "@tscircuit/alphabet/base64font"
 
 export interface SvgToPngOptions {
@@ -74,6 +74,8 @@ export async function svgToPng(
       },
     }
 
+    // Loaded lazily so browser bundles can resolve it to an empty module
+    const { Resvg } = await import("@resvg/resvg-js")
     const resvg = new Resvg(svgString, opts)
     const pngData = resvg.render()
     const pngBuffer = pngData.asPng()
