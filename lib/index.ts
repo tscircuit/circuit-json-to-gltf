@@ -1,3 +1,4 @@
+export { getAssemblyExplosionFrames } from "./utils/get-assembly-explosion-frames"
 import type { CircuitJson } from "circuit-json"
 import { convertCircuitJsonTo3D } from "./converters/circuit-to-3d"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
@@ -27,6 +28,7 @@ export async function convertCircuitJsonToGltf(
   // Convert circuit JSON to 3D scene
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
+    explosion: options.explosion,
     foldPcbs: options.foldPcbs,
     textureResolution: boardTextureResolution,
     showPcbNotes,
@@ -83,6 +85,9 @@ export { clearOBJCache, loadOBJ } from "./loaders/obj"
 export { clearSTLCache, loadSTL } from "./loaders/stl"
 // Re-export types
 export type {
+  AssemblyExplosionOptions,
+  AssemblyExplosionFrame,
+  AssemblyExplosionLine,
   CircuitJsonWithPcbFlex,
   BoardRenderOptions,
   BoundingBox,

@@ -1,3 +1,4 @@
+import { evaluateAssemblyExplosion } from "../utils/evaluate-assembly-explosion"
 import { loadCadComponentBox } from "../loaders/cad-component-box"
 import {
   getPadOverlappingVias,
@@ -62,6 +63,14 @@ export async function convertCircuitJsonTo3D(
   inputCircuitJson: CircuitJsonWithPcbFlex,
   options: CircuitTo3DOptions = {},
 ): Promise<Scene3D> {
+  // Explosion translations are circuit-world vectors. Resolve them before the
+  // existing CAD-to-scene axis mapping in loadCadComponentBox.
+  if (options.explosion)
+    inputCircuitJson = evaluateAssemblyExplosion(
+      inputCircuitJson,
+      options.explosion,
+    ).circuitJson
+
   const {
     boardSideColor,
     componentColor = "rgba(128,128,128,0.5)",
