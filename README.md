@@ -86,7 +86,10 @@ are also supported. Indexed vertices retain their coordinates without snapping.
 Exports remain assembled by default. Select a pose with the `explosion` option:
 
 ```typescript
-import { convertCircuitJsonToGltf, getAssemblyExplosionFrames } from "circuit-json-to-gltf"
+import {
+  convertCircuitJsonToGltf,
+  getAssemblyExplosionFrames,
+} from "circuit-json-to-gltf"
 
 const halfway = await convertCircuitJsonToGltf(circuitJson, {
   format: "glb",
