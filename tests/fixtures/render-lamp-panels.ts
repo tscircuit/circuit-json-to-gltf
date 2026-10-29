@@ -1,7 +1,10 @@
 import { createCanvas, loadImage } from "@napi-rs/canvas"
 import type { CircuitJson } from "circuit-json"
 import { renderGLTFToPNGFromGLB } from "poppygl"
-import { convertCircuitJsonToGltf } from "../../lib"
+import {
+  convertCircuitJsonToGltf,
+  type AssemblyExplosionOptions,
+} from "../../lib"
 
 /** Cameras are points in exported glTF world: +Y up, millimeters. This uses
  * the same real GLB -> PoppyGL path as three-disc-flex-four-view.test.ts.
@@ -11,6 +14,7 @@ export async function renderLampPanels(
     label: string
     circuitJson: CircuitJson
     showReferenceSurfaces?: boolean
+    explosion?: AssemblyExplosionOptions
     camPos?: [number, number, number]
     lookAt?: [number, number, number]
   }[],
@@ -25,6 +29,7 @@ export async function renderLampPanels(
   for (const [index, panel] of panels.entries()) {
     const glb = (await convertCircuitJsonToGltf(panel.circuitJson, {
       format: "glb",
+      explosion: panel.explosion,
       showReferenceSurfaces: panel.showReferenceSurfaces,
     })) as ArrayBuffer
     const png = await renderGLTFToPNGFromGLB(glb, {

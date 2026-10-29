@@ -1,3 +1,4 @@
+export { getAssemblyExplosionFrames } from "./utils/get-assembly-explosion-frames"
 // Browser-safe exports that don't include Node.js dependencies
 
 export {
@@ -10,6 +11,9 @@ export { clearOBJCache, loadOBJ } from "./loaders/obj"
 
 export { clearSTLCache, loadSTL } from "./loaders/stl"
 export type {
+  AssemblyExplosionOptions,
+  AssemblyExplosionFrame,
+  AssemblyExplosionLine,
   CircuitJsonWithPcbFlex,
   BoardRenderOptions,
   BoundingBox,
@@ -55,6 +59,11 @@ export async function convertCircuitJsonTo3D(
   } = options
 
   if (
+    options.explosion !== undefined ||
+    circuitJson.some(
+      (element) =>
+        element.type === "cad_component" && !element.pcb_component_id,
+    ) ||
     circuitJson.filter((element) => element.type === "pcb_board").length > 1 ||
     options.foldPcbs === true ||
     options.showReferenceSurfaces === true ||

@@ -1,3 +1,4 @@
+export { getAssemblyExplosionFrames } from "./utils/get-assembly-explosion-frames"
 // Browser-safe exports that don't include Node.js dependencies
 export {
   getPoppyglErrorOverlayOptions,
@@ -15,6 +16,9 @@ export { clearOBJCache, loadOBJ } from "./loaders/obj"
 export { clearSTLCache, loadSTL } from "./loaders/stl"
 // Re-export types
 export type {
+  AssemblyExplosionOptions,
+  AssemblyExplosionFrame,
+  AssemblyExplosionLine,
   CircuitJsonWithPcbFlex,
   BoardRenderOptions,
   BoundingBox,

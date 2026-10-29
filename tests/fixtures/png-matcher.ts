@@ -15,6 +15,7 @@ async function toMatchPngSnapshot(
   receivedMaybePromise: Buffer | Uint8Array | Promise<Buffer | Uint8Array>,
   testPathOriginal: string,
   pngName?: string,
+  options?: { maxDiffFraction?: number },
 ): Promise<MatcherResult> {
   const received = await receivedMaybePromise
   const testPath = testPathOriginal
@@ -84,7 +85,7 @@ async function toMatchPngSnapshot(
     : 1
 
   // Allow up to 5% pixel difference for cross-platform rendering variations
-  const ACCEPTABLE_DIFF_FRACTION = 0.05
+  const ACCEPTABLE_DIFF_FRACTION = options?.maxDiffFraction ?? 0.05
 
   if (diffFraction <= ACCEPTABLE_DIFF_FRACTION) {
     console.log(
@@ -125,6 +126,7 @@ declare module "bun:test" {
     toMatchPngSnapshot(
       testPath: string,
       pngName?: string,
+      options?: { maxDiffFraction?: number },
     ): Promise<MatcherResult>
   }
 }

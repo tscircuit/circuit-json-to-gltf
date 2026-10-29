@@ -80,8 +80,49 @@ models throw; open surfaces remain open for the caller's solid validation.
 Model-loading options `projectBaseUrl`, `authHeaders` and `coordinateTransform`
 are also supported. Indexed vertices retain their coordinates without snapping.
 
+### Assembly explosion stages
+
+`cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
+Exports remain assembled by default. Select a pose with the `explosion` option:
+
+```typescript
+import { convertCircuitJsonToGltf, getAssemblyExplosionFrames } from "circuit-json-to-gltf"
+
+const halfway = await convertCircuitJsonToGltf(circuitJson, {
+  format: "glb",
+  explosion: { throughStageRef: "DEVICE.lift-cover", stageProgress: 0.5 },
+})
+
+// Assembled, then every completed stage in declared order. Keep one camera
+// across these GLBs and label each image with frame.name for a storyboard.
+for (const frame of getAssemblyExplosionFrames(circuitJson)) {
+  const glb = await convertCircuitJsonToGltf(circuitJson, {
+    format: "glb",
+    explosion: frame.explosion,
+  })
+  // Save/render glb and label it with frame.name.
+}
+```
+
+`explosion: {}` finishes all stages. Progress divides the selected stage into its
+ordered moves, retaining all earlier displacement. A stage target expands its
+explicit CAD/reference-surface membership; overlapping targets move once per
+instruction. All references, orders and memberships are validated even when
+selecting an early pose. The assembled input is never mutated.
+
+Frames also include evaluated `circuitJson` and guide `lines` in circuit-world
+XYZ (mm, right-handed +X right, +Y top, +Z above). Evaluated poses omit explosion
+instructions to prevent applying them twice after saving. The usual exporter
+converts these positions to glTF +Y-up coordinates. Node and browser entry points
+support the same program, including assemblies without a PCB.
+
+Each export is a static pose, not a glTF animation track. Playback supports CAD
+and reference-surface translations; PCB/cable movement, rotation instructions
+and swept collision checking are not supported.
+
 ### Options
 
+- `explosion`: Optional `{ throughStageRef?, stageProgress? }` selecting a serialized assembly pose; omitted means assembled.
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)

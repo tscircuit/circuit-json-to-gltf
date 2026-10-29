@@ -14,7 +14,33 @@ export interface AuthHeaders extends Record<string, string> {
   Authorization: string
 }
 
+/** A pose within the serialized explosion program. Earlier stages stay applied. */
+export interface AssemblyExplosionOptions {
+  /** Inclusive qualified stage name. Omit to finish all stages. */
+  throughStageRef?: string
+  /** Fraction of the selected stage's sequential moves, from 0 to 1. */
+  stageProgress?: number
+}
+
+/** Circuit-world points in mm: right-handed +X right, +Y top, +Z above. */
+export interface AssemblyExplosionLine {
+  stageRef: string
+  targetRef: string
+  points: Point3[]
+}
+
+export interface AssemblyExplosionFrame {
+  name: string
+  /** Options for rendering the original assembled document at this pose. */
+  explosion?: AssemblyExplosionOptions
+  /** Evaluated pose without instructions, safe to save and reopen. */
+  circuitJson: CircuitJsonWithPcbFlex
+  lines: AssemblyExplosionLine[]
+}
+
 export interface ConversionOptions {
+  /** Render a serialized explosion pose. Omit to keep the assembly assembled. */
+  explosion?: AssemblyExplosionOptions
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
   format?: "gltf" | "glb"
@@ -190,6 +216,8 @@ export interface GLTFExportOptions {
 }
 
 export interface CircuitTo3DOptions {
+  /** Evaluate CAD explosion instructions before conversion to scene coordinates. */
+  explosion?: AssemblyExplosionOptions
   /** Override folding for supported PCB bend regions. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color
