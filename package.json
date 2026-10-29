@@ -73,7 +73,7 @@
     "@resvg/resvg-js": "2",
     "circuit-to-svg": ">=0.0.445",
     "@tscircuit/circuit-json-util": "*",
-    "circuit-json": "*"
+    "circuit-json": ">=0.0.539"
   },
   "peerDependenciesMeta": {
     "@resvg/resvg-wasm": {
