@@ -82,6 +82,13 @@ are also supported. Indexed vertices retain their coordinates without snapping.
 
 ### Assembly explosion stages
 
+The real RP2040/NEMA17 example below lifts the cover and bolts together, then
+separates the bolts, motor and spacers. These snapshots render the serialized
+Circuit JSON program directly, including a halfway bolt-removal pose. The TSX
+beside each view is the source that authored that stage.
+
+![RP2040 assembly explosion stages with TSX](./docs/images/rp2040-explosion-stages.png)
+
 `cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
 Exports remain assembled by default. Select a pose with the `explosion` option:
 
