@@ -46,7 +46,7 @@ export function createExplosionLineBoxes(
     const dashes: JscadOperation[] = []
     const dashLength = 1
     const gapLength = 0.5
-    const thickness = 0.18
+    const thickness = 0.3
     for (let i = 1; i < line.points.length; i++) {
       const a = line.points[i - 1]!
       const b = line.points[i]!
@@ -61,18 +61,26 @@ export function createExplosionLineBoxes(
         b.z + offset.z,
       )
       const length = vec3.distance(start, end)
+      if (!Number.isFinite(length))
+        throw new Error("Explosion guide exceeds renderable coordinates")
       if (length < 1e-6) continue
+      // Keep exported guide geometry bounded even for very long movements.
+      const period = Math.max(dashLength + gapLength, length / 512)
       const direction = vec3.normalize(
         vec3.create(),
         vec3.subtract(vec3.create(), end, start),
       )
       const up = Math.abs(direction[2]) > 0.9 ? [0, 1, 0] : [0, 0, 1]
       for (
-        let distance = 0;
-        distance < length;
-        distance += dashLength + gapLength
+        let dash = 0;
+        dash < Math.min(512, Math.ceil(length / period));
+        dash++
       ) {
-        const size = Math.min(dashLength, length - distance)
+        const distance = dash * period
+        const size = Math.min(
+          (period * dashLength) / (dashLength + gapLength),
+          length - distance,
+        )
         const midpoint = vec3.scaleAndAdd(
           vec3.create(),
           start,

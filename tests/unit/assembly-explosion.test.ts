@@ -130,12 +130,12 @@ test("explosion guides are downloadable dashed geometry with the same coordinate
     const positions = partial.accessors[primitive.attributes.POSITION]
     // The actual exported vertices must lie directly below gold-bolt's new
     // origin (-6, 7, 7), not under the mirrored or unremapped position.
-    expect(positions.min[0]).toBeCloseTo(-6.09, 4)
-    expect(positions.max[0]).toBeCloseTo(-5.91, 4)
+    expect(positions.min[0]).toBeCloseTo(-6.15, 4)
+    expect(positions.max[0]).toBeCloseTo(-5.85, 4)
     expect(positions.min[1]).toBeCloseTo(2, 4)
     expect(positions.max[1]).toBeCloseTo(7, 4)
-    expect(positions.min[2]).toBeCloseTo(6.91, 4)
-    expect(positions.max[2]).toBeCloseTo(7.09, 4)
+    expect(positions.min[2]).toBeCloseTo(6.85, 4)
+    expect(positions.max[2]).toBeCloseTo(7.15, 4)
     const full = await exportPose({})
     expect(guides(full)).toHaveLength(4)
     const sideways = guides(full).find(
@@ -147,8 +147,8 @@ test("explosion guides are downloadable dashed geometry with the same coordinate
       ]
     expect(horizontal.min[0]).toBeCloseTo(-26, 4)
     expect(horizontal.max[0]).toBeCloseTo(-6, 4)
-    expect(horizontal.min[1]).toBeCloseTo(11.91, 4)
-    expect(horizontal.max[1]).toBeCloseTo(12.09, 4)
+    expect(horizontal.min[1]).toBeCloseTo(11.85, 4)
+    expect(horizontal.max[1]).toBeCloseTo(12.15, 4)
   }
 })
 
