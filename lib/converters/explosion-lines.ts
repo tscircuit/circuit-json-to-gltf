@@ -1,5 +1,7 @@
 import { mat4, vec3 } from "gl-matrix"
 import type { JscadOperation, Matrix4 } from "jscad-planner"
+import { createMeshFromSTL, transformMesh } from "../gltf/geometry"
+import { boundsOfPositions } from "../utils/bounding-box"
 import { loadJscadPlan } from "../loaders/jscad-plan"
 import type { AssemblyExplosionLine, Box3D } from "../types"
 import { getBoundingBoxSize } from "../utils/mesh-scale"
@@ -12,8 +14,35 @@ import { getBoundingBoxSize } from "../utils/mesh-scale"
  */
 export function createExplosionLineBoxes(
   lines: AssemblyExplosionLine[],
+  targets: Box3D[],
 ): Box3D[] {
   return lines.flatMap((line) => {
+    const target = targets.find(
+      (box) => box.componentMetadata?.cad_component_id === line.targetRef,
+    )
+    // A printed part may author its whole shape away from the CAD origin.
+    // Keep a valid origin, but clamp an origin outside the actual mesh bounds
+    // onto the mesh's nearest bounding face so the guide reaches the part.
+    // Match GLTFBuilder.addBox's rotation before its final X reflection.
+    const bounds = target?.mesh
+      ? boundsOfPositions(
+          transformMesh(
+            createMeshFromSTL(target.mesh),
+            { x: 0, y: 0, z: 0 },
+            target.rotation,
+          ).positions,
+        )
+      : undefined
+    const clampOrigin = (min: number, max: number) =>
+      Math.max(min, Math.min(0, max))
+    // Inverse of loadJscadPlan's CIRCUIT_Z_UP_TO_SCENE_Y_UP mapping.
+    const offset = bounds
+      ? {
+          x: clampOrigin(bounds.min.x, bounds.max.x),
+          y: clampOrigin(bounds.min.z, bounds.max.z),
+          z: clampOrigin(bounds.min.y, bounds.max.y),
+        }
+      : { x: 0, y: 0, z: 0 }
     const dashes: JscadOperation[] = []
     const dashLength = 1
     const gapLength = 0.5
@@ -21,8 +50,16 @@ export function createExplosionLineBoxes(
     for (let i = 1; i < line.points.length; i++) {
       const a = line.points[i - 1]!
       const b = line.points[i]!
-      const start = vec3.fromValues(a.x, a.y, a.z)
-      const end = vec3.fromValues(b.x, b.y, b.z)
+      const start = vec3.fromValues(
+        a.x + offset.x,
+        a.y + offset.y,
+        a.z + offset.z,
+      )
+      const end = vec3.fromValues(
+        b.x + offset.x,
+        b.y + offset.y,
+        b.z + offset.z,
+      )
       const length = vec3.distance(start, end)
       if (length < 1e-6) continue
       const direction = vec3.normalize(

@@ -709,7 +709,7 @@ export async function convertCircuitJsonTo3D(
   ]
 
   if (explosion && options.showExplosionLines !== false)
-    boxes.push(...createExplosionLineBoxes(explosion.lines))
+    boxes.push(...createExplosionLineBoxes(explosion.lines, boxes))
 
   const scene: Scene3D = {
     boxes,

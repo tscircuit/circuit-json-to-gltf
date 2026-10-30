@@ -151,3 +151,20 @@ test("explosion guides are downloadable dashed geometry with the same coordinate
     expect(horizontal.max[1]).toBeCloseTo(12.09, 4)
   }
 })
+
+test("a printed part authored above its CAD origin gets a guide reaching its underside", async () => {
+  const input = structuredClone(assemblyExplosion)
+  const part = input.find((r: any) => r.cad_component_id === "cad_1") as any
+  part.model_jscad = { type: "cuboid", size: [4, 4, 2], center: [0, 0, 6] }
+  const gltf = (await convertCircuitJsonToGltf(input, {
+    explosion: { throughStageRef: "assembly.lift-bolts" },
+  })) as any
+  const guide = gltf.nodes.find(
+    (n: any) => n.name === "Explosion guide: assembly.lift-bolts/cad_1",
+  )
+  const positions =
+    gltf.accessors[gltf.meshes[guide.mesh].primitives[0].attributes.POSITION]
+  // The part occupies circuit Z=7..9 assembled, Z=17..19 lifted.
+  expect(positions.min[1]).toBeCloseTo(7, 4)
+  expect(positions.max[1]).toBeCloseTo(17, 4)
+})
