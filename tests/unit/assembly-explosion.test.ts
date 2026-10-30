@@ -90,7 +90,7 @@ test("invalid later instructions fail before partial playback", async () => {
   ).rejects.toThrow("progress")
 })
 
-test("explosion guides are downloadable dashed geometry with the same coordinates in every entry point", async () => {
+test("explosion paths are scene extras, with unchanged meshes and correct world coordinates in every entry point", async () => {
   for (const convert of [
     convertCircuitJsonToGltf,
     browserExport,
@@ -106,9 +106,7 @@ test("explosion guides are downloadable dashed geometry with the same coordinate
         showExplosionLines,
       })) as any
     const guides = (gltf: any) =>
-      gltf.nodes.filter((node: any) =>
-        node.name?.startsWith("Explosion guide:"),
-      )
+      gltf.scenes[gltf.scene].extras?.poppygl?.explosionLines ?? []
     expect(guides(await exportPose())).toHaveLength(0)
     expect(
       guides(
@@ -118,37 +116,53 @@ test("explosion guides are downloadable dashed geometry with the same coordinate
         }),
       ),
     ).toHaveLength(0)
-    expect(guides(await exportPose({}, false))).toHaveLength(0)
+    const disabled = await exportPose({}, false)
+    expect(guides(disabled)).toHaveLength(0)
     const partial = await exportPose({
       throughStageRef: "assembly.lift-bolts",
       stageProgress: 0.25,
     })
-    expect(guides(partial)).toHaveLength(1)
-    const guide = guides(partial)[0]
-    const primitive = partial.meshes[guide.mesh].primitives[0]
-    expect(primitive.mode).toBe(4) // Triangles work in both PoppyGL and model-viewer.
-    const positions = partial.accessors[primitive.attributes.POSITION]
-    // The actual exported vertices must lie directly below gold-bolt's new
-    // origin (-6, 7, 7), not under the mirrored or unremapped position.
-    expect(positions.min[0]).toBeCloseTo(-6.15, 4)
-    expect(positions.max[0]).toBeCloseTo(-5.85, 4)
-    expect(positions.min[1]).toBeCloseTo(2, 4)
-    expect(positions.max[1]).toBeCloseTo(7, 4)
-    expect(positions.min[2]).toBeCloseTo(6.85, 4)
-    expect(positions.max[2]).toBeCloseTo(7.15, 4)
+    expect(guides(partial)).toEqual([
+      {
+        stageRef: "assembly.lift-bolts",
+        targetRef: "cad_1",
+        points: [
+          [-6, 2, 7],
+          [-6, 7, 7],
+        ],
+        dashed: true,
+      },
+    ])
     const full = await exportPose({})
     expect(guides(full)).toHaveLength(4)
-    const sideways = guides(full).find(
-      (n: any) => n.name === "Explosion guide: assembly.park-bolts/cad_1",
+    expect(
+      guides(full).find(
+        (line: any) =>
+          line.stageRef === "assembly.park-bolts" && line.targetRef === "cad_1",
+      ).points,
+    ).toEqual([
+      [-6, 12, 7],
+      [-26, 12, 7],
+    ])
+    // Overlay metadata must not add primitives, materials, nodes, or buffer data.
+    for (const key of [
+      "nodes",
+      "meshes",
+      "materials",
+      "accessors",
+      "bufferViews",
+      "buffers",
+    ])
+      expect(full[key]).toEqual(disabled[key])
+    const glb = (await convert(assemblyExplosion, {
+      format: "glb",
+      explosion: {},
+    })) as ArrayBuffer
+    const jsonLength = new DataView(glb).getUint32(12, true)
+    const json = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(glb, 20, jsonLength)),
     )
-    const horizontal =
-      full.accessors[
-        full.meshes[sideways.mesh].primitives[0].attributes.POSITION
-      ]
-    expect(horizontal.min[0]).toBeCloseTo(-26, 4)
-    expect(horizontal.max[0]).toBeCloseTo(-6, 4)
-    expect(horizontal.min[1]).toBeCloseTo(11.85, 4)
-    expect(horizontal.max[1]).toBeCloseTo(12.15, 4)
+    expect(guides(json)).toEqual(guides(full))
   }
 })
 
@@ -159,12 +173,12 @@ test("a printed part authored above its CAD origin gets a guide reaching its und
   const gltf = (await convertCircuitJsonToGltf(input, {
     explosion: { throughStageRef: "assembly.lift-bolts" },
   })) as any
-  const guide = gltf.nodes.find(
-    (n: any) => n.name === "Explosion guide: assembly.lift-bolts/cad_1",
+  const guide = gltf.scenes[gltf.scene].extras.poppygl.explosionLines.find(
+    (line: any) => line.targetRef === "cad_1",
   )
-  const positions =
-    gltf.accessors[gltf.meshes[guide.mesh].primitives[0].attributes.POSITION]
   // The part occupies circuit Z=7..9 assembled, Z=17..19 lifted.
-  expect(positions.min[1]).toBeCloseTo(7, 4)
-  expect(positions.max[1]).toBeCloseTo(17, 4)
+  expect(guide.points).toEqual([
+    [-6, 7, 7],
+    [-6, 17, 7],
+  ])
 })

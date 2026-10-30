@@ -41,7 +41,7 @@ export interface AssemblyExplosionFrame {
 export interface ConversionOptions {
   /** Render a serialized explosion pose. Omit to keep the assembly assembled. */
   explosion?: AssemblyExplosionOptions
-  /** Include dashed motion guides in exploded geometry. Defaults to true. */
+  /** Include motion-guide metadata in scene extras for PoppyGL. Defaults to true. */
   showExplosionLines?: boolean
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
@@ -181,7 +181,15 @@ export interface Box3D {
   showHiddenEdges?: boolean
 }
 
+/** Guide points in Scene3D world coordinates: +Y up, mm, before glTF X reflection. */
+export interface SceneExplosionLine {
+  stageRef: string
+  targetRef: string
+  points: Point3[]
+}
+
 export interface Scene3D {
+  explosionLines?: SceneExplosionLine[]
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]
@@ -220,7 +228,7 @@ export interface GLTFExportOptions {
 export interface CircuitTo3DOptions {
   /** Evaluate CAD explosion instructions before conversion to scene coordinates. */
   explosion?: AssemblyExplosionOptions
-  /** Include dashed motion guides in exploded geometry. Defaults to true. */
+  /** Include motion-guide metadata in scene extras for PoppyGL. Defaults to true. */
   showExplosionLines?: boolean
   /** Override folding for supported PCB bend regions. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean

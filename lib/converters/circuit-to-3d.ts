@@ -1,4 +1,4 @@
-import { createExplosionLineBoxes } from "./explosion-lines"
+import { createExplosionLines } from "./explosion-lines"
 import { evaluateAssemblyExplosion } from "../utils/evaluate-assembly-explosion"
 import { loadCadComponentBox } from "../loaders/cad-component-box"
 import {
@@ -708,11 +708,11 @@ export async function convertCircuitJsonTo3D(
     },
   ]
 
-  if (explosion && options.showExplosionLines !== false)
-    boxes.push(...createExplosionLineBoxes(explosion.lines, boxes))
-
   const scene: Scene3D = {
     boxes,
+    ...(explosion && options.showExplosionLines !== false
+      ? { explosionLines: createExplosionLines(explosion.lines, boxes) }
+      : {}),
     camera,
     lights,
   }
