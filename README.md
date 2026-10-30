@@ -90,7 +90,9 @@ beside each view is the source that authored that stage.
 ![RP2040 assembly explosion stages with TSX](./docs/images/rp2040-explosion-stages.png)
 
 `cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
-Exports remain assembled by default. Select a pose with the `explosion` option:
+Exports remain assembled by default. Select a pose with the `explosion` option.
+Exploded exports include dashed motion guides as mesh geometry, visible in both
+rendered images and downloaded GLBs. Set `showExplosionLines: false` to hide them:
 
 ```typescript
 import {
@@ -133,6 +135,7 @@ and swept collision checking are not supported.
 ### Options
 
 - `explosion`: Optional `{ throughStageRef?, stageProgress? }` selecting a serialized assembly pose; omitted means assembled.
+- `showExplosionLines`: Include dashed motion guides when sampling an explosion (default: `true`).
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)

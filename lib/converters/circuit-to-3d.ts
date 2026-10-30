@@ -1,3 +1,4 @@
+import { createExplosionLineBoxes } from "./explosion-lines"
 import { evaluateAssemblyExplosion } from "../utils/evaluate-assembly-explosion"
 import { loadCadComponentBox } from "../loaders/cad-component-box"
 import {
@@ -65,11 +66,10 @@ export async function convertCircuitJsonTo3D(
 ): Promise<Scene3D> {
   // Explosion translations are circuit-world vectors. Resolve them before the
   // existing CAD-to-scene axis mapping in loadCadComponentBox.
-  if (options.explosion)
-    inputCircuitJson = evaluateAssemblyExplosion(
-      inputCircuitJson,
-      options.explosion,
-    ).circuitJson
+  const explosion = options.explosion
+    ? evaluateAssemblyExplosion(inputCircuitJson, options.explosion)
+    : undefined
+  if (explosion) inputCircuitJson = explosion.circuitJson
 
   const {
     boardSideColor,
@@ -707,6 +707,9 @@ export async function convertCircuitJsonTo3D(
       direction: { x: -1, y: -1, z: -1 },
     },
   ]
+
+  if (explosion && options.showExplosionLines !== false)
+    boxes.push(...createExplosionLineBoxes(explosion.lines))
 
   const scene: Scene3D = {
     boxes,

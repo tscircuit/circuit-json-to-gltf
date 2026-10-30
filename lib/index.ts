@@ -29,6 +29,7 @@ export async function convertCircuitJsonToGltf(
   const scene3D = await convertCircuitJsonTo3D(circuitJson, {
     renderBoardTextures: true,
     explosion: options.explosion,
+    showExplosionLines: options.showExplosionLines,
     foldPcbs: options.foldPcbs,
     textureResolution: boardTextureResolution,
     showPcbNotes,

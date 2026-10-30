@@ -41,6 +41,8 @@ export interface AssemblyExplosionFrame {
 export interface ConversionOptions {
   /** Render a serialized explosion pose. Omit to keep the assembly assembled. */
   explosion?: AssemblyExplosionOptions
+  /** Include dashed motion guides in exploded geometry. Defaults to true. */
+  showExplosionLines?: boolean
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
   format?: "gltf" | "glb"
@@ -218,6 +220,8 @@ export interface GLTFExportOptions {
 export interface CircuitTo3DOptions {
   /** Evaluate CAD explosion instructions before conversion to scene coordinates. */
   explosion?: AssemblyExplosionOptions
+  /** Include dashed motion guides in exploded geometry. Defaults to true. */
+  showExplosionLines?: boolean
   /** Override folding for supported PCB bend regions. Undefined follows CAD is_on_folded_board. */
   foldPcbs?: boolean
   pcbColor?: Color

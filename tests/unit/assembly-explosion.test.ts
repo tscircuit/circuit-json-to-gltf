@@ -89,3 +89,65 @@ test("invalid later instructions fail before partial playback", async () => {
     }),
   ).rejects.toThrow("progress")
 })
+
+test("explosion guides are downloadable dashed geometry with the same coordinates in every entry point", async () => {
+  for (const convert of [
+    convertCircuitJsonToGltf,
+    browserExport,
+    browserIndexExport,
+  ]) {
+    const exportPose = async (
+      explosion?: { throughStageRef?: string; stageProgress?: number },
+      showExplosionLines?: boolean,
+    ) =>
+      (await convert(assemblyExplosion, {
+        format: "gltf",
+        explosion,
+        showExplosionLines,
+      })) as any
+    const guides = (gltf: any) =>
+      gltf.nodes.filter((node: any) =>
+        node.name?.startsWith("Explosion guide:"),
+      )
+    expect(guides(await exportPose())).toHaveLength(0)
+    expect(
+      guides(
+        await exportPose({
+          stageProgress: 0,
+          throughStageRef: "assembly.lift-bolts",
+        }),
+      ),
+    ).toHaveLength(0)
+    expect(guides(await exportPose({}, false))).toHaveLength(0)
+    const partial = await exportPose({
+      throughStageRef: "assembly.lift-bolts",
+      stageProgress: 0.25,
+    })
+    expect(guides(partial)).toHaveLength(1)
+    const guide = guides(partial)[0]
+    const primitive = partial.meshes[guide.mesh].primitives[0]
+    expect(primitive.mode).toBe(4) // Triangles work in both PoppyGL and model-viewer.
+    const positions = partial.accessors[primitive.attributes.POSITION]
+    // The actual exported vertices must lie directly below gold-bolt's new
+    // origin (-6, 7, 7), not under the mirrored or unremapped position.
+    expect(positions.min[0]).toBeCloseTo(-6.09, 4)
+    expect(positions.max[0]).toBeCloseTo(-5.91, 4)
+    expect(positions.min[1]).toBeCloseTo(2, 4)
+    expect(positions.max[1]).toBeCloseTo(7, 4)
+    expect(positions.min[2]).toBeCloseTo(6.91, 4)
+    expect(positions.max[2]).toBeCloseTo(7.09, 4)
+    const full = await exportPose({})
+    expect(guides(full)).toHaveLength(4)
+    const sideways = guides(full).find(
+      (n: any) => n.name === "Explosion guide: assembly.park-bolts/cad_1",
+    )
+    const horizontal =
+      full.accessors[
+        full.meshes[sideways.mesh].primitives[0].attributes.POSITION
+      ]
+    expect(horizontal.min[0]).toBeCloseTo(-26, 4)
+    expect(horizontal.max[0]).toBeCloseTo(-6, 4)
+    expect(horizontal.min[1]).toBeCloseTo(11.91, 4)
+    expect(horizontal.max[1]).toBeCloseTo(12.09, 4)
+  }
+})
