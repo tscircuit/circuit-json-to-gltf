@@ -57,7 +57,7 @@
     "circuit-json": "^0.0.539",
     "circuit-to-svg": "^0.0.445",
     "graphics-debug": "^0.0.96",
-    "poppygl": "https://pkg.pr.new/tscircuit/poppygl@17a92e1",
+    "poppygl": "0.0.38",
     "react": "^19.1.1",
     "react-cosmos": "^7.0.0",
     "react-cosmos-plugin-vite": "^7.0.0",
