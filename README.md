@@ -91,11 +91,10 @@ beside each view is the source that authored that stage.
 
 `cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
 Exports remain assembled by default. Select a pose with the `explosion` option.
-Exploded exports include motion paths in the selected scene's
+Exploded exports always include motion paths in the selected scene's
 `extras.poppygl.explosionLines`, using final glTF world coordinates (+Y up, mm).
 PoppyGL renders these as dashed overlays; they do not add meshes or affect model
-bounds. Generic glTF viewers may ignore the extras. Set
-`showExplosionLines: false` to omit the metadata:
+bounds. Generic glTF viewers may ignore the extras.
 
 ```typescript
 import {
@@ -138,7 +137,6 @@ and swept collision checking are not supported.
 ### Options
 
 - `explosion`: Optional `{ throughStageRef?, stageProgress? }` selecting a serialized assembly pose; omitted means assembled.
-- `showExplosionLines`: Include PoppyGL motion-guide metadata when sampling an explosion (default: `true`).
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)

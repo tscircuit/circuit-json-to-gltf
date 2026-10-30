@@ -96,14 +96,13 @@ test("explosion paths are scene extras, with unchanged meshes and correct world 
     browserExport,
     browserIndexExport,
   ]) {
-    const exportPose = async (
-      explosion?: { throughStageRef?: string; stageProgress?: number },
-      showExplosionLines?: boolean,
-    ) =>
+    const exportPose = async (explosion?: {
+      throughStageRef?: string
+      stageProgress?: number
+    }) =>
       (await convert(assemblyExplosion, {
         format: "gltf",
         explosion,
-        showExplosionLines,
       })) as any
     const guides = (gltf: any) =>
       gltf.scenes[gltf.scene].extras?.poppygl?.explosionLines ?? []
@@ -116,8 +115,12 @@ test("explosion paths are scene extras, with unchanged meshes and correct world 
         }),
       ),
     ).toHaveLength(0)
-    const disabled = await exportPose({}, false)
-    expect(guides(disabled)).toHaveLength(0)
+    // The same already-sampled pose has no program from which to derive paths.
+    const sampledPose = getAssemblyExplosionFrames(assemblyExplosion).at(-1)!
+    const geometryOnly = (await convert(sampledPose.circuitJson, {
+      format: "gltf",
+    })) as any
+    expect(guides(geometryOnly)).toHaveLength(0)
     const partial = await exportPose({
       throughStageRef: "assembly.lift-bolts",
       stageProgress: 0.25,
@@ -153,7 +156,7 @@ test("explosion paths are scene extras, with unchanged meshes and correct world 
       "bufferViews",
       "buffers",
     ])
-      expect(full[key]).toEqual(disabled[key])
+      expect(full[key]).toEqual(geometryOnly[key])
     const glb = (await convert(assemblyExplosion, {
       format: "glb",
       explosion: {},

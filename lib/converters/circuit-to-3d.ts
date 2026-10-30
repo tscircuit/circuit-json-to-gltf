@@ -710,7 +710,7 @@ export async function convertCircuitJsonTo3D(
 
   const scene: Scene3D = {
     boxes,
-    ...(explosion && options.showExplosionLines !== false
+    ...(explosion
       ? { explosionLines: createExplosionLines(explosion.lines, boxes) }
       : {}),
     camera,
