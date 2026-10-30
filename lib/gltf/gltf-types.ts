@@ -20,10 +20,21 @@ export interface GLTF {
   extensionsUsed?: string[]
 }
 
+export interface GLTFExplosionLine {
+  /** Final glTF world coordinates, +Y up, mm. Points, not displacements. */
+  points: [number, number, number][]
+  dashed?: boolean
+  stageRef?: string
+  targetRef?: string
+}
+
 export interface GLTFScene {
   name?: string
   nodes?: number[]
   extras?: {
+    poppygl?: {
+      explosionLines?: GLTFExplosionLine[]
+    }
     tscircuit?: {
       errorMessages?: string[]
     }

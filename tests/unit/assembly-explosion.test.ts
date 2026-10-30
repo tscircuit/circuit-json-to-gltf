@@ -89,3 +89,99 @@ test("invalid later instructions fail before partial playback", async () => {
     }),
   ).rejects.toThrow("progress")
 })
+
+test("explosion paths are scene extras, with unchanged meshes and correct world coordinates in every entry point", async () => {
+  for (const convert of [
+    convertCircuitJsonToGltf,
+    browserExport,
+    browserIndexExport,
+  ]) {
+    const exportPose = async (explosion?: {
+      throughStageRef?: string
+      stageProgress?: number
+    }) =>
+      (await convert(assemblyExplosion, {
+        format: "gltf",
+        explosion,
+      })) as any
+    const guides = (gltf: any) =>
+      gltf.scenes[gltf.scene].extras?.poppygl?.explosionLines ?? []
+    expect(guides(await exportPose())).toHaveLength(0)
+    expect(
+      guides(
+        await exportPose({
+          stageProgress: 0,
+          throughStageRef: "assembly.lift-bolts",
+        }),
+      ),
+    ).toHaveLength(0)
+    // The same already-sampled pose has no program from which to derive paths.
+    const sampledPose = getAssemblyExplosionFrames(assemblyExplosion).at(-1)!
+    const geometryOnly = (await convert(sampledPose.circuitJson, {
+      format: "gltf",
+    })) as any
+    expect(guides(geometryOnly)).toHaveLength(0)
+    const partial = await exportPose({
+      throughStageRef: "assembly.lift-bolts",
+      stageProgress: 0.25,
+    })
+    expect(guides(partial)).toEqual([
+      {
+        stageRef: "assembly.lift-bolts",
+        targetRef: "cad_1",
+        points: [
+          [-6, 2, 7],
+          [-6, 7, 7],
+        ],
+        dashed: true,
+      },
+    ])
+    const full = await exportPose({})
+    expect(guides(full)).toHaveLength(4)
+    expect(
+      guides(full).find(
+        (line: any) =>
+          line.stageRef === "assembly.park-bolts" && line.targetRef === "cad_1",
+      ).points,
+    ).toEqual([
+      [-6, 12, 7],
+      [-26, 12, 7],
+    ])
+    // Overlay metadata must not add primitives, materials, nodes, or buffer data.
+    for (const key of [
+      "nodes",
+      "meshes",
+      "materials",
+      "accessors",
+      "bufferViews",
+      "buffers",
+    ])
+      expect(full[key]).toEqual(geometryOnly[key])
+    const glb = (await convert(assemblyExplosion, {
+      format: "glb",
+      explosion: {},
+    })) as ArrayBuffer
+    const jsonLength = new DataView(glb).getUint32(12, true)
+    const json = JSON.parse(
+      new TextDecoder().decode(new Uint8Array(glb, 20, jsonLength)),
+    )
+    expect(guides(json)).toEqual(guides(full))
+  }
+})
+
+test("a printed part authored above its CAD origin gets a guide reaching its underside", async () => {
+  const input = structuredClone(assemblyExplosion)
+  const part = input.find((r: any) => r.cad_component_id === "cad_1") as any
+  part.model_jscad = { type: "cuboid", size: [4, 4, 2], center: [0, 0, 6] }
+  const gltf = (await convertCircuitJsonToGltf(input, {
+    explosion: { throughStageRef: "assembly.lift-bolts" },
+  })) as any
+  const guide = gltf.scenes[gltf.scene].extras.poppygl.explosionLines.find(
+    (line: any) => line.targetRef === "cad_1",
+  )
+  // The part occupies circuit Z=7..9 assembled, Z=17..19 lifted.
+  expect(guide.points).toEqual([
+    [-6, 7, 7],
+    [-6, 17, 7],
+  ])
+})

@@ -179,7 +179,15 @@ export interface Box3D {
   showHiddenEdges?: boolean
 }
 
+/** Guide points in Scene3D world coordinates: +Y up, mm, before glTF X reflection. */
+export interface SceneExplosionLine {
+  stageRef: string
+  targetRef: string
+  points: Point3[]
+}
+
 export interface Scene3D {
+  explosionLines?: SceneExplosionLine[]
   boxes: Box3D[]
   camera?: Camera3D
   lights?: Light3D[]

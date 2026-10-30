@@ -90,7 +90,11 @@ beside each view is the source that authored that stage.
 ![RP2040 assembly explosion stages with TSX](./docs/images/rp2040-explosion-stages.png)
 
 `cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
-Exports remain assembled by default. Select a pose with the `explosion` option:
+Exports remain assembled by default. Select a pose with the `explosion` option.
+Exploded exports always include motion paths in the selected scene's
+`extras.poppygl.explosionLines`, using final glTF world coordinates (+Y up, mm).
+PoppyGL renders these as dashed overlays; they do not add meshes or affect model
+bounds. Generic glTF viewers may ignore the extras.
 
 ```typescript
 import {

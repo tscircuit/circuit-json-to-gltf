@@ -79,6 +79,23 @@ export class GLTFBuilder {
       }
     }
 
+    if (scene3D.explosionLines?.length) {
+      const scene = this.gltf.scenes![0]!
+      scene.extras = {
+        ...scene.extras,
+        poppygl: {
+          explosionLines: scene3D.explosionLines.map((line) => ({
+            stageRef: line.stageRef,
+            targetRef: line.targetRef,
+            // Match convertMeshToGLTFOrientation's final X reflection.
+            // These are world points, so node transforms must not apply again.
+            points: line.points.map((point) => [-point.x, point.y, point.z]),
+            dashed: true,
+          })),
+        },
+      }
+    }
+
     // Add default material
     const defaultMaterialIndex = this.addMaterial({
       name: "Default",
