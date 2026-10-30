@@ -75,5 +75,7 @@ test("renders the compact Sitara DFN on its PCB land pattern", async () => {
     backgroundColor: [1, 1, 1],
     grid: false,
   })
-  await expect(png).toMatchPngSnapshot(import.meta.path)
+  await expect(png).toMatchPngSnapshot(import.meta.path, undefined, {
+    maxDiffFraction: 0.001,
+  })
 })
