@@ -32,7 +32,7 @@
     "@tscircuit/footprinter": "^0.0.431",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
-    "jscad-electronics": "https://pkg.pr.new/tscircuit/jscad-electronics@c19e9c56460948310cf76193ed143dc4b5e52c1d",
+    "jscad-electronics": "^0.0.240",
     "jscad-planner": "^0.0.19",
     "jscad-to-gltf": "^0.0.5",
     "occt-import-js": "^0.0.23"
