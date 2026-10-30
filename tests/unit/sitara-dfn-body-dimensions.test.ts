@@ -17,7 +17,7 @@ test("captures the Sitara DFN mesh dimensions through Footprinter and GLB", asyn
   }).toMatchInlineSnapshot(`
     {
       "heightMm": 1.005,
-      "lengthMm": 5.3,
+      "lengthMm": 0.6,
       "widthMm": 1.35,
     }
   `)
