@@ -1,4 +1,4 @@
-const URL_SCHEME_REGEX = /^[a-zA-Z][a-zA-Z\d+.-]*:\/\//
+const URL_SCHEME_REGEX = /^(?:[a-zA-Z][a-zA-Z\d+.-]*:\/\/|data:|blob:)/i
 const WINDOWS_ABSOLUTE_PATH_REGEX = /^[A-Za-z]:[\\/]/
 
 const isNodeRuntime =
