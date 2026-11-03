@@ -46,6 +46,7 @@ const circuitJson = {
 // Convert to GLTF
 const gltf = await convertCircuitJsonToGltf(circuitJson, {
   format: "gltf", // or "glb" for binary
+  outputUnits: "m", // Standard glTF file units
   boardTextureResolution: 2048,
 })
 
@@ -92,7 +93,8 @@ beside each view is the source that authored that stage.
 `cad_explosion_stage` and `cad_explosion_move` records describe a playback program.
 Exports remain assembled by default. Select a pose with the `explosion` option.
 Exploded exports always include motion paths in the selected scene's
-`extras.poppygl.explosionLines`, using final glTF world coordinates (+Y up, mm).
+`extras.poppygl.explosionLines`, using final glTF world coordinates (+Y up,
+in `outputUnits`, default mm).
 PoppyGL renders these as dashed overlays; they do not add meshes or affect model
 bounds. Generic glTF viewers may ignore the extras.
 
@@ -138,6 +140,7 @@ and swept collision checking are not supported.
 
 - `explosion`: Optional `{ throughStageRef?, stageProgress? }` selecting a serialized assembly pose; omitted means assembled.
 - `format`: "gltf" (JSON) or "glb" (binary) - default: "gltf"
+- `outputUnits`: "m" for standard glTF files; "mm" (default) preserves existing millimeter render consumers. Also supported by `convertSceneToGLTF`; Circuit JSON and intermediate scene coordinates remain in mm.
 - `boardTextureResolution`: Resolution for board texture rendering - default: 1024
 - `showPcbNotes`: Include `pcb_note*` elements in board texture rendering (default: `false`)
 - `boardDrillQuality`: Drill geometry detail level, "high" or "fast" - default: "fast"
