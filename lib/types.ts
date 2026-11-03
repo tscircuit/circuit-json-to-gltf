@@ -148,12 +148,16 @@ export interface OBJMaterial {
 export type Color = string | [number, number, number, number]
 
 export interface Box3D {
-  /** Lightweight identity exported as glTF node extras.tscircuit (no geometry). */
+  /** Lightweight identity exported as glTF node extras.tscircuit (no geometry).
+   * Components carry their cad/source/pcb component ids. The board body, its
+   * "Via Plating" and its stiffeners carry the rendered pcb_board_id, which is
+   * the pcb_panel_id when a panel is rendered in place of its boards. */
   componentMetadata?: {
     cad_component_id?: string
     source_component_id?: string
     pcb_component_id?: string
     componentName?: string
+    pcb_board_id?: string
   }
   center: Point3
   size: Size3
