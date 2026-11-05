@@ -83,7 +83,7 @@ function parseOBJ(
       const z = parts[3]!
       normals.push({ x: parseFloat(x), y: parseFloat(y), z: parseFloat(z) })
     } else if (trimmed.startsWith("newmtl ")) {
-      const name = trimmed.split(/\s+/)[1]!
+      const name = trimmed.slice(7).trim()
       materials.set(name, { name })
       materialIndexMap.set(name, materialIndex++)
       activeMaterial = name
@@ -143,23 +143,33 @@ function parseOBJ(
     } else if (trimmed === "endmtl") {
       activeMaterial = undefined
     } else if (trimmed.startsWith("usemtl ")) {
-      activeMaterial = trimmed.split(/\s+/)[1]!
+      activeMaterial = trimmed.slice(7).trim()
     } else if (trimmed.startsWith("f ")) {
       const parts = trimmed.slice(2).trim().split(/\s+/)
+      const resolveIndex = (
+        raw: string | undefined,
+        total: number,
+      ): number | undefined => {
+        if (!raw) return undefined
+        const parsed = Number.parseInt(raw, 10)
+        if (Number.isNaN(parsed) || parsed === 0) return undefined
+        return parsed < 0 ? total + parsed : parsed - 1
+      }
       const idxs = parts.map((p) => {
-        const [vi, ti, ni] = p.split("/") as [string, string?, string?]
+        const [vi, _ti, ni] = p.split("/") as [string, string?, string?]
         return {
-          v: parseInt(vi) - 1,
-          n: ni ? parseInt(ni) - 1 : undefined,
+          v: resolveIndex(vi, vertices.length) ?? -1,
+          n: resolveIndex(ni, normals.length),
         }
       })
       for (let i = 1; i < idxs.length - 1; i++) {
         const a = idxs[0]!
         const b = idxs[i]!
         const c = idxs[i + 1]!
-        const v0 = vertices[a.v]!
-        const v1 = vertices[b.v]!
-        const v2 = vertices[c.v]!
+        const v0 = vertices[a.v]
+        const v1 = vertices[b.v]
+        const v2 = vertices[c.v]
+        if (!v0 || !v1 || !v2) continue
         let normal: Point3
         if (a.n !== undefined && normals[a.n]) {
           normal = normals[a.n]!
