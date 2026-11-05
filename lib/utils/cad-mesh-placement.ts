@@ -142,16 +142,27 @@ export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(
   fitMode: NonNullable<CadComponent["model_object_fit"]>,
 ): T {
   const meshSize = getBoundingBoxSize(mesh.boundingBox)
+  const hasPositiveScaleX =
+    meshSize.x > 0 && Number.isFinite(targetSize.x) && targetSize.x > 0
+  const hasPositiveScaleY =
+    meshSize.y > 0 && Number.isFinite(targetSize.y) && targetSize.y > 0
+  const hasPositiveScaleZ =
+    meshSize.z > 0 && Number.isFinite(targetSize.z) && targetSize.z > 0
   const safeScale = {
-    x: meshSize.x > 0 ? targetSize.x / meshSize.x : 1,
-    y: meshSize.y > 0 ? targetSize.y / meshSize.y : 1,
-    z: meshSize.z > 0 ? targetSize.z / meshSize.z : 1,
+    x: hasPositiveScaleX ? targetSize.x / meshSize.x : 1,
+    y: hasPositiveScaleY ? targetSize.y / meshSize.y : 1,
+    z: hasPositiveScaleZ ? targetSize.z / meshSize.z : 1,
   }
 
   if (fitMode === "fill_bounds") {
     return scaleMeshByAxis(mesh, safeScale)
   }
 
-  const uniformScale = Math.min(safeScale.x, safeScale.y, safeScale.z)
+  const validScales = [
+    ...(hasPositiveScaleX ? [safeScale.x] : []),
+    ...(hasPositiveScaleY ? [safeScale.y] : []),
+    ...(hasPositiveScaleZ ? [safeScale.z] : []),
+  ]
+  const uniformScale = validScales.length > 0 ? Math.min(...validScales) : 1
   return scaleMesh(mesh, uniformScale)
 }
