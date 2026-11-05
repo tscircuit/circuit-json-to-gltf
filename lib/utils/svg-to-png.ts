@@ -16,6 +16,10 @@ export async function svgToPng(
   svgString: string,
   options: SvgToPngOptions = {},
 ): Promise<Buffer> {
+  // Keep the optional native addon out of browser bundlers' dependency graphs.
+  // This module is only called on the Node/Bun branch of board-renderer.
+  const nativePackage = "@resvg/resvg-js"
+  const { Resvg } = await import(/* @vite-ignore */ nativePackage)
   const fontBuffer = Buffer.from(tscircuitFont, "base64")
 
   let tempFontPath: string | undefined
