@@ -191,6 +191,7 @@ export async function loadCadComponentBox(
   // (+Z up, intrinsic XYZ degrees). Resolving this flat layer convention
   // does not require constructing an unsupported board fold.
   const cadRotation = cad.rotation ?? defaultCadRotation
+  const pcbRotationZ = pcbComponent?.rotation ?? 0
   // Add rotation if specified
   if (cadRotation) {
     // For GLB/GLTF models, we need to remap rotation axes because the coordinate
@@ -206,16 +207,22 @@ export async function loadCadComponentBox(
     if (model_glb_url || model_gltf_url || hasFootprinterModel) {
       box.rotation = convertRotationFromCadRotation({
         x: 0,
-        y: 0,
+        y: -pcbRotationZ,
         z: 180, // Flip via Z rotation for GLB models (matches circuit JSON convention)
       })
     } else {
       box.rotation = convertRotationFromCadRotation({
         x: 180,
-        y: 0,
+        y: -pcbRotationZ,
         z: 0,
       })
     }
+  } else if (pcbRotationZ !== 0) {
+    box.rotation = convertRotationFromCadRotation({
+      x: 0,
+      y: pcbRotationZ,
+      z: 0,
+    })
   }
 
   // Try to load the mesh with default coordinate transform if none specified
