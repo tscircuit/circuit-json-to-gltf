@@ -100,15 +100,16 @@ export function applyNodeTransformToTriangle(
 }
 
 /**
- * Collect ancestor-first glTF node-local transforms (Y-up, source units).
- * This retains the loader's existing single-transform-per-mesh behavior.
+ * Collect ancestor-first glTF node-local transform chains for every node
+ * instance referencing each mesh (Y-up, source units).
  */
-export function buildMeshTransforms(gltf: any): Map<number, NodeTransform[]> {
-  const meshTransforms = new Map<number, NodeTransform[]>()
+export function buildMeshTransformInstances(
+  gltf: any,
+): Map<number, NodeTransform[][]> {
+  const meshTransformInstances = new Map<number, NodeTransform[][]>()
 
-  if (!gltf.nodes) return meshTransforms
+  if (!gltf.nodes) return meshTransformInstances
 
-  // Process all nodes and collect transforms for meshes
   function processNode(nodeIndex: number, parentTransforms: NodeTransform[]) {
     const node = gltf.nodes[nodeIndex]
     if (!node) return
@@ -124,7 +125,9 @@ export function buildMeshTransforms(gltf: any): Map<number, NodeTransform[]> {
     }
 
     if (node.mesh !== undefined) {
-      meshTransforms.set(node.mesh, currentTransforms)
+      const instances = meshTransformInstances.get(node.mesh) ?? []
+      instances.push(currentTransforms)
+      meshTransformInstances.set(node.mesh, instances)
     }
 
     if (node.children) {
@@ -134,13 +137,39 @@ export function buildMeshTransforms(gltf: any): Map<number, NodeTransform[]> {
     }
   }
 
-  // Start from scene root nodes
   const scene = gltf.scenes?.[gltf.scene ?? 0]
   if (scene?.nodes) {
     for (const rootNodeIndex of scene.nodes) {
       processNode(rootNodeIndex, [])
     }
+  } else {
+    const childNodeIndices = new Set<number>()
+    for (const node of gltf.nodes) {
+      for (const childIndex of node?.children ?? []) {
+        childNodeIndices.add(childIndex)
+      }
+    }
+    for (let nodeIndex = 0; nodeIndex < gltf.nodes.length; nodeIndex++) {
+      if (!childNodeIndices.has(nodeIndex)) {
+        processNode(nodeIndex, [])
+      }
+    }
   }
 
+  return meshTransformInstances
+}
+
+/**
+ * Collect ancestor-first glTF node-local transforms (Y-up, source units).
+ * This retains the loader's existing single-transform-per-mesh behavior.
+ */
+export function buildMeshTransforms(gltf: any): Map<number, NodeTransform[]> {
+  const meshTransforms = new Map<number, NodeTransform[]>()
+  for (const [meshIndex, instances] of buildMeshTransformInstances(gltf)) {
+    const lastInstance = instances.at(-1)
+    if (lastInstance) {
+      meshTransforms.set(meshIndex, lastInstance)
+    }
+  }
   return meshTransforms
 }

@@ -11,7 +11,7 @@ import { boundsOfTriangles } from "../utils/bounding-box"
 import { transformTriangles } from "../utils/coordinate-transform"
 import {
   applyNodeTransformToTriangle,
-  buildMeshTransforms,
+  buildMeshTransformInstances,
   composeNodeTransforms,
 } from "../utils/gltf-node-transforms"
 import { fetchWithTimeout } from "./fetch-with-timeout"
@@ -190,13 +190,16 @@ function extractTrianglesFromGLTF(
   }
 
   // Build mesh transforms from node hierarchy
-  const meshTransforms = buildMeshTransforms(gltf)
+  const meshTransformInstances = buildMeshTransformInstances(gltf)
 
   // Process each mesh
   for (let meshIndex = 0; meshIndex < gltf.meshes.length; meshIndex++) {
     const mesh = gltf.meshes[meshIndex]
-    const worldMatrix = composeNodeTransforms(
-      meshTransforms.get(meshIndex) ?? [],
+    const instanceTransformChains = meshTransformInstances.get(meshIndex) ?? [
+      [],
+    ]
+    const worldMatrices = instanceTransformChains.map((chain) =>
+      composeNodeTransforms(chain),
     )
     for (const primitive of mesh.primitives) {
       // Only support TRIANGLES mode
@@ -379,12 +382,14 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
-          triangles.push(
-            applyNodeTransformToTriangle(
-              { vertices: [v0, v1, v2], normal, color: triangleColor },
-              worldMatrix,
-            ),
-          )
+          for (const worldMatrix of worldMatrices) {
+            triangles.push(
+              applyNodeTransformToTriangle(
+                { vertices: [v0, v1, v2], normal, color: triangleColor },
+                worldMatrix,
+              ),
+            )
+          }
         }
       } else {
         // No indices, vertices are in order
@@ -494,12 +499,14 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
-          triangles.push(
-            applyNodeTransformToTriangle(
-              { vertices: [v0, v1, v2], normal, color: triangleColor },
-              worldMatrix,
-            ),
-          )
+          for (const worldMatrix of worldMatrices) {
+            triangles.push(
+              applyNodeTransformToTriangle(
+                { vertices: [v0, v1, v2], normal, color: triangleColor },
+                worldMatrix,
+              ),
+            )
+          }
         }
       }
     }
@@ -546,8 +553,12 @@ function getAccessorData(
   const elementSize = componentSize * componentsPerElement
   const stride = bufferView.byteStride ?? elementSize
 
-  // Keep the zero-copy path for tightly packed FLOAT attributes.
-  if (componentType === 5126 && stride === elementSize) {
+  // Keep the zero-copy path for tightly packed 4-byte-aligned FLOAT attributes.
+  if (
+    componentType === 5126 &&
+    stride === elementSize &&
+    byteOffset % 4 === 0
+  ) {
     return new Float32Array(binaryBuffer, byteOffset, totalComponents)
   }
 

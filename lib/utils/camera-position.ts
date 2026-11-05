@@ -172,7 +172,32 @@ export function getBestCameraPosition(
     }
   }
 
-  const { width, height, center } = surface
+  let { width, height, center } = surface
+
+  if (
+    (!width || !height || !center) &&
+    "outline" in surface &&
+    Array.isArray(surface.outline) &&
+    surface.outline.length >= 3
+  ) {
+    let minX = Number.POSITIVE_INFINITY
+    let maxX = Number.NEGATIVE_INFINITY
+    let minY = Number.POSITIVE_INFINITY
+    let maxY = Number.NEGATIVE_INFINITY
+    for (const point of surface.outline) {
+      if (Number.isFinite(point.x) && Number.isFinite(point.y)) {
+        minX = Math.min(minX, point.x)
+        maxX = Math.max(maxX, point.x)
+        minY = Math.min(minY, point.y)
+        maxY = Math.max(maxY, point.y)
+      }
+    }
+    if (minX < maxX && minY < maxY) {
+      width = width || maxX - minX
+      height = height || maxY - minY
+      center = center ?? { x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+    }
+  }
 
   // Validate required properties
   if (!width || !height || !center) {
@@ -199,7 +224,12 @@ export function getBestCameraPosition(
     -cameraDirection[2],
   ]
 
-  const worldUp: [number, number, number] = [0, 1, 0]
+  const primaryWorldUp: [number, number, number] = [0, 1, 0]
+  const rawRight = cross(forward, primaryWorldUp)
+  const worldUp: [number, number, number] =
+    Math.hypot(rawRight[0], rawRight[1], rawRight[2]) < 1e-6
+      ? [0, 0, 1]
+      : primaryWorldUp
   const right = normalizeVector(cross(forward, worldUp))
   const up = normalizeVector(cross(right, forward))
 
