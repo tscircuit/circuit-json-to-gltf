@@ -1,4 +1,5 @@
 import type { CircuitJson, PcbVia, PcbHole } from "circuit-json"
+import type { Vec2 } from "@jscad/modeling/src/maths/types"
 import {
   circle,
   ellipse,
@@ -12,6 +13,8 @@ import {
   measureBoundingBox,
 } from "@jscad/modeling/src/measurements"
 import type { STLMesh } from "../types"
+import { boundsOfTriangles } from "./bounding-box"
+import { arePointsClockwise } from "./pcb-board-cutouts"
 
 /** Flat pad/via footprints are Circuit JSON world XY points in mm (+Z up).
  * Reuse JSCAD's 2D shapes so rotated, rounded and polygon pads keep their outline. */
@@ -65,10 +68,27 @@ export function getPadOverlappingVias(circuit: CircuitJson): PcbVia[] {
     let local = true
     const points = p.points ?? p.pad_outline
     if (points?.length >= 3) {
+      let polygonPoints: Vec2[] = points.map(
+        (point: any): Vec2 => [point.x, point.y],
+      )
+      if (polygonPoints.length > 2) {
+        const first = polygonPoints[0]!
+        const last = polygonPoints[polygonPoints.length - 1]!
+        if (Math.hypot(first[0] - last[0], first[1] - last[1]) <= 1e-8) {
+          polygonPoints = polygonPoints.slice(0, -1)
+        }
+      }
+      if (polygonPoints.length < 3) return []
+      if (arePointsClockwise(polygonPoints)) {
+        polygonPoints = polygonPoints.slice().reverse()
+      }
       footprint = polygon({
-        points: points.map((point: any) => [point.x, point.y]),
+        points: polygonPoints,
       })
       local = pad.type === "pcb_plated_hole"
+      if (local && p.ccw_rotation) {
+        footprint = rotateZ((p.ccw_rotation * Math.PI) / 180, footprint)
+      }
     } else if (pad.shape === "circle") {
       footprint = circle({
         radius: p.radius ?? p.outer_diameter / 2,
@@ -96,7 +116,11 @@ export function getPadOverlappingVias(circuit: CircuitJson): PcbVia[] {
       const rotation = p.rect_ccw_rotation ?? p.ccw_rotation ?? 0
       if (rotation) footprint = rotateZ((rotation * Math.PI) / 180, footprint)
     }
-    if (local) footprint = translate([p.x, p.y, 0], footprint)
+    if (local) {
+      const offsetX = p.rect_pad_x_offset ?? 0
+      const offsetY = p.rect_pad_y_offset ?? 0
+      footprint = translate([p.x + offsetX, p.y + offsetY, 0], footprint)
+    }
     return [
       {
         footprint,
@@ -150,7 +174,11 @@ export function splitViaWalls(
   center: { x: number; y: number },
   vias: PcbVia[],
 ) {
-  if (!vias.length) return { board: mesh, copper: { ...mesh, triangles: [] } }
+  if (!vias.length)
+    return {
+      board: mesh,
+      copper: { ...mesh, triangles: [], boundingBox: boundsOfTriangles([]) },
+    }
   const copper: STLMesh = { ...mesh, triangles: [] }
   const board: STLMesh = { ...mesh, triangles: [] }
   for (const triangle of mesh.triangles) {
@@ -168,5 +196,7 @@ export function splitViaWalls(
       })
     ;(isViaWall ? copper : board).triangles.push(triangle)
   }
+  board.boundingBox = boundsOfTriangles(board.triangles)
+  copper.boundingBox = boundsOfTriangles(copper.triangles)
   return { board, copper }
 }

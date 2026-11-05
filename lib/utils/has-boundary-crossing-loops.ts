@@ -28,9 +28,73 @@ export const hasBoundaryCrossingLoops = (
   outerLoop: Vec2Point[],
   innerLoops: Vec2Point[][],
 ): boolean => {
-  return innerLoops.some((loop) =>
-    loop.some((point) => !isPointStrictlyInsideLoop(point, outerLoop)),
+  return innerLoops.some(
+    (loop) =>
+      loop.some((point) => !isPointStrictlyInsideLoop(point, outerLoop)) ||
+      outerLoop.some((point) => isPointInsideOrOnLoop(point, loop)) ||
+      doLoopSegmentsIntersect(loop, outerLoop),
   )
+}
+
+const isPointInsideOrOnLoop = (
+  point: Vec2Point,
+  loop: Vec2Point[],
+): boolean => {
+  for (let i = 0, j = loop.length - 1; i < loop.length; j = i++) {
+    if (isPointOnSegment(point, loop[i]!, loop[j]!)) {
+      return true
+    }
+  }
+  return isPointStrictlyInsideLoop(point, loop)
+}
+
+const crossProduct = (o: Vec2Point, a: Vec2Point, b: Vec2Point): number =>
+  (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x)
+
+const doSegmentsIntersect = (
+  a1: Vec2Point,
+  a2: Vec2Point,
+  b1: Vec2Point,
+  b2: Vec2Point,
+): boolean => {
+  if (
+    isPointOnSegment(a1, b1, b2) ||
+    isPointOnSegment(a2, b1, b2) ||
+    isPointOnSegment(b1, a1, a2) ||
+    isPointOnSegment(b2, a1, a2)
+  ) {
+    return true
+  }
+
+  const d1 = crossProduct(b1, b2, a1)
+  const d2 = crossProduct(b1, b2, a2)
+  const d3 = crossProduct(a1, a2, b1)
+  const d4 = crossProduct(a1, a2, b2)
+
+  return (
+    ((d1 > LOOP_CONTAINMENT_EPSILON && d2 < -LOOP_CONTAINMENT_EPSILON) ||
+      (d1 < -LOOP_CONTAINMENT_EPSILON && d2 > LOOP_CONTAINMENT_EPSILON)) &&
+    ((d3 > LOOP_CONTAINMENT_EPSILON && d4 < -LOOP_CONTAINMENT_EPSILON) ||
+      (d3 < -LOOP_CONTAINMENT_EPSILON && d4 > LOOP_CONTAINMENT_EPSILON))
+  )
+}
+
+const doLoopSegmentsIntersect = (
+  loopA: Vec2Point[],
+  loopB: Vec2Point[],
+): boolean => {
+  for (let i = 0; i < loopA.length; i++) {
+    const a1 = loopA[i]!
+    const a2 = loopA[(i + 1) % loopA.length]!
+    for (let j = 0; j < loopB.length; j++) {
+      const b1 = loopB[j]!
+      const b2 = loopB[(j + 1) % loopB.length]!
+      if (doSegmentsIntersect(a1, a2, b1, b2)) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
 const isPointStrictlyInsideLoop = (

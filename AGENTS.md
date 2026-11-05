@@ -8,6 +8,7 @@ alwaysApply: false
 Default to using Bun instead of Node.js.
 
 Do not change the README for new features unless explicitly requested or the feature changes an API.
+
 - Use `bun <file>` instead of `node <file>` or `ts-node <file>`
 - Use `bun test` instead of `jest` or `vitest`
 - Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
@@ -38,6 +39,7 @@ conversion is the single largest source of defects in tscircuit's 3D output.
 | glTF / GLB scene (output) | **+Y** | mm    |
 
 Consequences that are easy to get wrong:
+
 - A rotation cannot be copied across the boundary. `circuit-to-3d.ts` remaps a
   component's rotation (`y ← cad.rotation.z`, `z ← cad.rotation.y`) precisely
   because of the swap. Any new rotation path needs the same remap, not a
