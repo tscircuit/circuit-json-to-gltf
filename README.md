@@ -162,6 +162,7 @@ silkscreen colors. Explicit conversion options take precedence.
 ## Architecture
 
 The converter uses a modular architecture:
+
 1. **Circuit to 3D Converter**: Parses circuit JSON and creates a 3D scene representation
 2. **Board Renderer**: Renders PCB layers as textures using circuit-to-svg and resvg
 3. **Model Loaders**: Load STL and OBJ files for component 3D models

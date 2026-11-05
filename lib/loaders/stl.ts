@@ -39,20 +39,28 @@ export async function loadSTL({
   return mesh
 }
 
-function parseSTL(
+export function parseSTL(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
 ): STLMesh {
   const view = new DataView(buffer)
 
-  // Check if it's binary STL (first 5 bytes should not be "solid")
+  // Check if it's ASCII STL. Note that many CAD exporters write "solid ..."
+  // in the 80-byte binary STL header, so fall back to binary when no ASCII
+  // facets are found and the buffer matches the binary STL layout.
   const header = new TextDecoder().decode(buffer.slice(0, 5))
 
   if (header.toLowerCase() === "solid") {
-    return parseASCIISTL(buffer, transform)
-  } else {
-    return parseBinarySTL(view, transform)
+    const asciiMesh = parseASCIISTL(buffer, transform)
+    if (
+      asciiMesh.triangles.length > 0 ||
+      buffer.byteLength < 84 ||
+      84 + view.getUint32(80, true) * 50 !== buffer.byteLength
+    ) {
+      return asciiMesh
+    }
   }
+  return parseBinarySTL(view, transform)
 }
 
 function parseASCIISTL(
@@ -137,7 +145,7 @@ function parseBinarySTL(
 
   const triangles: Triangle[] = []
 
-  for (let i = 0; i < numTriangles; i++) {
+  for (let i = 0; i < numTriangles && offset + 50 <= view.byteLength; i++) {
     // Read normal vector (3 floats, 12 bytes)
     const normal: Point3 = {
       x: view.getFloat32(offset, true),
