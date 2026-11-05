@@ -312,6 +312,28 @@ export async function convertCircuitJsonTo3D(
           )
         }
       }
+      const boardPalette = getBoardColorPalette(boardCircuitJson, {
+        solderMaskColor:
+          pcbColorOverride !== undefined
+            ? colorToCssString(pcbColorOverride)
+            : undefined,
+        silkscreenColor,
+      })
+      const boardResolvedPcbColor =
+        pcbColorOverride ?? boardPalette.backgroundColor ?? "rgba(0,140,0,0.8)"
+      const boardResolvedSideColor =
+        boardSideColor ?? boardPalette.boardSideColor
+      const currentBoardTextureColors = {
+        backgroundColor: boardPalette.backgroundColor,
+        ...(typeof options.copperColor === "string"
+          ? { copperColor: options.copperColor }
+          : {}),
+        silkscreenColor: silkscreenColor ?? boardPalette.silkscreenColor,
+        solderMaskWithCopperColor:
+          solderMaskWithCopperColor ?? boardPalette.solderMaskWithCopperColor,
+        drillColor,
+      }
+
       const boardBox: Box3D = {
         center: {
           x: pcbBoard.center.x,
@@ -324,8 +346,8 @@ export async function convertCircuitJsonTo3D(
           z: Number.isFinite(meshHeight) ? meshHeight : pcbBoard.height,
         },
         mesh: foldedBoardMesh,
-        color: resolvedPcbColor,
-        sideColor: resolvedBoardSideColor,
+        color: boardResolvedPcbColor,
+        sideColor: boardResolvedSideColor,
       }
 
       // Render board textures if requested and resolution > 0
@@ -334,7 +356,7 @@ export async function convertCircuitJsonTo3D(
           const textures = await renderBoardTextures(boardCircuitJson, {
             resolution: textureResolution,
             showPcbNotes,
-            ...boardTextureColors,
+            ...currentBoardTextureColors,
           })
           boardBox.texture = {
             top: textures.top,
@@ -343,11 +365,11 @@ export async function convertCircuitJsonTo3D(
         } catch (error) {
           console.warn("Failed to render board textures:", error)
           // If texture rendering fails, use the fallback color
-          boardBox.color = resolvedPcbColor
+          boardBox.color = boardResolvedPcbColor
         }
       } else {
         // No textures requested, use solid color
-        boardBox.color = resolvedPcbColor
+        boardBox.color = boardResolvedPcbColor
       }
 
       if (fold && boardBox.mesh)
@@ -511,13 +533,22 @@ export async function convertCircuitJsonTo3D(
 
       // Check if component is on bottom layer
       const isBottomLayer = component.layer === "bottom"
+      const owningBoard =
+        pcbBoards.find(
+          (b: any) =>
+            (component.pcb_board_id &&
+              b.pcb_board_id === component.pcb_board_id) ||
+            (component.subcircuit_id &&
+              b.subcircuit_id === component.subcircuit_id),
+        ) ?? pcbBoard
+      const componentBoardThickness = owningBoard?.thickness ?? boardThickness
 
       const box: Box3D = {
         center: {
           x: component.center.x,
           y: isBottomLayer
-            ? -(effectiveBoardThickness + compHeight / 2)
-            : effectiveBoardThickness / 2 + compHeight / 2,
+            ? -(componentBoardThickness / 2 + compHeight / 2)
+            : componentBoardThickness / 2 + compHeight / 2,
           z: component.center.y,
         },
         size: {
