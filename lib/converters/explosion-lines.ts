@@ -18,15 +18,16 @@ export function createExplosionLines(
     // Keep a valid origin, but clamp an origin outside the actual mesh bounds
     // onto the mesh's nearest bounding face so the guide reaches the part.
     // Match GLTFBuilder.addBox's rotation before its final X reflection.
-    const bounds = target?.mesh
-      ? boundsOfPositions(
-          transformMesh(
-            createMeshFromSTL(target.mesh),
-            { x: 0, y: 0, z: 0 },
-            target.rotation,
-          ).positions,
-        )
-      : undefined
+    const bounds =
+      target?.mesh && target.mesh.triangles.length > 0
+        ? boundsOfPositions(
+            transformMesh(
+              createMeshFromSTL(target.mesh),
+              { x: 0, y: 0, z: 0 },
+              target.rotation,
+            ).positions,
+          )
+        : undefined
     const clampOrigin = (min: number, max: number) =>
       Math.max(min, Math.min(0, max))
     // Inverse of loadJscadPlan's CIRCUIT_Z_UP_TO_SCENE_Y_UP mapping.

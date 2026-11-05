@@ -16,6 +16,20 @@ import { getBoundingBoxSize } from "../utils/mesh-scale"
  * Scene3D -> glTF mapping and triangle winding, as for every other mesh.
  */
 export function loadCable(cable: CadCable): Box3D[] {
+  const path = cable.path.filter(
+    (p, i, arr) =>
+      Number.isFinite(p.x) &&
+      Number.isFinite(p.y) &&
+      Number.isFinite(p.z) &&
+      (i === 0 ||
+        Math.hypot(
+          p.x - arr[i - 1]!.x,
+          p.y - arr[i - 1]!.y,
+          p.z - arr[i - 1]!.z,
+        ) > 1e-6),
+  )
+  if (path.length < 2) return []
+
   // Consume producer-resolved absolute pin 1 points. Project away the axial
   // mating-face -> wire-exit offset; this is a frame conversion, not footprint
   // inference. Both the points and the path are still circuit-world Z-up.
@@ -23,9 +37,16 @@ export function loadCable(cable: CadCable): Box3D[] {
     position: Point3 | undefined,
     end: "from" | "to",
   ): [number, number, number] | undefined => {
-    if (!position || cable.path.length < 2) return undefined
-    const tip = end === "from" ? cable.path[0]! : cable.path.at(-1)!
-    const next = end === "from" ? cable.path[1]! : cable.path.at(-2)!
+    if (
+      !position ||
+      !Number.isFinite(position.x) ||
+      !Number.isFinite(position.y) ||
+      !Number.isFinite(position.z) ||
+      path.length < 2
+    )
+      return undefined
+    const tip = end === "from" ? path[0]! : path.at(-1)!
+    const next = end === "from" ? path[1]! : path.at(-2)!
     const axis = vec3.normalize(vec3.create(), [
       next.x - tip.x,
       next.y - tip.y,
@@ -43,7 +64,7 @@ export function loadCable(cable: CadCable): Box3D[] {
   }
   const meshes = createCableMeshes({
     definition: parseCableString(cable.cableprinter_string),
-    path: cable.path.map(({ x, y, z }) => [x, y, z]),
+    path: path.map(({ x, y, z }) => [x, y, z]),
     // Orient in circuit Z-up before the paired mesh transform to scene Y-up.
     startPin1Side: pin1Side(cable.from_connector_pin1_position, "from"),
     endPin1Side: pin1Side(cable.to_connector_pin1_position, "to"),

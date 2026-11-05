@@ -9,6 +9,26 @@ interface LoopInput {
   isHole: boolean
 }
 
+const sanitizeLoop = (loop: Vec2Point[]): Vec2Point[] => {
+  const cleaned: Vec2Point[] = []
+  for (const p of loop) {
+    if (!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)) continue
+    const prev = cleaned[cleaned.length - 1]
+    if (prev && Math.hypot(p.x - prev.x, p.y - prev.y) <= 1e-9) continue
+    cleaned.push(p)
+  }
+  while (
+    cleaned.length > 1 &&
+    Math.hypot(
+      cleaned[cleaned.length - 1]!.x - cleaned[0]!.x,
+      cleaned[cleaned.length - 1]!.y - cleaned[0]!.y,
+    ) <= 1e-9
+  ) {
+    cleaned.pop()
+  }
+  return cleaned
+}
+
 export const buildBoardMeshFromLoops = ({
   outerLoop,
   holeLoops,
@@ -18,20 +38,33 @@ export const buildBoardMeshFromLoops = ({
   holeLoops: Vec2Point[][]
   thickness: number
 }): STLMesh => {
+  const cleanedOuter = sanitizeLoop(outerLoop)
+  if (
+    !Number.isFinite(thickness) ||
+    thickness <= 0 ||
+    cleanedOuter.length < 3
+  ) {
+    return {
+      triangles: [],
+      boundingBox: boundsOfTriangles([]),
+    }
+  }
+
   const flattenedVertices: number[] = []
   const holeIndices: number[] = []
   const allLoops: LoopInput[] = []
 
-  pushLoop(flattenedVertices, outerLoop)
-  allLoops.push({ points: outerLoop, isHole: false })
+  pushLoop(flattenedVertices, cleanedOuter)
+  allLoops.push({ points: cleanedOuter, isHole: false })
 
-  let vertexOffset = outerLoop.length
+  let vertexOffset = cleanedOuter.length
   for (const holeLoop of holeLoops) {
-    if (holeLoop.length < 3) continue
+    const cleanedHole = sanitizeLoop(holeLoop)
+    if (cleanedHole.length < 3) continue
     holeIndices.push(vertexOffset)
-    pushLoop(flattenedVertices, holeLoop)
-    allLoops.push({ points: holeLoop, isHole: true })
-    vertexOffset += holeLoop.length
+    pushLoop(flattenedVertices, cleanedHole)
+    allLoops.push({ points: cleanedHole, isHole: true })
+    vertexOffset += cleanedHole.length
   }
 
   const indices = earcut(flattenedVertices, holeIndices, 2)
@@ -52,6 +85,7 @@ export const buildBoardMeshFromLoops = ({
     const cy = flattenedVertices[ic * 2 + 1]!
 
     const crossZ = (bx - ax) * (cy - ay) - (by - ay) * (cx - ax)
+    if (Math.abs(crossZ) <= 1e-12) continue
     if (crossZ < 0) {
       ;[ib, ic] = [ic, ib]
     }
