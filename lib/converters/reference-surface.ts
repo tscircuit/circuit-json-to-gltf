@@ -27,17 +27,30 @@ export function createReferenceSurfaceBox(
     surface.center.y,
     surface.center.z,
   )
-  const normal = vec3.fromValues(
-    surface.normal.x,
-    surface.normal.y,
-    surface.normal.z,
+  const normal = vec3.normalize(
+    vec3.create(),
+    vec3.fromValues(surface.normal.x, surface.normal.y, surface.normal.z),
   )
-  const xAxis = vec3.fromValues(
+  const rawXAxis = vec3.fromValues(
     surface.x_axis.x,
     surface.x_axis.y,
     surface.x_axis.z,
   )
-  const yAxis = vec3.cross(vec3.create(), normal, xAxis)
+  const projectedXAxis = vec3.scaleAndAdd(
+    vec3.create(),
+    rawXAxis,
+    normal,
+    -vec3.dot(rawXAxis, normal),
+  )
+  const xAxis = vec3.normalize(
+    vec3.create(),
+    vec3.length(projectedXAxis) > 1e-6 ? projectedXAxis : rawXAxis,
+  )
+  const yAxis = vec3.normalize(
+    vec3.create(),
+    vec3.cross(vec3.create(), normal, xAxis),
+  )
+  const unitNormal = { x: normal[0], y: normal[1], z: normal[2] }
   const point = (x: number, y: number, z = 0) => {
     const result = vec3.clone(center)
     vec3.scaleAndAdd(result, result, xAxis, x)
@@ -54,12 +67,12 @@ export function createReferenceSurfaceBox(
   const triangles: Triangle[] = [
     {
       vertices: [corners[0]!, corners[1]!, corners[2]!],
-      normal: surface.normal,
+      normal: unitNormal,
       material: { color: [0.1, 0.75, 0.95], opacity: 0.2, transparent: true },
     },
     {
       vertices: [corners[0]!, corners[2]!, corners[3]!],
-      normal: surface.normal,
+      normal: unitNormal,
       material: { color: [0.1, 0.75, 0.95], opacity: 0.2, transparent: true },
     },
   ]
@@ -72,6 +85,8 @@ export function createReferenceSurfaceBox(
   ) => {
     const start = vec3.fromValues(a.x, a.y, a.z)
     const end = vec3.fromValues(b.x, b.y, b.z)
+    const segmentLength = vec3.distance(start, end)
+    if (segmentLength <= 1e-6 || thickness <= 0) return
     const midpoint = vec3.lerp(vec3.create(), start, end, 0.5)
     const direction = vec3.normalize(
       vec3.create(),
@@ -88,7 +103,7 @@ export function createReferenceSurfaceBox(
         matrix: Array.from(matrix) as Matrix4,
         shape: {
           type: "cuboid",
-          size: [thickness, thickness, vec3.distance(start, end)],
+          size: [thickness, thickness, segmentLength],
         },
       },
     })
