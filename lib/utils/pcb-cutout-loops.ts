@@ -1,6 +1,7 @@
 import type { Point } from "circuit-json"
 import {
   createCircleLoop,
+  createRoundedRectLoop,
   isValidLoop,
   normalizeLoop,
   rotateLoop,
@@ -35,12 +36,25 @@ export const createCutoutLoops = ({
         const height = isFiniteNumber(cutout.height) ? cutout.height : undefined
         if (!width || !height) continue
 
-        let loop: Vec2Point[] = [
-          { x: -width / 2, y: -height / 2 },
-          { x: width / 2, y: -height / 2 },
-          { x: width / 2, y: height / 2 },
-          { x: -width / 2, y: height / 2 },
-        ]
+        const cornerRadius =
+          isFiniteNumber(cutout.corner_radius) && cutout.corner_radius > 0
+            ? cutout.corner_radius
+            : 0
+
+        let loop: Vec2Point[] =
+          cornerRadius > 0
+            ? createRoundedRectLoop({
+                width,
+                height,
+                segments,
+                cornerRadius,
+              })
+            : [
+                { x: -width / 2, y: -height / 2 },
+                { x: width / 2, y: -height / 2 },
+                { x: width / 2, y: height / 2 },
+                { x: -width / 2, y: height / 2 },
+              ]
 
         const rotationRad = getCutoutRotationRadians(cutout.rotation)
         if (rotationRad !== 0) {

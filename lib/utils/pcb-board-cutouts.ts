@@ -2,7 +2,12 @@ import type { Geom3 } from "@jscad/modeling/src/geometries/types"
 import type { Vec2 } from "@jscad/modeling/src/maths/types"
 import { extrudeLinear } from "@jscad/modeling/src/operations/extrusions"
 import { rotateZ, translate } from "@jscad/modeling/src/operations/transforms"
-import { cylinder, polygon, rectangle } from "@jscad/modeling/src/primitives"
+import {
+  cylinder,
+  polygon,
+  rectangle,
+  roundedRectangle,
+} from "@jscad/modeling/src/primitives"
 import type { PcbBoard, PcbCutout, Point } from "circuit-json"
 
 // Default drill quality segment counts ("fast")
@@ -125,7 +130,24 @@ export const createCutoutGeoms = (
         const relX = center.x - boardCenter.x
         const relY = -(center.y - boardCenter.y)
 
-        const rect2d = rectangle({ size: [width, height] })
+        const cornerRadius =
+          typeof cutout.corner_radius === "number" &&
+          Number.isFinite(cutout.corner_radius) &&
+          cutout.corner_radius > 0
+            ? Math.min(
+                cutout.corner_radius,
+                Math.max(0, Math.min(width, height) / 2 - 1e-4),
+              )
+            : 0
+
+        const rect2d =
+          cornerRadius > 0
+            ? roundedRectangle({
+                size: [width, height],
+                roundRadius: cornerRadius,
+                segments,
+              })
+            : rectangle({ size: [width, height] })
         let geom = extrudeLinear({ height: thickness + 1 }, rect2d)
         geom = translate([0, 0, -(thickness + 1) / 2], geom)
 
