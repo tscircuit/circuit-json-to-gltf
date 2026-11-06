@@ -1,12 +1,13 @@
-import { test, expect } from "bun:test"
+import { expect, test } from "bun:test"
 import type {
   CircuitJson,
   PcbBoard,
+  PcbCutout,
   PcbHole,
   PcbPlatedHole,
 } from "circuit-json"
-import { createBoardMesh } from "../../lib/utils/pcb-board-geometry"
 import { convertCircuitJsonTo3D } from "../../lib/converters/circuit-to-3d"
+import { createBoardMesh } from "../../lib/utils/pcb-board-geometry"
 
 const triangleArea = (
   a: { x: number; y: number; z: number },
@@ -274,4 +275,161 @@ test("convertCircuitJsonTo3D includes board mesh for outline boards", async () =
     z: board.center.y,
   })
   expect(boardBox.size.y).toBeCloseTo(board.thickness ?? 1.2, 6)
+})
+
+test("createBoardMesh supports custom outline, holes, and cutouts (interior and boundary-crossing)", () => {
+  // L-shaped outline: 20x20 square minus 10x10 top-right corner => area = 300
+  const board: PcbBoard = {
+    type: "pcb_board",
+    pcb_board_id: "board_custom_outline_cutouts",
+    center: { x: 10, y: 10 },
+    width: 20,
+    height: 20,
+    thickness: 1.6,
+    num_layers: 2,
+    material: "fr4",
+    outline: [
+      { x: 0, y: 0 },
+      { x: 20, y: 0 },
+      { x: 20, y: 10 },
+      { x: 10, y: 10 },
+      { x: 10, y: 20 },
+      { x: 0, y: 20 },
+    ],
+  }
+
+  const squareHole: PcbHole = {
+    type: "pcb_hole",
+    pcb_hole_id: "square_hole_1",
+    x: 4,
+    y: 4,
+    hole_shape: "square",
+    hole_diameter: 2,
+  }
+
+  const rotatedPillPlatedHole: PcbPlatedHole = {
+    type: "pcb_plated_hole",
+    pcb_plated_hole_id: "rotated_pill_ph_1",
+    shape: "rotated_pill_hole_with_rect_pad",
+    hole_shape: "rotated_pill",
+    pad_shape: "rect",
+    x: 15,
+    y: 5,
+    hole_offset_x: 0,
+    hole_offset_y: 0,
+    hole_width: 2,
+    hole_height: 1,
+    hole_ccw_rotation: 30,
+    rect_pad_width: 3,
+    rect_pad_height: 2,
+    rect_ccw_rotation: 30,
+    layers: ["top", "bottom"],
+  }
+
+  const polygonPadPlatedHole: PcbPlatedHole = {
+    type: "pcb_plated_hole",
+    pcb_plated_hole_id: "polygon_pad_ph_1",
+    shape: "hole_with_polygon_pad",
+    hole_shape: "oval",
+    x: 5,
+    y: 15,
+    hole_offset_x: 0,
+    hole_offset_y: 0,
+    hole_width: 2,
+    hole_height: 1,
+    pad_outline: [
+      { x: -1.5, y: -1 },
+      { x: 1.5, y: -1 },
+      { x: 1.5, y: 1 },
+      { x: -1.5, y: 1 },
+    ],
+    layers: ["top", "bottom"],
+  }
+
+  const cutouts: PcbCutout[] = [
+    {
+      type: "pcb_cutout",
+      pcb_cutout_id: "cutout_rect_1",
+      shape: "rect",
+      center: { x: 8, y: 4 },
+      width: 3,
+      height: 2,
+    },
+    {
+      type: "pcb_cutout",
+      pcb_cutout_id: "cutout_circle_1",
+      shape: "circle",
+      center: { x: 4, y: 9 },
+      radius: 1,
+    },
+    {
+      type: "pcb_cutout",
+      pcb_cutout_id: "cutout_poly_1",
+      shape: "polygon",
+      points: [
+        { x: 12, y: 1 },
+        { x: 14, y: 1 },
+        { x: 13, y: 3 },
+      ],
+    },
+  ]
+
+  const mesh = createBoardMesh(board, {
+    thickness: board.thickness ?? 1.6,
+    holes: [squareHole],
+    platedHoles: [rotatedPillPlatedHole, polygonPadPlatedHole],
+    cutouts,
+  })
+
+  const topArea = mesh.triangles
+    .filter((triangle) => triangle.normal.y > 0.9)
+    .reduce((sum, triangle) => {
+      const [a, b, c] = triangle.vertices
+      return sum + triangleArea(a, b, c)
+    }, 0)
+
+  const outlineArea = 300
+  const squareHoleArea = 2 * 2
+  const rotatedPillArea = (2 - 1) * 1 + Math.PI * 0.5 ** 2
+  const ovalPlatedArea = Math.PI * 1 * 0.5
+  const rectCutoutArea = 3 * 2
+  const circleCutoutArea = Math.PI * 1 ** 2
+  const triangleCutoutArea = 0.5 * 2 * 2
+  const expectedArea =
+    outlineArea -
+    squareHoleArea -
+    rotatedPillArea -
+    ovalPlatedArea -
+    rectCutoutArea -
+    circleCutoutArea -
+    triangleCutoutArea
+
+  expect(topArea).toBeCloseTo(expectedArea, 0)
+
+  // Also verify @jscad/modeling boundary-crossing path with a cutout crossing x = 0 edge
+  const edgeNotchCutout: PcbCutout = {
+    type: "pcb_cutout",
+    pcb_cutout_id: "cutout_edge_notch",
+    shape: "rect",
+    center: { x: 0, y: 10 },
+    width: 2,
+    height: 4,
+  }
+
+  const boundaryMesh = createBoardMesh(board, {
+    thickness: board.thickness ?? 1.6,
+    holes: [squareHole],
+    platedHoles: [rotatedPillPlatedHole, polygonPadPlatedHole],
+    cutouts: [...cutouts, edgeNotchCutout],
+  })
+
+  const boundaryTopArea = boundaryMesh.triangles
+    .filter((triangle) => triangle.normal.y > 0.9)
+    .reduce((sum, triangle) => {
+      const [a, b, c] = triangle.vertices
+      return sum + triangleArea(a, b, c)
+    }, 0)
+
+  // Half of the 2x4 notch lies inside the board (area = 4)
+  expect(boundaryTopArea).toBeCloseTo(expectedArea - 4, 0)
 })

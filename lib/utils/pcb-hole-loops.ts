@@ -1,4 +1,4 @@
-import type { PcbPlatedHole, PcbHole } from "circuit-json"
+import type { PcbHole, PcbPlatedHole } from "circuit-json"
 import {
   createCircleLoop,
   createEllipseLoop,
@@ -38,9 +38,14 @@ export const createHoleLoops = ({
     const relY = -(hole.y - boardCenter.y)
     const holeShape = holeRecord.hole_shape as string | undefined
 
-    if (holeShape === "rect") {
-      const holeWidth = getNumberProperty(holeRecord, "hole_width")
-      const holeHeight = getNumberProperty(holeRecord, "hole_height")
+    if (holeShape === "rect" || holeShape === "square") {
+      const fallbackSize =
+        getNumberProperty(holeRecord, "hole_diameter") ??
+        getNumberProperty(holeRecord, "diameter")
+      const holeWidth =
+        getNumberProperty(holeRecord, "hole_width") ?? fallbackSize
+      const holeHeight =
+        getNumberProperty(holeRecord, "hole_height") ?? fallbackSize
       if (!holeWidth || !holeHeight) continue
 
       const loop = createRectLoop({ width: holeWidth, height: holeHeight })
@@ -122,7 +127,15 @@ export const createHoleLoops = ({
     const relX = plated.x - boardCenter.x + holeOffsetX
     const relY = -(plated.y - boardCenter.y + holeOffsetY)
 
-    if (plated.shape === "oval") {
+    const platedHoleShape =
+      typeof platedRecord.hole_shape === "string"
+        ? platedRecord.hole_shape
+        : undefined
+
+    if (
+      plated.shape === "oval" ||
+      (plated.shape === "hole_with_polygon_pad" && platedHoleShape === "oval")
+    ) {
       const holeWidth =
         getNumberProperty(platedRecord, "hole_width") ??
         getNumberProperty(platedRecord, "outer_width") ??
@@ -137,7 +150,10 @@ export const createHoleLoops = ({
         0
       if (!holeWidth || !holeHeight) continue
 
-      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotation =
+        getNumberProperty(platedRecord, "hole_ccw_rotation") ??
+        getNumberProperty(platedRecord, "ccw_rotation") ??
+        0
       const rotationRad = -(rotation * Math.PI) / 180
       let loop = createEllipseLoop({
         center: { x: 0, y: 0 },
@@ -152,18 +168,29 @@ export const createHoleLoops = ({
       continue
     }
 
-    if (plated.shape === "pill" || plated.shape === "pill_hole_with_rect_pad") {
+    if (
+      plated.shape === "pill" ||
+      plated.shape === "pill_hole_with_rect_pad" ||
+      plated.shape === "rotated_pill_hole_with_rect_pad" ||
+      (plated.shape === "hole_with_polygon_pad" &&
+        (platedHoleShape === "pill" || platedHoleShape === "rotated_pill"))
+    ) {
       const holeWidth =
         getNumberProperty(platedRecord, "hole_width") ??
+        getNumberProperty(platedRecord, "outer_width") ??
         getNumberProperty(platedRecord, "outer_diameter") ??
         0
       const holeHeight =
         getNumberProperty(platedRecord, "hole_height") ??
+        getNumberProperty(platedRecord, "outer_height") ??
         getNumberProperty(platedRecord, "hole_diameter") ??
         0
       if (!holeWidth || !holeHeight) continue
 
-      const rotation = getNumberProperty(platedRecord, "ccw_rotation") ?? 0
+      const rotation =
+        getNumberProperty(platedRecord, "hole_ccw_rotation") ??
+        getNumberProperty(platedRecord, "ccw_rotation") ??
+        0
       const rotationRad = -(rotation * Math.PI) / 180
       let loop = createRoundedRectLoop({
         width: holeWidth,

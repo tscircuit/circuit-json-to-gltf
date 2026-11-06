@@ -135,15 +135,18 @@ export const createRoundedRectLoop = ({
   width,
   height,
   segments,
+  cornerRadius,
 }: {
   width: number
   height: number
   segments: number
+  cornerRadius?: number
 }): Vec2Point[] => {
   const minDimension = Math.min(width, height)
   const maxAllowedRadius = Math.max(0, minDimension / 2 - RADIUS_EPSILON)
+  const requestedRadius = cornerRadius ?? height / 2
   const radius =
-    maxAllowedRadius <= 0 ? 0 : Math.min(height / 2, maxAllowedRadius)
+    maxAllowedRadius <= 0 ? 0 : Math.min(requestedRadius, maxAllowedRadius)
 
   if (radius <= POINT_EPSILON) {
     return [
