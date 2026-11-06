@@ -35,7 +35,7 @@ export interface NodeModulesPackageInfo {
 export function extractPackageInfoFromNodeModulesPath(
   requestPath: string,
 ): NodeModulesPackageInfo | null {
-  let path = requestPath.replace(/^\/?(\.\/)?/, "")
+  let path = normalizeWindowsPath(requestPath).replace(/^\/?(\.\/)?/, "")
 
   if (!path.startsWith("node_modules/")) {
     return null
@@ -129,14 +129,15 @@ export async function resolveModelUrl(
 
   if (projectBaseUrl) {
     const baseUrl = ensureTrailingSlash(projectBaseUrl)
-    const relative = url.replace(/^\.\//, "")
+    const relative = normalizeWindowsPath(url).replace(/^\.\//, "")
     return new URL(relative, baseUrl).toString()
   }
 
   if (isNodeRuntime) {
-    const cwd = normalizeWindowsPath(process.cwd())
-    const cwdAsBase = ensureTrailingSlash(cwd)
-    return new URL(url, `file://${cwdAsBase}`).toString()
+    const cwdFileUrl = ensureTrailingSlash(
+      toFileUrlFromAbsolutePath(process.cwd()),
+    )
+    return new URL(normalizeWindowsPath(url), cwdFileUrl).toString()
   }
 
   return url

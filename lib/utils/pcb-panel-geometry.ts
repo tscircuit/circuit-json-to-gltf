@@ -26,6 +26,29 @@ export const createPanelMesh = (
   options: BoardGeometryOptions,
 ): STLMesh => {
   const { thickness, holes = [], platedHoles = [], cutouts = [] } = options
+  const panelOutline = (panel as { outline?: unknown }).outline
+  const hasValidOutline =
+    Array.isArray(panelOutline) && panelOutline.length >= 3
+  const hasValidDimensions =
+    typeof panel.width === "number" &&
+    Number.isFinite(panel.width) &&
+    panel.width > 0 &&
+    typeof panel.height === "number" &&
+    Number.isFinite(panel.height) &&
+    panel.height > 0
+  if (
+    (!hasValidOutline && !hasValidDimensions) ||
+    !Number.isFinite(thickness) ||
+    thickness <= 0
+  ) {
+    return {
+      triangles: [],
+      boundingBox: {
+        min: { x: 0, y: 0, z: 0 },
+        max: { x: 0, y: 0, z: 0 },
+      },
+    }
+  }
   const drillQuality = options.drillQuality ?? "fast"
   const center = panel.center ?? { x: 0, y: 0 }
 
