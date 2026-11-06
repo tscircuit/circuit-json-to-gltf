@@ -8,13 +8,20 @@ export function withCircuitJsonErrors(
   scene: Scene3D,
   circuitJson: CircuitJsonWithPcbFlex,
 ): Scene3D {
-  const errorMessages = circuitJson.flatMap((element) =>
-    "error_type" in element &&
-    typeof element.error_type === "string" &&
-    "message" in element &&
-    typeof element.message === "string"
-      ? [element.message]
-      : [],
+  const errorMessages = Array.from(
+    new Set(
+      circuitJson.flatMap((element) =>
+        element &&
+        typeof element === "object" &&
+        "error_type" in element &&
+        typeof element.error_type === "string" &&
+        "message" in element &&
+        typeof element.message === "string" &&
+        element.message.trim().length > 0
+          ? [element.message]
+          : [],
+      ),
+    ),
   )
   return errorMessages.length ? { ...scene, errorMessages } : scene
 }
