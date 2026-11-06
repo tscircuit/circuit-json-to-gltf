@@ -29,7 +29,6 @@
     "@jscad/modeling": "^2.12.6",
     "@tscircuit/alphabet": "^0.0.25",
     "@tscircuit/cableprinter": "^0.0.6",
-    "@tscircuit/footprinter": "^0.0.431",
     "earcut": "^3.0.2",
     "gl-matrix": "^3.4.4",
     "jscad-electronics": "^0.0.243",
@@ -47,6 +46,7 @@
     "@tscircuit/circuit-json-util": "^0.0.114",
     "@tscircuit/core": "^0.0.1955",
     "@tscircuit/flex-utils": "https://jscdn.tscircuit.com/@tscircuit/flex-utils/0.0.8.tgz",
+    "@tscircuit/footprinter": "^0.0.450",
     "@tscircuit/image-utils": "^0.0.10",
     "@tscircuit/props": "^0.0.664",
     "@types/bun": "latest",
@@ -74,6 +74,7 @@
     "@resvg/resvg-js": "2",
     "circuit-to-svg": ">=0.0.445",
     "@tscircuit/circuit-json-util": "*",
+    "@tscircuit/footprinter": "*",
     "circuit-json": ">=0.0.539"
   },
   "peerDependenciesMeta": {
