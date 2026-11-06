@@ -44,6 +44,8 @@ export interface ConversionOptions {
   /** Override the render fold state. Undefined follows CAD is_on_folded_board in Circuit JSON. */
   foldPcbs?: boolean
   format?: "gltf" | "glb"
+  /** Use "m" for standard glTF files. Defaults to legacy scene units, "mm". */
+  outputUnits?: "mm" | "m"
   boardTextureResolution?: number
   showPcbNotes?: boolean
   /** Include full Circuit JSON error messages for screen overlay renderers. Defaults to false. */
@@ -214,6 +216,8 @@ export interface Light3D {
 
 export interface GLTFExportOptions {
   binary?: boolean
+  /** Use "m" for standard glTF files. Defaults to legacy scene units, "mm". */
+  outputUnits?: "mm" | "m"
   trs?: boolean
   onlyVisible?: boolean
   truncateDrawRange?: boolean

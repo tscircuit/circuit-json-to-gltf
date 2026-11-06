@@ -1,6 +1,13 @@
 import type { MaterialOptions } from "jscad-planner"
 import { colors } from "@jscad/modeling"
-import type { Scene3D, Box3D, Color, OBJMesh, Triangle } from "../types"
+import type {
+  Scene3D,
+  Box3D,
+  Color,
+  OBJMesh,
+  Triangle,
+  GLTFExportOptions,
+} from "../types"
 import type {
   GLTF,
   GLTFScene,
@@ -32,6 +39,8 @@ import {
   type MeshData,
   type FaceMeshData,
 } from "./geometry"
+
+const METERS_PER_MILLIMETER = 0.001
 
 export class GLTFBuilder {
   private gltf: GLTF
@@ -70,7 +79,12 @@ export class GLTFBuilder {
     this.materialCache = new Map()
   }
 
-  async buildFromScene3D(scene3D: Scene3D): Promise<void> {
+  async buildFromScene3D(
+    scene3D: Scene3D,
+    outputUnits: GLTFExportOptions["outputUnits"] = "mm",
+  ): Promise<void> {
+    let outputScale = 1
+    if (outputUnits === "m") outputScale = METERS_PER_MILLIMETER
     if (scene3D.errorMessages?.length) {
       this.gltf.scenes![0]!.extras = {
         tscircuit: {
@@ -89,7 +103,11 @@ export class GLTFBuilder {
             targetRef: line.targetRef,
             // Match convertMeshToGLTFOrientation's final X reflection.
             // These are world points, so node transforms must not apply again.
-            points: line.points.map((point) => [-point.x, point.y, point.z]),
+            points: line.points.map((point) => [
+              -point.x * outputScale,
+              point.y * outputScale,
+              point.z * outputScale,
+            ]),
             dashed: true,
           })),
         },
@@ -111,6 +129,15 @@ export class GLTFBuilder {
     for (let i = 0; i < scene3D.boxes.length; i++) {
       const box = scene3D.boxes[i]!
       await this.addBox(box, defaultMaterialIndex)
+    }
+    if (outputUnits === "m" && this.nodes.length > 0) {
+      const scene = this.gltf.scenes![0]!
+      const rootIndex = this.nodes.length
+      this.nodes.push({
+        scale: [outputScale, outputScale, outputScale],
+        children: scene.nodes,
+      })
+      scene.nodes = [rootIndex]
     }
   }
 
