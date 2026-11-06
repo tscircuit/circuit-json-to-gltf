@@ -4,6 +4,7 @@ import loadManifold, { type ManifoldToplevel } from "manifold-3d"
 import {
   type CadComponentMesh,
   convertCircuitJsonTo3D,
+  convertSceneToGLTF,
   loadCadComponentMesh,
 } from "../../lib"
 import { boundsOfPositions } from "../../lib/utils/bounding-box"
@@ -401,6 +402,120 @@ test("PCB layer fallback uses the same bottom rotation as the renderer", async (
     [13, 17],
     [20, 26],
   ])
+})
+
+test("PCB rotation fallback rotates top and bottom components when cad.rotation is omitted", async () => {
+  const topPcb: PcbComponent = {
+    type: "pcb_component",
+    pcb_component_id: "pcb_top_rot",
+    source_component_id: cad.source_component_id,
+    center: { x: 10, y: 20 },
+    width: 2,
+    height: 4,
+    rotation: 90,
+    layer: "top",
+    obstructs_within_bounds: true,
+  }
+  const topMesh = await loadCadComponentMesh(
+    {
+      ...cad,
+      pcb_component_id: topPcb.pcb_component_id,
+      model_origin_position: { x: 4, y: 4, z: 8 },
+    },
+    { pcbComponent: topPcb },
+  )
+  for (const [axis, span] of spans(topMesh).entries()) {
+    for (const [end, coordinate] of span.entries()) {
+      expect(coordinate).toBeCloseTo(
+        [
+          [7, 11],
+          [18, 20],
+          [26, 32],
+        ][axis]![end]!,
+        10,
+      )
+    }
+  }
+
+  const bottomPcb: PcbComponent = {
+    ...topPcb,
+    pcb_component_id: "pcb_bottom_rot",
+    layer: "bottom",
+  }
+  const bottomMesh = await loadCadComponentMesh(
+    {
+      ...cad,
+      pcb_component_id: bottomPcb.pcb_component_id,
+      model_origin_position: { x: 4, y: 4, z: 8 },
+      model_jscad: undefined,
+      model_glb_url: `data:model/gltf-binary;base64,${Buffer.from(makeAccessorCube("packed")).toString("base64")}`,
+    },
+    {
+      pcbComponent: bottomPcb,
+      coordinateTransform: COORDINATE_TRANSFORMS.IDENTITY,
+    },
+  )
+  const explicitBottomMesh = await loadCadComponentMesh(
+    {
+      ...cad,
+      layer: "bottom",
+      rotation: { x: 0, y: 180, z: -90 },
+      model_origin_position: { x: 4, y: 4, z: 8 },
+      model_jscad: undefined,
+      model_glb_url: `data:model/gltf-binary;base64,${Buffer.from(makeAccessorCube("packed")).toString("base64")}`,
+    },
+    { coordinateTransform: COORDINATE_TRANSFORMS.IDENTITY },
+  )
+  for (const [axis, span] of spans(bottomMesh).entries()) {
+    for (const [end, coordinate] of span.entries()) {
+      expect(coordinate).toBeCloseTo(spans(explicitBottomMesh)[axis]![end]!, 10)
+    }
+  }
+})
+
+test("multi-material OBJ primitive exceeding 65535 vertices retains all pins via 32-bit indices", async () => {
+  const triangleCount = 22_000 // 66,000 vertices > 65,535 uint16 limit
+  const lines = [
+    "newmtl body",
+    "Kd 0.1 0.1 0.1",
+    "newmtl pins",
+    "Kd 0.8 0.8 0.8",
+    "usemtl body",
+    "v 0 0 0",
+    "v 1 0 0",
+    "v 0 1 0",
+    "f 1 2 3",
+    "usemtl pins",
+  ]
+  for (let i = 0; i < triangleCount; i++) {
+    const base = 1 + (i + 1) * 3
+    const x = i * 0.01
+    lines.push(
+      `v ${x} 0 0`,
+      `v ${x + 0.005} 0 0`,
+      `v ${x} 0.005 0`,
+      `f ${base - 2} ${base - 1} ${base}`,
+    )
+  }
+  const scene = await convertCircuitJsonTo3D(
+    [
+      {
+        ...cad,
+        model_jscad: undefined,
+        model_obj_url: `data:text/plain;base64,${Buffer.from(lines.join("\n")).toString("base64")}`,
+      },
+    ],
+    { renderBoardTextures: false },
+  )
+  const gltf = (await convertSceneToGLTF(scene, { binary: false })) as {
+    meshes: Array<{ primitives: Array<{ indices: number }> }>
+    accessors: Array<{ componentType: number; count: number }>
+  }
+  const primitives = gltf.meshes[0]!.primitives
+  expect(primitives).toHaveLength(2)
+  const pinIndicesAccessor = gltf.accessors[primitives[1]!.indices]!
+  expect(pinIndicesAccessor.componentType).toBe(5125) // UNSIGNED_INT
+  expect(pinIndicesAccessor.count).toBe(triangleCount * 3)
 })
 
 test("missing and empty models cannot silently return a bounding box", async () => {
