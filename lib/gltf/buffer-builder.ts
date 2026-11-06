@@ -4,17 +4,19 @@ export class BufferBuilder {
   private offset: number
 
   constructor(initialSize: number = 1024 * 1024) {
-    this.data = new ArrayBuffer(initialSize)
+    const safeInitialSize =
+      Number.isFinite(initialSize) && initialSize > 0
+        ? Math.floor(initialSize)
+        : 1024 * 1024
+    this.data = new ArrayBuffer(safeInitialSize)
     this.view = new DataView(this.data)
     this.offset = 0
   }
 
   private ensureCapacity(additionalBytes: number) {
     if (this.offset + additionalBytes > this.data.byteLength) {
-      const newSize = Math.max(
-        this.data.byteLength * 2,
-        this.offset + additionalBytes,
-      )
+      const baseSize = Math.max(1, this.data.byteLength)
+      const newSize = Math.max(baseSize * 2, this.offset + additionalBytes)
       const newData = new ArrayBuffer(newSize)
       const newView = new Uint8Array(newData)
       newView.set(new Uint8Array(this.data, 0, this.offset))
@@ -86,10 +88,13 @@ export class BufferBuilder {
   }
 
   align(alignment: number = 4) {
-    const remainder = this.offset % alignment
+    const step = Number.isFinite(alignment) ? Math.floor(alignment) : 4
+    if (step <= 1) return
+    const remainder = this.offset % step
     if (remainder !== 0) {
-      const padding = alignment - remainder
+      const padding = step - remainder
       this.ensureCapacity(padding)
+      new Uint8Array(this.data, this.offset, padding).fill(0)
       this.offset += padding
     }
   }

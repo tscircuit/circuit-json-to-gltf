@@ -25,9 +25,9 @@ export interface FaceMeshData {
 }
 
 export function createBoxMesh(size: Size3): MeshData {
-  const hw = size.x / 2
-  const hh = size.y / 2
-  const hd = size.z / 2
+  const hw = Number.isFinite(size.x) && size.x > 0 ? size.x / 2 : 0
+  const hh = Number.isFinite(size.y) && size.y > 0 ? size.y / 2 : 0
+  const hd = Number.isFinite(size.z) && size.z > 0 ? size.z / 2 : 0
 
   // Vertices for a box (8 vertices, 6 faces)
   const positions: number[] = []
@@ -161,9 +161,9 @@ export function createBoxMesh(size: Size3): MeshData {
 }
 
 export function createBoxMeshByFaces(size: Size3): FaceMeshData {
-  const hw = size.x / 2
-  const hh = size.y / 2
-  const hd = size.z / 2
+  const hw = Number.isFinite(size.x) && size.x > 0 ? size.x / 2 : 0
+  const hh = Number.isFinite(size.y) && size.y > 0 ? size.y / 2 : 0
+  const hd = Number.isFinite(size.z) && size.z > 0 ? size.z / 2 : 0
 
   // Define the 6 faces as separate meshes
   const faceDefinitions = {
@@ -401,6 +401,13 @@ export function transformMesh(
     }
   }
 
+  const tx = Number.isFinite(translation?.x) ? translation.x : 0
+  const ty = Number.isFinite(translation?.y) ? translation.y : 0
+  const tz = Number.isFinite(translation?.z) ? translation.z : 0
+  const rotX = rotation && Number.isFinite(rotation.x) ? rotation.x : 0
+  const rotY = rotation && Number.isFinite(rotation.y) ? rotation.y : 0
+  const rotZ = rotation && Number.isFinite(rotation.z) ? rotation.z : 0
+
   // Apply transformations to positions
   for (let i = 0; i < result.positions.length; i += 3) {
     let x = result.positions[i]!
@@ -415,22 +422,22 @@ export function transformMesh(
     }
 
     if (rotation) {
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
+      const cosY = Math.cos(rotY)
+      const sinY = Math.sin(rotY)
       const rx = x * cosY - z * sinY
       const rz = x * sinY + z * cosY
       x = rx
       z = rz
 
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
+      const cosZ = Math.cos(rotZ)
+      const sinZ = Math.sin(rotZ)
       const rx2 = x * cosZ + y * sinZ
       const ry2 = -x * sinZ + y * cosZ
       x = rx2
       y = ry2
 
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
+      const cosX = Math.cos(rotX)
+      const sinX = Math.sin(rotX)
       const ry = y * cosX + z * sinX
       const rz2 = -y * sinX + z * cosX
       y = ry
@@ -438,9 +445,9 @@ export function transformMesh(
     }
 
     // Apply translation
-    result.positions[i] = x + translation.x
-    result.positions[i + 1] = y + translation.y
-    result.positions[i + 2] = z + translation.z
+    result.positions[i] = x + tx
+    result.positions[i + 1] = y + ty
+    result.positions[i + 2] = z + tz
   }
 
   // Also transform normals if there was rotation
@@ -450,27 +457,33 @@ export function transformMesh(
       let ny = result.normals[i + 1]!
       let nz = result.normals[i + 2]!
 
-      const cosY = Math.cos(rotation.y)
-      const sinY = Math.sin(rotation.y)
+      const cosY = Math.cos(rotY)
+      const sinY = Math.sin(rotY)
       const rnx = nx * cosY - nz * sinY
       const rnz = nx * sinY + nz * cosY
       nx = rnx
       nz = rnz
 
-      const cosZ = Math.cos(rotation.z)
-      const sinZ = Math.sin(rotation.z)
+      const cosZ = Math.cos(rotZ)
+      const sinZ = Math.sin(rotZ)
       const rnx2 = nx * cosZ + ny * sinZ
       const rny2 = -nx * sinZ + ny * cosZ
       nx = rnx2
       ny = rny2
 
-      const cosX = Math.cos(rotation.x)
-      const sinX = Math.sin(rotation.x)
+      const cosX = Math.cos(rotX)
+      const sinX = Math.sin(rotX)
       const rny = ny * cosX + nz * sinX
       const rnz2 = -ny * sinX + nz * cosX
       ny = rny
       nz = rnz2
 
+      const len = Math.hypot(nx, ny, nz)
+      if (len > 0) {
+        nx /= len
+        ny /= len
+        nz /= len
+      }
       result.normals[i] = nx
       result.normals[i + 1] = ny
       result.normals[i + 2] = nz

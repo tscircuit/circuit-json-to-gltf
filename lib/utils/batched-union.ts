@@ -21,12 +21,16 @@ export const batchedUnion = (geoms: Geom3[], batchSize = 50): Geom3 => {
     return geoms[0]!
   }
 
+  const effectiveBatchSize = Number.isFinite(batchSize)
+    ? Math.max(2, Math.floor(batchSize))
+    : 50
+
   // Process in batches to avoid deep recursion
   let results = [...geoms]
   while (results.length > 1) {
     const newResults: Geom3[] = []
-    for (let i = 0; i < results.length; i += batchSize) {
-      const batch = results.slice(i, i + batchSize)
+    for (let i = 0; i < results.length; i += effectiveBatchSize) {
+      const batch = results.slice(i, i + effectiveBatchSize)
       if (batch.length === 1) {
         newResults.push(batch[0]!)
       } else {
