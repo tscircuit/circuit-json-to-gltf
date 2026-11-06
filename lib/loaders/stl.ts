@@ -39,20 +39,31 @@ export async function loadSTL({
   return mesh
 }
 
+function isLikelyASCIISTL(buffer: ArrayBuffer, view: DataView): boolean {
+  if (buffer.byteLength >= 84) {
+    const expectedBinaryByteLength = 84 + view.getUint32(80, true) * 50
+    if (expectedBinaryByteLength === buffer.byteLength) {
+      return false
+    }
+  }
+  const probe = new TextDecoder()
+    .decode(buffer.slice(0, Math.min(buffer.byteLength, 512)))
+    .trimStart()
+  return (
+    probe.toLowerCase().startsWith("solid") && /facet\s+normal/i.test(probe)
+  )
+}
+
 function parseSTL(
   buffer: ArrayBuffer,
   transform?: CoordinateTransformConfig,
 ): STLMesh {
   const view = new DataView(buffer)
 
-  // Check if it's binary STL (first 5 bytes should not be "solid")
-  const header = new TextDecoder().decode(buffer.slice(0, 5))
-
-  if (header.toLowerCase() === "solid") {
+  if (isLikelyASCIISTL(buffer, view)) {
     return parseASCIISTL(buffer, transform)
-  } else {
-    return parseBinarySTL(view, transform)
   }
+  return parseBinarySTL(view, transform)
 }
 
 function parseASCIISTL(
@@ -168,6 +179,23 @@ function parseBinarySTL(
 
     // Skip attribute byte count (2 bytes)
     offset += 2
+
+    if (normal.x === 0 && normal.y === 0 && normal.z === 0) {
+      const [v0, v1, v2] = vertices
+      const edge1 = { x: v1.x - v0.x, y: v1.y - v0.y, z: v1.z - v0.z }
+      const edge2 = { x: v2.x - v0.x, y: v2.y - v0.y, z: v2.z - v0.z }
+      const nx = edge1.y * edge2.z - edge1.z * edge2.y
+      const ny = edge1.z * edge2.x - edge1.x * edge2.z
+      const nz = edge1.x * edge2.y - edge1.y * edge2.x
+      const len = Math.hypot(nx, ny, nz)
+      if (len > 0) {
+        normal.x = nx / len
+        normal.y = ny / len
+        normal.z = nz / len
+      } else {
+        normal.z = 1
+      }
+    }
 
     triangles.push({ vertices, normal })
   }
