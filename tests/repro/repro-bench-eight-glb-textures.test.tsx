@@ -65,6 +65,8 @@ beforeAll(async () => {
       type: "cad_component",
       cad_component_id: "panel_cad",
       source_component_id: "panel_source",
+      anchor_alignment: "center",
+      model_object_fit: "contain_within_bounds",
       model_glb_url: dataUrl(original),
       position: { x: 0, y: 0, z: 0 },
       // Original GLB is Y-up; Circuit JSON is Z-up. This is the placement
