@@ -63,6 +63,7 @@ export interface ConversionOptions {
   showBoundingBoxes?: boolean
   coordinateTransform?: CoordinateTransformConfig
   projectBaseUrl?: string
+  resolveStaticAsset?: CircuitTo3DOptions["resolveStaticAsset"]
   authHeaders?: AuthHeaders
 }
 
@@ -249,6 +250,8 @@ export interface CircuitTo3DOptions {
   showReferenceSurfaces?: boolean
   showBoundingBoxes?: boolean
   projectBaseUrl?: string
+  /** Resolve the selected CAD model URL before loading it. */
+  resolveStaticAsset?: (modelUrl: string) => string
   authHeaders?: AuthHeaders
 }
 

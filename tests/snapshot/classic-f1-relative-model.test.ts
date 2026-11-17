@@ -56,9 +56,9 @@ test("matches the Classic F1 relative LCD model snapshot", async () => {
   })
 })
 
-test.failing("resolves Classic F1's release-relative LCD OBJ", async () => {
+test("resolves Classic F1's release-relative LCD OBJ", async () => {
   const { scene, resolveStaticAsset } = await renderClassicF1()
-  expect(resolveStaticAsset).toHaveBeenCalledWith(lcdPath)
+  expect(resolveStaticAsset.mock.calls).toEqual([[lcdPath]])
   const lcd = scene.boxes.find(
     (box) => box.componentMetadata?.cad_component_id === "cad_component_58",
   )
