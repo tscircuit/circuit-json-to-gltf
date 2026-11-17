@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 170">
+  <rect x="14" y="31" width="108" height="108" rx="21" fill="#4a8fe0"/>
+  <circle cx="31" cy="49" r="4.5" fill="#ffffff"/>
+  <text x="72" y="116" font-size="66" text-anchor="middle" fill="#ffffff" stroke="#ffffff" stroke-width="2.5">ts</text>
+  <text x="134" y="62" font-size="50" fill="#4a8fe0" stroke="#4a8fe0" stroke-width="1.6" textLength="212" lengthAdjust="spacingAndGlyphs">tscircuit</text>
+  <text x="136" y="91" font-size="25" fill="#111111" stroke="#111111" stroke-width="1">NEMA17</text>
+  <text x="136" y="114" font-size="16" fill="#555555">USB Stepper</text>
+  <text x="136" y="134" font-size="16" fill="#555555">Driver + Controller</text>
+  <text x="136" y="155" font-size="13.5" fill="#666666" textLength="208" lengthAdjust="spacingAndGlyphs">motorcontrol.tscircuit.com</text>
+</svg>
