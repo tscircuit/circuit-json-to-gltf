@@ -6,6 +6,7 @@ import {
   viaDrills,
   splitViaWalls,
 } from "../utils/pad-overlapping-vias"
+import { createLaserEngravingTextBox } from "./laser-engraving-text"
 import { createReferenceSurfaceBox } from "./reference-surface"
 import {
   createStiffenerMesh,
@@ -34,14 +35,15 @@ import type {
   PcbPlatedHole,
 } from "circuit-json"
 import { loadCable } from "../loaders/cable"
-import type {
-  Box3D,
-  Camera3D,
-  CircuitTo3DOptions,
-  CircuitJsonWithPcbFlex,
-  Light3D,
-  Point3,
-  Scene3D,
+import {
+  isManufacturingLaserEngravingText,
+  type Box3D,
+  type Camera3D,
+  type CircuitTo3DOptions,
+  type CircuitJsonWithPcbFlex,
+  type Light3D,
+  type Point3,
+  type Scene3D,
 } from "../types"
 import { getBoundingBoxSize } from "../utils/mesh-scale"
 import { filterCutoutsForBoard } from "../utils/pcb-board-cutouts"
@@ -482,6 +484,22 @@ export async function convertCircuitJsonTo3D(
     if (result && !result.ok)
       reportFoldIssue(`CAD component ${cad.cad_component_id}`, result.issue)
     boxes.push(result?.ok ? result.value : box)
+  }
+
+  // Engraved marks are part of the product, so they are always drawn.
+  for (const engraving of inputCircuitJson as { type: string }[]) {
+    if (!isManufacturingLaserEngravingText(engraving)) continue
+    const cad = cadComponents.find(
+      (c) =>
+        c.cad_component_id === engraving.cad_component_id ||
+        (!engraving.cad_component_id &&
+          c.source_component_id === engraving.source_component_id),
+    )
+    const box = createLaserEngravingTextBox(engraving, {
+      partColor: cad?.color,
+      ownerName: db.source_component.get(engraving.source_component_id)?.name,
+    })
+    if (box) boxes.push(box)
   }
 
   if (options.showReferenceSurfaces) {

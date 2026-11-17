@@ -8,10 +8,11 @@ import {
   type CadExplosionTarget,
   type Point3,
 } from "circuit-json"
-import type {
-  AssemblyExplosionOptions,
-  AssemblyExplosionLine,
-  CircuitJsonWithPcbFlex,
+import {
+  isManufacturingLaserEngravingText,
+  type AssemblyExplosionOptions,
+  type AssemblyExplosionLine,
+  type CircuitJsonWithPcbFlex,
 } from "../types"
 
 type CadId = CadComponent["cad_component_id"]
@@ -225,6 +226,18 @@ export function evaluateAssemblyExplosion(
               surfaceOffsets.get(record.cad_reference_surface_id) ?? zero(),
             ),
           }
+        // A mark is part of its component's surface, so it moves with it.
+        const unreleased: { type: string } = record
+        if (isManufacturingLaserEngravingText(unreleased))
+          return {
+            ...unreleased,
+            anchor_position: plus(
+              unreleased.anchor_position,
+              (unreleased.cad_component_id
+                ? cadOffsets.get(unreleased.cad_component_id)
+                : undefined) ?? zero(),
+            ),
+          } as unknown as typeof record
         return record
       }),
     stages: stages.map((stage) => stage.name),
