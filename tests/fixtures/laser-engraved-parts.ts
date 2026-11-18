@@ -51,7 +51,7 @@ const engraving = (
 ): CadLaserEngravingTextRecord => ({
   type: "cad_laser_engraving_text",
   cad_laser_engraving_text_id: `cad_laser_engraving_text_${index}`,
-  source_manufacturing_laser_engraving_text_id: `source_manufacturing_laser_engraving_text_${index}`,
+  source_laser_engraving_text_id: `source_laser_engraving_text_${index}`,
   source_component_id: `source_component_${owner}`,
   cad_component_id: `cad_component_${owner}`,
   font: "tscircuit2024",
@@ -120,9 +120,8 @@ export const laserEngravedParts = [
   ...part(1, "PLATE", "#d8d2c4", [36, 36, 4], [58, 0]),
   // Each mark's manufacturing step. Rendering reads only the cad records.
   ...laserEngravings.map((mark) => ({
-    type: "source_manufacturing_laser_engraving_text",
-    source_manufacturing_laser_engraving_text_id:
-      mark.source_manufacturing_laser_engraving_text_id,
+    type: "source_laser_engraving_text",
+    source_laser_engraving_text_id: mark.source_laser_engraving_text_id,
     source_component_id: mark.source_component_id,
     text: mark.text,
     engraving_depth: 0.1,

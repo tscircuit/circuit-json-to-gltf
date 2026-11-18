@@ -8,12 +8,12 @@ import type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
  * anchor_position is an absolute point; normal (outward) and x_axis (reading
  * direction) are perpendicular unit directions; the text's up is normal cross
  * x_axis. What is engraved and how deep is in the linked
- * source_manufacturing_laser_engraving_text, which rendering does not need.
+ * source_laser_engraving_text, which rendering does not need.
  */
 export interface CadLaserEngravingTextRecord {
   type: "cad_laser_engraving_text"
   cad_laser_engraving_text_id: string
-  source_manufacturing_laser_engraving_text_id?: string
+  source_laser_engraving_text_id?: string
   source_component_id: string
   cad_component_id?: string
   cad_reference_surface_id?: string
