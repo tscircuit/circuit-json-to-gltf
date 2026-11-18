@@ -14,7 +14,10 @@ export interface CadComponentMesh {
 
 export type CadComponentMeshOptions = Pick<
   CircuitTo3DOptions,
-  "coordinateTransform" | "projectBaseUrl" | "authHeaders"
+  | "coordinateTransform"
+  | "projectBaseUrl"
+  | "resolveStaticAsset"
+  | "authHeaders"
 > & { pcbComponent?: PcbComponent }
 
 type VertexPositionKey = string

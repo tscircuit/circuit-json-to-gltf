@@ -88,6 +88,7 @@ export async function convertCircuitJsonTo3D(
     coordinateTransform,
     showBoundingBoxes = false,
     projectBaseUrl,
+    resolveStaticAsset,
     authHeaders,
   } = options
 
@@ -461,6 +462,7 @@ export async function convertCircuitJsonTo3D(
       showBoundingBoxes,
       coordinateTransform,
       projectBaseUrl,
+      resolveStaticAsset,
       authHeaders,
       // Preserve the fold renderer's existing flat bottom-layer convention.
       defaultCadRotation:

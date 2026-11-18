@@ -24,6 +24,7 @@ export type CadComponentBoxOptions = Pick<
   CircuitTo3DOptions,
   | "coordinateTransform"
   | "projectBaseUrl"
+  | "resolveStaticAsset"
   | "authHeaders"
   | "componentColor"
   | "defaultComponentHeight"
@@ -77,6 +78,7 @@ export async function loadCadComponentBox(
     showBoundingBoxes = false,
     coordinateTransform,
     projectBaseUrl,
+    resolveStaticAsset = (url) => url,
     authHeaders,
   } = options
   const {
@@ -238,14 +240,14 @@ export async function loadCadComponentBox(
 
   if (model_stl_url) {
     box.mesh = await loadSTL({
-      url: model_stl_url,
+      url: resolveStaticAsset(model_stl_url),
       transform: defaultTransform,
       projectBaseUrl,
       authHeaders,
     })
   } else if (model_obj_url) {
     box.mesh = await loadOBJ({
-      url: model_obj_url,
+      url: resolveStaticAsset(model_obj_url),
       transform: defaultTransform,
       projectBaseUrl,
       authHeaders,
@@ -253,7 +255,7 @@ export async function loadCadComponentBox(
   } else if (model_glb_url) {
     try {
       box.mesh = await loadGLB({
-        url: model_glb_url,
+        url: resolveStaticAsset(model_glb_url),
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,
@@ -263,7 +265,7 @@ export async function loadCadComponentBox(
     }
   } else if (model_gltf_url) {
     box.mesh = await loadGLTF({
-      url: model_gltf_url,
+      url: resolveStaticAsset(model_gltf_url),
       transform: defaultTransform,
       projectBaseUrl,
       authHeaders,
@@ -271,7 +273,7 @@ export async function loadCadComponentBox(
   } else if (model_step_url) {
     try {
       box.mesh = await loadSTEP({
-        url: model_step_url,
+        url: resolveStaticAsset(model_step_url),
         transform: defaultTransform,
         projectBaseUrl,
         authHeaders,

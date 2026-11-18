@@ -45,6 +45,7 @@ export async function convertCircuitJsonToGltf(
     showBoundingBoxes,
     showReferenceSurfaces: options.showReferenceSurfaces,
     projectBaseUrl: options.projectBaseUrl,
+    resolveStaticAsset: options.resolveStaticAsset,
     authHeaders: options.authHeaders,
   })
 
