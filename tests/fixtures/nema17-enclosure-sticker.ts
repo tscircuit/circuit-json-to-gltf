@@ -180,7 +180,11 @@ export async function createNema17EnclosureWithSticker(
     width: 36,
     height: 17,
     thickness: 0.15,
-    image_url: `data:image/svg+xml;base64,${Buffer.from(artwork).toString("base64")}`,
+    image_asset: {
+      project_relative_path: "tests/assets/nema17-enclosure-sticker.svg",
+      url: `data:image/svg+xml;base64,${Buffer.from(artwork).toString("base64")}`,
+      mimetype: "image/svg+xml",
+    },
     background_color: "#f4f4f2",
     ...stickerOverrides,
   }

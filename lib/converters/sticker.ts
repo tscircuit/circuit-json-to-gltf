@@ -1,3 +1,4 @@
+import type { Asset } from "circuit-json"
 import { fetchWithTimeout } from "../loaders/fetch-with-timeout"
 import { resolveModelUrl } from "../loaders/resolve-model-url"
 import type { AuthHeaders, Box3D, Point3, Triangle } from "../types"
@@ -26,7 +27,7 @@ export interface CadStickerRecord {
   width: number
   height: number
   thickness?: number
-  image_url?: string
+  image_asset?: Asset
   background_color?: string
   subcircuit_id?: string
 }
@@ -204,21 +205,21 @@ async function loadStickerTexture(
       width: pixelWidth,
       background: options.backgroundColor,
     })
-  if (!sticker.image_url) return rasterize(blank)
+  const artwork = sticker.image_asset
+  if (!artwork) return rasterize(blank)
   try {
-    const url = await resolveModelUrl(sticker.image_url, options.projectBaseUrl)
+    const url = await resolveModelUrl(artwork.url, options.projectBaseUrl)
     const response = await fetchWithTimeout(url, {
       authHeaders: options.authHeaders,
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const mimeType = (response.headers.get("content-type") ?? "").split(";")[0]
     const bytes = new Uint8Array(await response.arrayBuffer())
-    const isSvg =
-      mimeType === "image/svg+xml" || /\.svg(\?|#|$)/i.test(sticker.image_url)
-    if (isSvg) return await rasterize(new TextDecoder().decode(bytes))
+    // The asset's mimetype, not the URL or response, says how to read it.
+    if (artwork.mimetype === "image/svg+xml")
+      return await rasterize(new TextDecoder().decode(bytes))
     let binary = ""
     for (const byte of bytes) binary += String.fromCharCode(byte)
-    return `data:${mimeType || "image/png"};base64,${btoa(binary)}`
+    return `data:${artwork.mimetype};base64,${btoa(binary)}`
   } catch (error) {
     console.warn(
       `Failed to load artwork for sticker ${sticker.cad_sticker_id}:`,
