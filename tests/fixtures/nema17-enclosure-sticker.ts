@@ -148,16 +148,18 @@ const cadDefaults = {
  * sticker on the lid. Circuit XYZ, right-handed, +Z up, mm; Z=0 is the motor's
  * back face, which the enclosure sits on. The motor's shaft points along -Z.
  *
- * `cad_sticker` is the proposed Circuit JSON record. It is what core would
- * emit for:
+ * The artwork is the production enclosure label, 38.1 × 19.05 mm, copied from
+ * tscircuit/product-packaging (products/nema17/enclosure-label/label.svg).
+ *
+ * `cad_sticker` is the Circuit JSON record core would emit for:
  *
  *   <assembly.printedpart name="LID" jscad={<Lid />}>
  *     <assembly.sticker
  *       name="LABEL"
  *       imageUrl="./nema17-enclosure-sticker.svg"
  *       surfaceRef="topSurface"
- *       width="36mm"
- *       height="17mm"
+ *       width="38.1mm"
+ *       height="19.05mm"
  *     />
  *   </assembly.printedpart>
  */
@@ -177,15 +179,15 @@ export async function createNema17EnclosureWithSticker(
     center: { x: 0, y: 0, z: LID_HEIGHT },
     normal_direction: { x: 0, y: 0, z: 1 },
     x_axis_direction: { x: 1, y: 0, z: 0 },
-    width: 36,
-    height: 17,
+    width: 38.1,
+    height: 19.05,
     thickness: 0.15,
     image_asset: {
       project_relative_path: "tests/assets/nema17-enclosure-sticker.svg",
       url: `data:image/svg+xml;base64,${Buffer.from(artwork).toString("base64")}`,
       mimetype: "image/svg+xml",
     },
-    background_color: "#f4f4f2",
+    background_color: "#ffffff",
     ...stickerOverrides,
   }
   return [
