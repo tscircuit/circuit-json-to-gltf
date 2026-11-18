@@ -144,6 +144,12 @@ export interface OBJMaterial {
   specular?: Color
   shininess?: number
   dissolve?: number
+  textureDataUrl?: string
+  metallicFactor?: number
+  roughnessFactor?: number
+  alphaMode?: "OPAQUE" | "MASK" | "BLEND"
+  alphaCutoff?: number
+  doubleSided?: boolean
 }
 
 export type Color = string | [number, number, number, number]
