@@ -6,8 +6,8 @@ import { assemblyExplosion } from "../fixtures/assembly-explosion"
 // The gold bolt (cad_1) carries a mark on its head; the base (cad_0) carries
 // one too. Circuit world is right-handed, +Z up, mm.
 const mark = (id: string, cad: number, z: number) => ({
-  type: "manufacturing_laser_engraving_text",
-  manufacturing_laser_engraving_text_id: id,
+  type: "cad_laser_engraving_text",
+  cad_laser_engraving_text_id: id,
   source_component_id: `source_${cad}`,
   cad_component_id: `cad_${cad}`,
   text: "M3",

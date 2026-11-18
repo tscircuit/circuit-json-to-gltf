@@ -1,5 +1,5 @@
 import type { CircuitJson } from "circuit-json"
-import type { ManufacturingLaserEngravingTextRecord } from "../../lib"
+import type { CadLaserEngravingTextRecord } from "../../lib"
 
 /** Two printed parts with laser-engraved text, in right-handed circuit world
  * (+X right, +Y top, +Z up, mm).
@@ -8,8 +8,8 @@ import type { ManufacturingLaserEngravingTextRecord } from "../../lib"
  * its top is Z=8, its -Y wall is Y=-20 and its +X wall is X=30. PLATE is a
  * pale 36 x 36 x 4 block centered at X=58.
  *
- * Engraving records are not in a released circuit-json yet, so the document is
- * cast to CircuitJson.
+ * The source and cad engraving records are not in a released circuit-json yet,
+ * so the document is cast to CircuitJson.
  */
 const part = (
   index: number,
@@ -44,13 +44,14 @@ const engraving = (
   index: number,
   owner: number,
   fields: Pick<
-    ManufacturingLaserEngravingTextRecord,
+    CadLaserEngravingTextRecord,
     "text" | "font_size" | "anchor_position" | "normal" | "x_axis"
   > &
-    Partial<ManufacturingLaserEngravingTextRecord>,
-): ManufacturingLaserEngravingTextRecord => ({
-  type: "manufacturing_laser_engraving_text",
-  manufacturing_laser_engraving_text_id: `manufacturing_laser_engraving_text_${index}`,
+    Partial<CadLaserEngravingTextRecord>,
+): CadLaserEngravingTextRecord => ({
+  type: "cad_laser_engraving_text",
+  cad_laser_engraving_text_id: `cad_laser_engraving_text_${index}`,
+  source_manufacturing_laser_engraving_text_id: `source_manufacturing_laser_engraving_text_${index}`,
   source_component_id: `source_component_${owner}`,
   cad_component_id: `cad_component_${owner}`,
   font: "tscircuit2024",
@@ -61,7 +62,7 @@ const engraving = (
 const up = { x: 0, y: 0, z: 1 }
 const right = { x: 1, y: 0, z: 0 }
 
-export const laserEngravings: ManufacturingLaserEngravingTextRecord[] = [
+export const laserEngravings: CadLaserEngravingTextRecord[] = [
   // LID top, centered.
   engraving(0, 0, {
     text: "tscircuit",
@@ -87,14 +88,14 @@ export const laserEngravings: ManufacturingLaserEngravingTextRecord[] = [
     normal: up,
     x_axis: { x: 0, y: -1, z: 0 },
   }),
-  // LID wall facing -Y, with a stated resulting color.
+  // LID wall facing -Y, with a stated color.
   engraving(3, 0, {
     text: "SN 0001",
     font_size: 4,
     anchor_position: { x: 0, y: -20, z: 4 },
     normal: { x: 0, y: -1, z: 0 },
     x_axis: right,
-    resulting_color: "#e8c15a",
+    color: "#e8c15a",
   }),
   // LID wall facing +X, reading toward +Y.
   engraving(4, 0, {
@@ -117,5 +118,14 @@ export const laserEngravings: ManufacturingLaserEngravingTextRecord[] = [
 export const laserEngravedParts = [
   ...part(0, "LID", "#2f3b4a", [60, 40, 8], [0, 0]),
   ...part(1, "PLATE", "#d8d2c4", [36, 36, 4], [58, 0]),
+  // Each mark's manufacturing step. Rendering reads only the cad records.
+  ...laserEngravings.map((mark) => ({
+    type: "source_manufacturing_laser_engraving_text",
+    source_manufacturing_laser_engraving_text_id:
+      mark.source_manufacturing_laser_engraving_text_id,
+    source_component_id: mark.source_component_id,
+    text: mark.text,
+    engraving_depth: 0.1,
+  })),
   ...laserEngravings,
 ] as unknown as CircuitJson

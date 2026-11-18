@@ -39,7 +39,7 @@ import { withCircuitJsonErrors } from "./utils/circuit-json-errors"
 import type { CircuitJson } from "circuit-json"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
 import {
-  isManufacturingLaserEngravingText,
+  isCadLaserEngravingText,
   type CircuitJsonWithPcbFlex,
   type ConversionOptions,
   type Scene3D,
@@ -77,7 +77,7 @@ export async function convertCircuitJsonTo3D(
         e.type === "pcb_bend" ||
         (e.type === "pcb_board" && e.material === "flex"),
     ) ||
-    (circuitJson as { type: string }[]).some(isManufacturingLaserEngravingText)
+    (circuitJson as { type: string }[]).some(isCadLaserEngravingText)
   ) {
     const { convertCircuitJsonTo3D: convertFullScene } = await import(
       "./converters/circuit-to-3d"

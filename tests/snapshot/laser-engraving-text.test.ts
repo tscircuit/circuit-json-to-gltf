@@ -24,7 +24,7 @@ test("PoppyGL draws laser-engraved text on part tops and walls, reading the righ
       lookAt: [-20, 0, 0],
     },
     {
-      label: "Wall facing -Y: a stated brass resulting color",
+      label: "Wall facing -Y: a stated brass color",
       circuitJson: laserEngravedParts,
       camPos: [0, 24, -104],
       lookAt: [0, 4, 0],

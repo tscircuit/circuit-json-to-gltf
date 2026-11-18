@@ -3,7 +3,7 @@ import { glyphOutlineAlphabet } from "@tscircuit/alphabet/outline-polygons"
 import earcut from "earcut"
 import type {
   Box3D,
-  ManufacturingLaserEngravingTextRecord,
+  CadLaserEngravingTextRecord,
   Point3,
   Triangle,
 } from "../types"
@@ -100,7 +100,7 @@ const parseHex = (color: string): [number, number, number] | undefined => {
   ]
 }
 
-/** Without a stated resulting color, a mark is drawn to contrast with its
+/** Without a stated color, a mark is drawn to contrast with its
  * part: pale on a dark part, dark on a pale one. */
 export function deriveEngravedColor(partColor?: string): string {
   const rgb = partColor ? parseHex(partColor) : undefined
@@ -126,10 +126,11 @@ export function deriveEngravedColor(partColor?: string): string {
  * plane; glTF export applies its canonical X mirror alongside all CAD meshes.
  *
  * anchor_alignment refers to the extents of the engraved strokes. Depth is not
- * modeled: the mark is drawn on the surface whatever engraving_depth says.
+ * modeled: the mark is drawn flat on the surface. Engraving depth is on the
+ * source record and is not read here.
  */
 export function createLaserEngravingTextBox(
-  engraving: ManufacturingLaserEngravingTextRecord,
+  engraving: CadLaserEngravingTextRecord,
   options: { partColor?: string; ownerName?: string } = {},
 ): Box3D | undefined {
   const glyphs = layoutGlyphRings(engraving.text, engraving.font_size)
@@ -200,7 +201,7 @@ export function createLaserEngravingTextBox(
     center,
     size: getBoundingBoxSize(boundingBox),
     label: `${options.ownerName ?? "part"} engraving "${engraving.text}"`,
-    color: engraving.resulting_color ?? deriveEngravedColor(options.partColor),
+    color: engraving.color ?? deriveEngravedColor(options.partColor),
     mesh: {
       triangles: sceneTriangles,
       boundingBox: boundsOfTriangles(sceneTriangles),

@@ -3,16 +3,16 @@ import type { CircuitJson } from "circuit-json"
 import {
   convertCircuitJsonTo3D,
   type Box3D,
-  type ManufacturingLaserEngravingTextRecord,
+  type CadLaserEngravingTextRecord,
 } from "../../lib"
 import { convertCircuitJsonTo3D as convertBrowserScene } from "../../lib/browser"
 import { createLaserEngravingTextBox } from "../../lib/converters/laser-engraving-text"
 
 // Circuit world is right-handed, +Z up, mm. Scene3D is +Y up, so a circuit
 // point (x, y, z) is the scene point (x, z, y).
-const engraving: ManufacturingLaserEngravingTextRecord = {
-  type: "manufacturing_laser_engraving_text",
-  manufacturing_laser_engraving_text_id: "engraving_1",
+const engraving: CadLaserEngravingTextRecord = {
+  type: "cad_laser_engraving_text",
+  cad_laser_engraving_text_id: "engraving_1",
   source_component_id: "source_1",
   text: "L",
   font_size: 10,
@@ -133,7 +133,7 @@ test("engraved text follows the record's frame on walls and when rotated", () =>
 
 test("anchor alignment places the engraved strokes' bounds around the anchor", () => {
   const at = (
-    anchor_alignment: ManufacturingLaserEngravingTextRecord["anchor_alignment"],
+    anchor_alignment: CadLaserEngravingTextRecord["anchor_alignment"],
   ) =>
     measure(
       createLaserEngravingTextBox({
@@ -161,7 +161,7 @@ test("anchor alignment places the engraved strokes' bounds around the anchor", (
   expect(center.x[1]! - center.x[0]!).toBeLessThan(36)
 })
 
-test("the mark uses a stated resulting color, or one that contrasts with its part", async () => {
+test("the mark uses a stated color, or one that contrasts with its part", async () => {
   const withPart = (partColor: string | undefined, fields = {}) =>
     [
       {
@@ -187,9 +187,9 @@ test("the mark uses a stated resulting color, or one that contrasts with its par
       0,
     ) / 255
 
-  expect(
-    await markColor(withPart("#101820", { resulting_color: "#e8c15a" })),
-  ).toBe("#e8c15a")
+  expect(await markColor(withPart("#101820", { color: "#e8c15a" }))).toBe(
+    "#e8c15a",
+  )
   // Dark part: a clearly paler mark. Pale part: a clearly darker one.
   const onDark = (await markColor(withPart("#101820"))) as string
   expect(luminance(onDark) - luminance("#101820")).toBeGreaterThan(0.4)

@@ -9,7 +9,7 @@ import {
   type Point3,
 } from "circuit-json"
 import {
-  isManufacturingLaserEngravingText,
+  isCadLaserEngravingText,
   type AssemblyExplosionOptions,
   type AssemblyExplosionLine,
   type CircuitJsonWithPcbFlex,
@@ -228,7 +228,7 @@ export function evaluateAssemblyExplosion(
           }
         // A mark is part of its component's surface, so it moves with it.
         const unreleased: { type: string } = record
-        if (isManufacturingLaserEngravingText(unreleased))
+        if (isCadLaserEngravingText(unreleased))
           return {
             ...unreleased,
             anchor_position: plus(

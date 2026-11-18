@@ -36,7 +36,7 @@ import type {
 } from "circuit-json"
 import { loadCable } from "../loaders/cable"
 import {
-  isManufacturingLaserEngravingText,
+  isCadLaserEngravingText,
   type Box3D,
   type Camera3D,
   type CircuitTo3DOptions,
@@ -488,7 +488,7 @@ export async function convertCircuitJsonTo3D(
 
   // Engraved marks are part of the product, so they are always drawn.
   for (const engraving of inputCircuitJson as { type: string }[]) {
-    if (!isManufacturingLaserEngravingText(engraving)) continue
+    if (!isCadLaserEngravingText(engraving)) continue
     const cad = cadComponents.find(
       (c) =>
         c.cad_component_id === engraving.cad_component_id ||
