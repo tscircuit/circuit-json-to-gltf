@@ -18,8 +18,8 @@ const engraving: CadLaserEngravingTextRecord = {
   font_size: 10,
   anchor_position: { x: 10, y: 5, z: 8 },
   anchor_alignment: "bottom_left",
-  normal: { x: 0, y: 0, z: 1 },
-  x_axis: { x: 1, y: 0, z: 0 },
+  normal_direction: { x: 0, y: 0, z: 1 },
+  x_axis_direction: { x: 1, y: 0, z: 0 },
 }
 
 /** World-space scene vertices, bounds, and area-weighted centroid of a mark. */
@@ -93,12 +93,13 @@ test("engraved text on a top surface starts at its anchor and is not mirrored", 
 })
 
 test("engraved text follows the record's frame on walls and when rotated", () => {
-  // Wall facing circuit -Y, reading toward +X: up is normal cross x_axis = +Z.
+  // Wall facing circuit -Y, reading toward +X: up is normal_direction cross
+  // x_axis_direction = +Z.
   const wall = measure(
     createLaserEngravingTextBox({
       ...engraving,
       anchor_position: { x: 10, y: -20, z: 3 },
-      normal: { x: 0, y: -1, z: 0 },
+      normal_direction: { x: 0, y: -1, z: 0 },
     })!,
   )
   expect(wall.x[0]).toBeCloseTo(10, 5)
@@ -115,7 +116,7 @@ test("engraved text follows the record's frame on walls and when rotated", () =>
   const turned = measure(
     createLaserEngravingTextBox({
       ...engraving,
-      x_axis: { x: 0, y: -1, z: 0 },
+      x_axis_direction: { x: 0, y: -1, z: 0 },
     })!,
   )
   expect(turned.z[1]).toBeCloseTo(5, 5) // begins at the anchor's circuit Y...

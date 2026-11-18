@@ -13,8 +13,8 @@ const mark = (id: string, cad: number, z: number) => ({
   text: "M3",
   font_size: 1.5,
   anchor_position: { x: cad ? 6 : -8, y: cad ? 7 : -8, z },
-  normal: { x: 0, y: 0, z: 1 },
-  x_axis: { x: 1, y: 0, z: 0 },
+  normal_direction: { x: 0, y: 0, z: 1 },
+  x_axis_direction: { x: 1, y: 0, z: 0 },
 })
 const circuit = [
   ...assemblyExplosion,

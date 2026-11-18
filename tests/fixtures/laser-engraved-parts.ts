@@ -45,7 +45,11 @@ const engraving = (
   owner: number,
   fields: Pick<
     CadLaserEngravingTextRecord,
-    "text" | "font_size" | "anchor_position" | "normal" | "x_axis"
+    | "text"
+    | "font_size"
+    | "anchor_position"
+    | "normal_direction"
+    | "x_axis_direction"
   > &
     Partial<CadLaserEngravingTextRecord>,
 ): CadLaserEngravingTextRecord => ({
@@ -68,8 +72,8 @@ export const laserEngravings: CadLaserEngravingTextRecord[] = [
     text: "tscircuit",
     font_size: 6,
     anchor_position: { x: 0, y: 1, z: 8 },
-    normal: up,
-    x_axis: right,
+    normal_direction: up,
+    x_axis_direction: right,
   }),
   // LID top, hung from its top-left corner 3 mm in from two edges.
   engraving(1, 0, {
@@ -77,24 +81,24 @@ export const laserEngravings: CadLaserEngravingTextRecord[] = [
     font_size: 3,
     anchor_position: { x: -27, y: 17, z: 8 },
     anchor_alignment: "top_left",
-    normal: up,
-    x_axis: right,
+    normal_direction: up,
+    x_axis_direction: right,
   }),
   // LID top, turned 90 degrees clockwise seen from above: reads toward -Y.
   engraving(2, 0, {
     text: "LOT 42",
     font_size: 2.5,
     anchor_position: { x: 26, y: 0, z: 8 },
-    normal: up,
-    x_axis: { x: 0, y: -1, z: 0 },
+    normal_direction: up,
+    x_axis_direction: { x: 0, y: -1, z: 0 },
   }),
   // LID wall facing -Y, with a stated color.
   engraving(3, 0, {
     text: "SN 0001",
     font_size: 4,
     anchor_position: { x: 0, y: -20, z: 4 },
-    normal: { x: 0, y: -1, z: 0 },
-    x_axis: right,
+    normal_direction: { x: 0, y: -1, z: 0 },
+    x_axis_direction: right,
     color: "#e8c15a",
   }),
   // LID wall facing +X, reading toward +Y.
@@ -102,16 +106,16 @@ export const laserEngravings: CadLaserEngravingTextRecord[] = [
     text: "FCC",
     font_size: 4,
     anchor_position: { x: 30, y: 0, z: 4 },
-    normal: right,
-    x_axis: { x: 0, y: 1, z: 0 },
+    normal_direction: right,
+    x_axis_direction: { x: 0, y: 1, z: 0 },
   }),
   // PLATE top: a pale part, so the derived mark is dark.
   engraving(5, 1, {
     text: "MODEL A1",
     font_size: 3.5,
     anchor_position: { x: 58, y: 0, z: 4 },
-    normal: up,
-    x_axis: right,
+    normal_direction: up,
+    x_axis_direction: right,
   }),
 ]
 

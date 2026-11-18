@@ -5,9 +5,10 @@ import type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
 /** The 3D geometry of text laser engraved onto one surface of a part. Mirrors
  * the proposed circuit-json cad_laser_engraving_text record until it is
  * released. Right-handed circuit world, mm: +X right, +Y top, +Z above.
- * anchor_position is an absolute point; normal (outward) and x_axis (reading
- * direction) are perpendicular unit directions; the text's up is normal cross
- * x_axis. What is engraved and how deep is in the linked
+ * anchor_position is an absolute point; normal_direction (outward) and
+ * x_axis_direction (reading direction) are perpendicular unit directions; the
+ * text's up is normal_direction cross x_axis_direction. What is engraved and
+ * how deep is in the linked
  * source_laser_engraving_text, which rendering does not need.
  */
 export interface CadLaserEngravingTextRecord {
@@ -32,8 +33,8 @@ export interface CadLaserEngravingTextRecord {
     | "bottom_left"
     | "bottom_center"
     | "bottom_right"
-  normal: Point3
-  x_axis: Point3
+  normal_direction: Point3
+  x_axis_direction: Point3
   /** Color the engraved area is drawn in. */
   color?: string
   subcircuit_id?: string

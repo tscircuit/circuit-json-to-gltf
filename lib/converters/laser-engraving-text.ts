@@ -119,8 +119,9 @@ export function deriveEngravedColor(partColor?: string): string {
 /** Engraved text as flat filled glyphs on the part surface.
  *
  * The record's frame is right-handed circuit world (+X right, +Y top, +Z up,
- * mm): anchor_position is a point, normal and x_axis are unit directions, and
- * the text's up direction is normal cross x_axis. Geometry is built in that
+ * mm): anchor_position is a point, normal_direction and x_axis_direction are
+ * unit directions, and the text's up direction is normal_direction cross
+ * x_axis_direction. Geometry is built in that
  * frame and crosses to Scene3D (+Y up) through the same
  * CIRCUIT_Z_UP_TO_SCENE_Y_UP transform createReferenceSurfaceBox uses for its
  * plane; glTF export applies its canonical X mirror alongside all CAD meshes.
@@ -153,8 +154,13 @@ export function createLaserEngravingTextBox(
       ? minY
       : (minY + maxY) / 2
 
-  const { anchor_position: origin, normal, x_axis: xAxis } = engraving
-  // Up the text: normal cross x_axis, completing a right-handed frame.
+  const {
+    anchor_position: origin,
+    normal_direction: normal,
+    x_axis_direction: xAxis,
+  } = engraving
+  // Up the text: normal_direction cross x_axis_direction, completing a
+  // right-handed frame.
   const yAxis: Point3 = {
     x: normal.y * xAxis.z - normal.z * xAxis.y,
     y: normal.z * xAxis.x - normal.x * xAxis.z,
