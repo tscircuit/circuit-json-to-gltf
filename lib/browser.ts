@@ -38,10 +38,11 @@ import { withCircuitJsonErrors } from "./utils/circuit-json-errors"
 // Browser-safe version of circuit to 3D conversion (without texture rendering)
 import type { CircuitJson } from "circuit-json"
 import { convertSceneToGLTF } from "./converters/scene-to-gltf"
-import type {
-  CircuitJsonWithPcbFlex,
-  ConversionOptions,
-  Scene3D,
+import {
+  isCadLaserEngravingText,
+  type CircuitJsonWithPcbFlex,
+  type ConversionOptions,
+  type Scene3D,
 } from "./types"
 
 const DEFAULT_BOARD_THICKNESS = 1.6
@@ -75,7 +76,8 @@ export async function convertCircuitJsonTo3D(
         e.type === "pcb_stiffener" ||
         e.type === "pcb_bend" ||
         (e.type === "pcb_board" && e.material === "flex"),
-    )
+    ) ||
+    (circuitJson as { type: string }[]).some(isCadLaserEngravingText)
   ) {
     const { convertCircuitJsonTo3D: convertFullScene } = await import(
       "./converters/circuit-to-3d"

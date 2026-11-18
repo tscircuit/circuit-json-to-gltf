@@ -2,6 +2,51 @@ import type { CircuitJson, PcbBoard } from "circuit-json"
 import type { MaterialOptions } from "jscad-planner"
 import type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
 
+/** The 3D geometry of text laser engraved onto one surface of a part. Mirrors
+ * the proposed circuit-json cad_laser_engraving_text record until it is
+ * released. Right-handed circuit world, mm: +X right, +Y top, +Z above.
+ * anchor_position is an absolute point; normal_direction (outward) and
+ * x_axis_direction (reading direction) are perpendicular unit directions; the
+ * text's up is normal_direction cross x_axis_direction. What is engraved and
+ * how deep is in the linked
+ * source_laser_engraving_text, which rendering does not need.
+ */
+export interface CadLaserEngravingTextRecord {
+  type: "cad_laser_engraving_text"
+  cad_laser_engraving_text_id: string
+  source_laser_engraving_text_id?: string
+  source_component_id: string
+  cad_component_id?: string
+  cad_reference_surface_id?: string
+  text: string
+  font?: "tscircuit2024"
+  /** Text height in mm. */
+  font_size: number
+  anchor_position: Point3
+  anchor_alignment?:
+    | "top_left"
+    | "top_center"
+    | "top_right"
+    | "center_left"
+    | "center"
+    | "center_right"
+    | "bottom_left"
+    | "bottom_center"
+    | "bottom_right"
+  normal_direction: Point3
+  x_axis_direction: Point3
+  /** Color the engraved area is drawn in. */
+  color?: string
+  subcircuit_id?: string
+}
+
+/** Until circuit-json releases the record, it is not in the CircuitJson union,
+ * so documents carrying one are recognized by this guard. */
+export const isCadLaserEngravingText = (record: {
+  type: string
+}): record is CadLaserEngravingTextRecord =>
+  record.type === "cad_laser_engraving_text"
+
 /** Accept unreleased flex records alongside existing Circuit JSON elements. */
 export type CircuitJsonWithPcbFlex = (
   | CircuitJson[number]

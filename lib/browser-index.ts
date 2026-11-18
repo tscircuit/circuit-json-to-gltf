@@ -29,6 +29,7 @@ export type {
   ConversionOptions,
   GLTFExportOptions,
   Light3D,
+  CadLaserEngravingTextRecord,
   OBJMaterial,
   OBJMesh,
   Point3,

@@ -100,6 +100,7 @@ export type {
   CoordinateTransformConfig,
   GLTFExportOptions,
   Light3D,
+  CadLaserEngravingTextRecord,
   OBJMaterial,
   OBJMesh,
   Point3,
@@ -138,3 +139,4 @@ export interface BRepShape {
 }
 
 export type { PcbBendRecord, PcbStiffenerRecord } from "./utils/pcb-fold"
+export { isCadLaserEngravingText } from "./types"
