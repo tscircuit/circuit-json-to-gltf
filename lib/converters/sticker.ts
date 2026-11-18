@@ -12,9 +12,10 @@ import { getBoundingBoxSize } from "../utils/mesh-scale"
 /** Draft of the proposed Circuit JSON `cad_sticker` record, not yet in the
  * installed circuit-json package. Right-handed circuit world, mm: +X right,
  * +Y top, +Z above. `center` is a point on the surface the sticker is applied
- * to; `normal` and `x_axis` are perpendicular unit directions. Seen from
- * outside, looking against `normal`, the artwork reads left to right along
- * `x_axis` with its top toward `normal × x_axis`.
+ * to; `normal_direction` and `x_axis_direction` are perpendicular unit
+ * directions. Seen from outside, looking against `normal_direction`, the
+ * artwork reads left to right along `x_axis_direction` with its top toward
+ * `normal_direction × x_axis_direction`.
  */
 export interface CadStickerRecord {
   type: "cad_sticker"
@@ -22,8 +23,8 @@ export interface CadStickerRecord {
   source_component_id: string
   applied_to_source_component_id?: string
   center: Point3
-  normal: Point3
-  x_axis: Point3
+  normal_direction: Point3
+  x_axis_direction: Point3
   width: number
   height: number
   thickness?: number
@@ -57,7 +58,13 @@ export async function createStickerBox(
     authHeaders?: AuthHeaders
   } = {},
 ): Promise<Box3D> {
-  const { center, normal, x_axis: xAxis, width, height } = sticker
+  const {
+    center,
+    normal_direction: normal,
+    x_axis_direction: xAxis,
+    width,
+    height,
+  } = sticker
   const thickness = sticker.thickness ?? DEFAULT_RENDER_THICKNESS
   const backgroundColor = sticker.background_color ?? DEFAULT_BACKGROUND_COLOR
   const yAxis = cross(normal, xAxis)

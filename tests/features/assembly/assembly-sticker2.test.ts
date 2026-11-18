@@ -37,7 +37,7 @@ const expectPoint = (actual: Point3 | undefined, expected: Point3) => {
   expect(actual!.z).toBeCloseTo(expected.z, 6)
 }
 
-test("sticker artwork lands on its frame: left to right along x_axis, top toward normal × x_axis", async () => {
+test("sticker artwork lands on its frame: left to right along x_axis_direction, top toward normal_direction × x_axis_direction", async () => {
   // Off-center on the lid's top, with the default frame.
   const top = await artworkCorners({
     center: { x: 3, y: -2, z: 12 },
@@ -53,7 +53,7 @@ test("sticker artwork lands on its frame: left to right along x_axis, top toward
   // Turned a quarter turn counterclockwise on that surface.
   const turned = await artworkCorners({
     center: { x: 3, y: -2, z: 12 },
-    x_axis: { x: 0, y: 1, z: 0 },
+    x_axis_direction: { x: 0, y: 1, z: 0 },
     width: 20,
     height: 8,
     thickness: 0.2,
@@ -65,8 +65,8 @@ test("sticker artwork lands on its frame: left to right along x_axis, top toward
   // On the -Y wall, upright: reads along +X with its top toward +Z.
   const wall = await artworkCorners({
     center: { x: 3, y: -22.75, z: 6 },
-    normal: { x: 0, y: -1, z: 0 },
-    x_axis: { x: 1, y: 0, z: 0 },
+    normal_direction: { x: 0, y: -1, z: 0 },
+    x_axis_direction: { x: 1, y: 0, z: 0 },
     width: 20,
     height: 8,
     thickness: 0.2,
