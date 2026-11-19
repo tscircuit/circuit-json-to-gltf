@@ -7,6 +7,7 @@ import {
   splitViaWalls,
 } from "../utils/pad-overlapping-vias"
 import { createReferenceSurfaceBox } from "./reference-surface"
+import { createStickerBox, type CadStickerRecord } from "./sticker"
 import {
   createStiffenerMesh,
   tryFoldStiffenerMesh,
@@ -484,6 +485,21 @@ export async function convertCircuitJsonTo3D(
     if (result && !result.ok)
       reportFoldIssue(`CAD component ${cad.cad_component_id}`, result.issue)
     boxes.push(result?.ok ? result.value : box)
+  }
+
+  // cad_sticker is a proposed record that the installed circuit-json does not
+  // type yet, so it is matched by its discriminator.
+  for (const record of inputCircuitJson as readonly { type: string }[]) {
+    if (record.type !== "cad_sticker") continue
+    const sticker = record as CadStickerRecord
+    boxes.push(
+      await createStickerBox(sticker, {
+        label: db.source_component.get(sticker.source_component_id)?.name,
+        textureResolution,
+        projectBaseUrl,
+        authHeaders,
+      }),
+    )
   }
 
   if (options.showReferenceSurfaces) {
