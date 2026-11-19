@@ -160,6 +160,7 @@ const cadDefaults = {
  *       surfaceRef="topSurface"
  *       width="38.1mm"
  *       height="19.05mm"
+ *       cornerRadius="1.5mm"
  *     />
  *   </assembly.printedpart>
  */
@@ -181,6 +182,8 @@ export async function createNema17EnclosureWithSticker(
     x_axis_direction: { x: 1, y: 0, z: 0 },
     width: 38.1,
     height: 19.05,
+    // Illustrative: product-packaging does not record the label stock's radius.
+    corner_radius: 1.5,
     thickness: 0.15,
     image_asset: {
       project_relative_path: "tests/assets/nema17-enclosure-sticker.svg",

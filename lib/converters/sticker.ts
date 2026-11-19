@@ -27,6 +27,7 @@ export interface CadStickerRecord {
   x_axis_direction: Point3
   width: number
   height: number
+  corner_radius?: number
   thickness?: number
   image_asset?: Asset
   background_color?: string
@@ -42,6 +43,53 @@ const cross = (a: Point3, b: Point3): Point3 => ({
   y: a.z * b.x - a.x * b.z,
   z: a.x * b.y - a.y * b.x,
 })
+
+/** Segments used to approximate each rounded corner's quarter circle. */
+const CORNER_SEGMENTS = 8
+
+/** The sticker's outline in its own XY, in mm: X along x_axis_direction, Y
+ * toward the artwork's top, origin at the center. Counterclockwise seen from
+ * outside, starting at the bottom-left. `halfWidth` and `halfHeight` are half
+ * extents; the radius is clamped to the smaller of them.
+ */
+function stickerOutline(
+  halfWidth: number,
+  halfHeight: number,
+  cornerRadius: number,
+): Array<{ x: number; y: number }> {
+  const radius = Math.min(cornerRadius, halfWidth, halfHeight)
+  if (!(radius > 0))
+    return [
+      { x: -halfWidth, y: -halfHeight },
+      { x: halfWidth, y: -halfHeight },
+      { x: halfWidth, y: halfHeight },
+      { x: -halfWidth, y: halfHeight },
+    ]
+  // Each corner's arc center and the angle its arc starts at, in quarter turns.
+  const corners = [
+    { x: -halfWidth + radius, y: -halfHeight + radius, startQuarter: 2 },
+    { x: halfWidth - radius, y: -halfHeight + radius, startQuarter: 3 },
+    { x: halfWidth - radius, y: halfHeight - radius, startQuarter: 0 },
+    { x: -halfWidth + radius, y: halfHeight - radius, startQuarter: 1 },
+  ]
+  const outline: Array<{ x: number; y: number }> = []
+  for (const corner of corners) {
+    for (let step = 0; step <= CORNER_SEGMENTS; step++) {
+      const angle =
+        ((corner.startQuarter + step / CORNER_SEGMENTS) * Math.PI) / 2
+      outline.push({
+        x: corner.x + radius * Math.cos(angle),
+        y: corner.y + radius * Math.sin(angle),
+      })
+    }
+  }
+  // A radius of half a side makes neighbouring arcs meet, which would leave
+  // zero-length edges.
+  return outline.filter((vertex, index) => {
+    const next = outline[(index + 1) % outline.length]!
+    return Math.hypot(next.x - vertex.x, next.y - vertex.y) > 1e-9
+  })
+}
 
 /** A thin slab with the artwork on its outward face. Corners are built in
  * circuit world from the record's frame, the same way
@@ -74,50 +122,21 @@ export async function createStickerBox(
     z: center.z + xAxis.z * x + yAxis.z * y + normal.z * z,
   })
   const [w, h] = [width / 2, height / 2]
-  // Counterclockwise seen from outside: bottom-left, bottom-right, top-right,
-  // top-left of the artwork.
-  const ring = (z: number) => [
-    point(-w, -h, z),
-    point(w, -h, z),
-    point(w, h, z),
-    point(-w, h, z),
-  ]
-  const back = ring(0)
-  const face = ring(thickness)
+  const outline = stickerOutline(w, h, sticker.corner_radius ?? 0)
+  const back = outline.map(({ x, y }) => point(x, y, 0))
+  const face = outline.map(({ x, y }) => point(x, y, thickness))
   // glTF texture coordinates: (0, 0) is the image's top-left corner.
-  const uv = [
-    { u: 0, v: 1 },
-    { u: 1, v: 1 },
-    { u: 1, v: 0 },
-    { u: 0, v: 0 },
-  ]
+  const uvs = outline.map(({ x, y }) => ({
+    u: (x + w) / width,
+    v: (h - y) / height,
+  }))
   const inward = { x: -normal.x, y: -normal.y, z: -normal.z }
-  const triangles: Triangle[] = [
-    {
-      vertices: [face[0]!, face[1]!, face[2]!],
-      uvs: [uv[0]!, uv[1]!, uv[2]!],
-      normal,
-      pcbFace: "top",
-    },
-    {
-      vertices: [face[0]!, face[2]!, face[3]!],
-      uvs: [uv[0]!, uv[2]!, uv[3]!],
-      normal,
-      pcbFace: "top",
-    },
-    {
-      vertices: [back[0]!, back[2]!, back[1]!],
-      normal: inward,
-      pcbFace: "side",
-    },
-    {
-      vertices: [back[0]!, back[3]!, back[2]!],
-      normal: inward,
-      pcbFace: "side",
-    },
-  ]
-  for (let i = 0; i < 4; i++) {
-    const j = (i + 1) % 4
+  const triangles: Triangle[] = []
+  // The outline is convex, so both faces are fans around the sticker's center.
+  const faceCenter = point(0, 0, thickness)
+  const backCenter = point(0, 0, 0)
+  for (let i = 0; i < outline.length; i++) {
+    const j = (i + 1) % outline.length
     const edge = {
       x: back[j]!.x - back[i]!.x,
       y: back[j]!.y - back[i]!.y,
@@ -131,6 +150,17 @@ export async function createStickerBox(
       z: outward.z / length,
     }
     triangles.push(
+      {
+        vertices: [faceCenter, face[i]!, face[j]!],
+        uvs: [{ u: 0.5, v: 0.5 }, uvs[i]!, uvs[j]!],
+        normal,
+        pcbFace: "top",
+      },
+      {
+        vertices: [backCenter, back[j]!, back[i]!],
+        normal: inward,
+        pcbFace: "side",
+      },
       {
         vertices: [back[i]!, back[j]!, face[j]!],
         normal: sideNormal,

@@ -11,7 +11,8 @@ async function artworkCorners(
   sticker: Parameters<typeof createNema17EnclosureWithSticker>[0],
 ) {
   const scene = await convertCircuitJsonTo3D(
-    await createNema17EnclosureWithSticker(sticker),
+    // Square corners, so each corner of the artwork is a mesh vertex.
+    await createNema17EnclosureWithSticker({ corner_radius: 0, ...sticker }),
     { renderBoardTextures: false },
   )
   const box = scene.boxes.find((candidate) => candidate.label === "LABEL")!
