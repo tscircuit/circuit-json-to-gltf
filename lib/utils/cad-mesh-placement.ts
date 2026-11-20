@@ -1,4 +1,4 @@
-import type { CadComponent } from "circuit-json"
+import type { CadComponent, PcbComponent } from "circuit-json"
 import type {
   CoordinateTransformConfig,
   OBJMesh,
@@ -82,11 +82,29 @@ function getBoardContactBounds(mesh: STLMesh | OBJMesh) {
 function getInferredMeshOrigin(
   cad: CadComponent,
   mesh: STLMesh | OBJMesh,
+  objFootprintOrigin?: PcbComponent["footprint_origin"],
 ): Point3 {
   const meshBounds = mesh.boundingBox
   const alignment = cad.model_origin_alignment ?? cad.anchor_alignment
 
   if (alignment === "center_of_component_on_board_surface") {
+    // Core emits both board-surface tags by default. A planar offset from
+    // footprint_origin is an authored CAD anchor in Z-up circuit millimetres.
+    // Keep the OBJ's local origin at that anchor, as the native viewer does.
+    if (
+      objFootprintOrigin &&
+      cad.position &&
+      !cad.is_on_folded_board &&
+      cad.model_origin_alignment === alignment &&
+      cad.anchor_alignment === alignment &&
+      Math.hypot(
+        cad.position.x - objFootprintOrigin.x,
+        cad.position.y - objFootprintOrigin.y,
+      ) > 1e-6
+    ) {
+      return { x: 0, y: 0, z: 0 }
+    }
+
     const contactBounds = getBoardContactBounds(mesh)
     const center = getBoundingBoxCenter(contactBounds ?? meshBounds)
 
@@ -110,6 +128,7 @@ export function getMeshOrigin(
   options?: {
     loaderTransform?: CoordinateTransformConfig
     modelBoardNormalDirection?: CadComponent["model_board_normal_direction"]
+    objFootprintOrigin?: PcbComponent["footprint_origin"]
   },
 ): Point3 | null {
   if (cad.model_origin_position) {
@@ -133,7 +152,7 @@ export function getMeshOrigin(
     return origin
   }
 
-  return getInferredMeshOrigin(cad, mesh)
+  return getInferredMeshOrigin(cad, mesh, options?.objFootprintOrigin)
 }
 
 export function fitMeshToCadBounds<T extends STLMesh | OBJMesh>(
