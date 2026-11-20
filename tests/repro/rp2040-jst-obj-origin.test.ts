@@ -125,6 +125,8 @@ test("exported J1 contact placement snapshot", async () => {
         width: 17,
         height: 14,
         thickness: 1.6,
+        num_layers: 2,
+        material: "fr4",
       },
       pcb,
       { ...cad, position: { ...cad.position, z: 0.77 } },
