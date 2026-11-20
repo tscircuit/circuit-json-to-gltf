@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import type { CadComponent, PcbComponent, PcbSmtPad } from "circuit-json"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { convertCircuitJsonToGltf } from "../../lib"
 import { parseGLB } from "../../lib/loaders/glb"
 import { COORDINATE_TRANSFORMS } from "../../lib/utils/coordinate-transform"
@@ -110,4 +111,36 @@ test("an explicit OBJ origin aligns the exported J1 contacts", async () => {
     position: { x: 18.0875, y: -4.2, z: 0.8 },
     model_origin_position: { x: 0, y: 1, z: 0.05 },
   })
+})
+
+test("exported J1 contact placement snapshot", async () => {
+  // Lift the flat contact faces 0.02 mm for the render so they remain visible
+  // where they meet the board. The geometry checks use the original Z height.
+  const glb = await convertCircuitJsonToGltf(
+    [
+      {
+        type: "pcb_board",
+        pcb_board_id: "board",
+        center: { x: 16.5, y: -4.2 },
+        width: 17,
+        height: 14,
+        thickness: 1.6,
+      },
+      pcb,
+      { ...cad, position: { ...cad.position, z: 0.77 } },
+      ...pads,
+    ],
+    { format: "glb", boardTextureResolution: 768 },
+  )
+  if (!(glb instanceof ArrayBuffer)) throw new Error("Expected binary glTF")
+
+  await expect(
+    renderGLTFToPNGFromGLB(glb, {
+      camPos: [-16.5, 24, -4.15],
+      lookAt: [-16.5, 0.8, -4.2],
+      width: 640,
+      height: 480,
+      fov: 42,
+    }),
+  ).toMatchPngSnapshot(import.meta.path, undefined, { maxDiffFraction: 0.002 })
 })
