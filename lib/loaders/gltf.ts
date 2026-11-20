@@ -56,6 +56,47 @@ export async function fetchGltfAndConvertToGlb(
 
   const buffers = await Promise.all(bufferPromises)
 
+  if (Array.isArray(gltf.images)) {
+    await Promise.all(
+      gltf.images.map(async (image: any) => {
+        if (
+          image &&
+          typeof image.uri === "string" &&
+          !image.uri.startsWith("data:")
+        ) {
+          const imageUrl = new URL(image.uri, url).toString()
+          const imageResponse = await fetchWithTimeout(imageUrl, {
+            authHeaders,
+          })
+          if (!imageResponse.ok) return
+          const imageBuffer = await imageResponse.arrayBuffer()
+          const bytes = new Uint8Array(imageBuffer)
+          const headerMime = imageResponse.headers
+            ?.get("content-type")
+            ?.split(";")[0]
+            ?.trim()
+          const extMime =
+            image.uri.toLowerCase().endsWith(".jpg") ||
+            image.uri.toLowerCase().endsWith(".jpeg")
+              ? "image/jpeg"
+              : image.uri.toLowerCase().endsWith(".webp")
+                ? "image/webp"
+                : "image/png"
+          const mimeType =
+            image.mimeType ||
+            (headerMime?.startsWith("image/") ? headerMime : undefined) ||
+            extMime
+          let binary = ""
+          const chunkSize = 0x8000
+          for (let i = 0; i < bytes.length; i += chunkSize) {
+            binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+          }
+          image.uri = `data:${mimeType};base64,${btoa(binary)}`
+        }
+      }),
+    )
+  }
+
   let binaryBuffer = new ArrayBuffer(0)
   if (buffers.length > 0 && buffers[0]) {
     binaryBuffer = buffers[0]

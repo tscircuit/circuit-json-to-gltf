@@ -44,6 +44,7 @@ export class GLTFBuilder {
   private textures: GLTFTexture[]
   private images: GLTFImage[]
   private imageDataMap: Map<string, Uint8Array>
+  private textureCache: Map<string, number>
   private meshCache: Map<string, number>
   private materialCache: Map<string, number>
 
@@ -66,6 +67,7 @@ export class GLTFBuilder {
     this.textures = []
     this.images = []
     this.imageDataMap = new Map()
+    this.textureCache = new Map()
     this.meshCache = new Map()
     this.materialCache = new Map()
   }
@@ -320,7 +322,11 @@ export class GLTFBuilder {
     const objMaterialIndices = new Map<number, number>()
 
     for (const [name, objMaterial] of objMesh.materials!) {
-      let baseColor: [number, number, number, number] = [0.3, 0.3, 0.3, 1.0]
+      const textureIndex = objMaterial.textureDataUrl
+        ? await this.addTextureFromDataUrl(objMaterial.textureDataUrl)
+        : -1
+      let baseColor: [number, number, number, number] =
+        textureIndex !== -1 ? [1.0, 1.0, 1.0, 1.0] : [0.3, 0.3, 0.3, 1.0]
 
       if (objMaterial.color) {
         const color =
@@ -351,15 +357,27 @@ export class GLTFBuilder {
       }
       baseColor[3] = alpha
 
+      const alphaMode = box.isTranslucent
+        ? "BLEND"
+        : (objMaterial.alphaMode ?? (alpha < 1.0 ? "BLEND" : "OPAQUE"))
+
       const gltfMaterialIndex = this.addMaterial({
         name: `OBJ_${name}`,
         pbrMetallicRoughness: {
+          ...(textureIndex !== -1
+            ? { baseColorTexture: { index: textureIndex } }
+            : {}),
           baseColorFactor: baseColor,
-          metallicFactor: 0.05,
-          roughnessFactor: 0.95,
+          metallicFactor:
+            objMaterial.metallicFactor ?? (textureIndex !== -1 ? 0.0 : 0.05),
+          roughnessFactor:
+            objMaterial.roughnessFactor ?? (textureIndex !== -1 ? 0.8 : 0.95),
         },
-        alphaMode: alpha < 1.0 ? "BLEND" : "OPAQUE",
-        doubleSided: box.isTranslucent ? true : undefined,
+        alphaMode,
+        ...(alphaMode === "MASK" && objMaterial.alphaCutoff !== undefined
+          ? { alphaCutoff: objMaterial.alphaCutoff }
+          : {}),
+        doubleSided: box.isTranslucent ? true : objMaterial.doubleSided,
       })
 
       // Get the correct material index from the OBJ parsing
@@ -1088,15 +1106,20 @@ export class GLTFBuilder {
   }
 
   private async addTextureFromDataUrl(dataUrl: string): Promise<number> {
+    const cachedTextureIndex = this.textureCache.get(dataUrl)
+    if (cachedTextureIndex !== undefined) {
+      return cachedTextureIndex
+    }
+
     try {
       // Extract image data from data URL
-      const base64Match = dataUrl.match(/^data:image\/(\w+);base64,(.+)$/)
+      const base64Match = dataUrl.match(/^data:(image\/[\w.+-]+);base64,(.+)$/)
       if (!base64Match) {
         console.warn("Invalid data URL format")
         return -1
       }
 
-      const mimeType = `image/${base64Match[1]!}`
+      const mimeType = base64Match[1]!
       const base64Data = base64Match[2]!
       const imageData = Uint8Array.from(atob(base64Data), (c) =>
         c.charCodeAt(0),
@@ -1118,6 +1141,7 @@ export class GLTFBuilder {
         source: imageIndex,
         sampler: 0, // Use default sampler
       })
+      this.textureCache.set(dataUrl, textureIndex)
 
       return textureIndex
     } catch (error) {

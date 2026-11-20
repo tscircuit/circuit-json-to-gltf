@@ -99,8 +99,11 @@ export function parseGLB(
       binaryBuffer = buffer.slice(offset, offset + binaryChunkLength)
     }
   }
-  // Extract geometry from GLTF
-  const triangles = extractTrianglesFromGLTF(gltf, binaryBuffer)
+  // Extract geometry and embedded material definitions from GLTF
+  const { triangles, extractedMaterials } = extractTrianglesFromGLTF(
+    gltf,
+    binaryBuffer,
+  )
 
   // Apply coordinate transformation
   // GLB files from JSCAD have Y and Z swapped relative to our coordinate system
@@ -109,12 +112,14 @@ export function parseGLB(
   }
   const transformedTriangles = transformTriangles(triangles, finalConfig)
 
-  // Check if any triangles have colors (materials)
-  const hasColors = transformedTriangles.some((t) => t.color !== undefined)
+  // Check if any triangles have colors or textured/PBR materials
+  const hasMaterials =
+    extractedMaterials.size > 0 ||
+    transformedTriangles.some((t) => t.color !== undefined)
 
-  if (hasColors) {
-    // Group triangles by color and return as OBJMesh
-    return convertToOBJMesh(transformedTriangles)
+  if (hasMaterials) {
+    // Group triangles by material/color and return as OBJMesh
+    return convertToOBJMesh(transformedTriangles, extractedMaterials)
   }
 
   return {
@@ -123,16 +128,34 @@ export function parseGLB(
   }
 }
 
-function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
-  // Group triangles by color
-  const colorGroups = new Map<string, Triangle[]>()
+function convertToOBJMesh(
+  triangles: Triangle[],
+  extractedMaterials: Map<number, OBJMaterial>,
+): OBJMesh {
+  // Group triangles by extracted glTF material + resolved triangle color so
+  // distinct textured surfaces (e.g. top and bottom PCB textures sharing white
+  // baseColorFactor) stay separate while vertex-colored primitives still group.
+  const materialGroups = new Map<
+    string,
+    { baseMaterial?: OBJMaterial; colorKey: string; triangles: Triangle[] }
+  >()
 
   for (const triangle of triangles) {
+    const baseMaterial =
+      triangle.materialIndex !== undefined
+        ? extractedMaterials.get(triangle.materialIndex)
+        : undefined
     const colorKey = triangle.color ? JSON.stringify(triangle.color) : "default"
-    if (!colorGroups.has(colorKey)) {
-      colorGroups.set(colorKey, [])
+    const groupKey =
+      triangle.materialIndex !== undefined
+        ? `gltf:${triangle.materialIndex}:${colorKey}`
+        : `color:${colorKey}`
+    let group = materialGroups.get(groupKey)
+    if (!group) {
+      group = { baseMaterial, colorKey, triangles: [] }
+      materialGroups.set(groupKey, group)
     }
-    colorGroups.get(colorKey)!.push(triangle)
+    group.triangles.push(triangle)
   }
 
   // Create materials and assign material indices
@@ -142,18 +165,28 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
 
   const trianglesWithMaterialIndex: Triangle[] = []
 
-  for (const [colorKey, groupTriangles] of colorGroups) {
+  for (const [, group] of materialGroups) {
     const materialName = `Material_${materialIndex}`
     materialIndexMap.set(materialName, materialIndex)
 
-    if (colorKey === "default") {
+    if (group.baseMaterial) {
+      const resolvedColor =
+        group.colorKey !== "default"
+          ? JSON.parse(group.colorKey)
+          : group.baseMaterial.color
+      materials.set(materialName, {
+        ...group.baseMaterial,
+        name: materialName,
+        ...(resolvedColor ? { color: resolvedColor } : {}),
+      })
+    } else if (group.colorKey === "default") {
       // Default gray material
       materials.set(materialName, {
         name: materialName,
         color: [179, 179, 179, 1.0], // 0.7 * 255 = 179
       })
     } else {
-      const color = JSON.parse(colorKey)
+      const color = JSON.parse(group.colorKey)
       materials.set(materialName, {
         name: materialName,
         color,
@@ -161,7 +194,7 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
     }
 
     // Add triangles with material index
-    for (const triangle of groupTriangles) {
+    for (const triangle of group.triangles) {
       trianglesWithMaterialIndex.push({
         ...triangle,
         materialIndex,
@@ -179,14 +212,144 @@ function convertToOBJMesh(triangles: Triangle[]): OBJMesh {
   }
 }
 
+function sniffImageMimeType(bytes: Uint8Array): string | undefined {
+  if (
+    bytes.length >= 4 &&
+    bytes[0] === 0x89 &&
+    bytes[1] === 0x50 &&
+    bytes[2] === 0x4e &&
+    bytes[3] === 0x47
+  ) {
+    return "image/png"
+  }
+  if (
+    bytes.length >= 3 &&
+    bytes[0] === 0xff &&
+    bytes[1] === 0xd8 &&
+    bytes[2] === 0xff
+  ) {
+    return "image/jpeg"
+  }
+  if (
+    bytes.length >= 12 &&
+    bytes[0] === 0x52 &&
+    bytes[1] === 0x49 &&
+    bytes[2] === 0x46 &&
+    bytes[3] === 0x46 &&
+    bytes[8] === 0x57 &&
+    bytes[9] === 0x45 &&
+    bytes[10] === 0x42 &&
+    bytes[11] === 0x50
+  ) {
+    return "image/webp"
+  }
+  return undefined
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(
+      bytes.buffer,
+      bytes.byteOffset,
+      bytes.byteLength,
+    ).toString("base64")
+  }
+  let binary = ""
+  const chunkSize = 0x8000
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+  return btoa(binary)
+}
+
+function resolveBaseColorTextureDataUrl(
+  material: any,
+  gltf: any,
+  binaryBuffer: ArrayBuffer | undefined,
+  imageDataUrlCache: Map<number, string | undefined>,
+): string | undefined {
+  const texInfo = material?.pbrMetallicRoughness?.baseColorTexture
+  if (texInfo?.index === undefined) return undefined
+  const texture = gltf.textures?.[texInfo.index]
+  const imageIndex = texture?.source
+  if (typeof imageIndex !== "number") return undefined
+
+  if (imageDataUrlCache.has(imageIndex)) {
+    return imageDataUrlCache.get(imageIndex)
+  }
+
+  const image = gltf.images?.[imageIndex]
+  if (!image) {
+    imageDataUrlCache.set(imageIndex, undefined)
+    return undefined
+  }
+
+  let dataUrl: string | undefined
+  if (typeof image.uri === "string" && image.uri.startsWith("data:image/")) {
+    dataUrl = image.uri
+  } else if (typeof image.bufferView === "number" && binaryBuffer) {
+    const bufferView = gltf.bufferViews?.[image.bufferView]
+    if (bufferView) {
+      const byteOffset = bufferView.byteOffset ?? 0
+      const byteLength = bufferView.byteLength ?? 0
+      if (
+        byteOffset >= 0 &&
+        byteLength > 0 &&
+        byteOffset + byteLength <= binaryBuffer.byteLength
+      ) {
+        const bytes = new Uint8Array(binaryBuffer, byteOffset, byteLength)
+        const mimeType =
+          image.mimeType || sniffImageMimeType(bytes) || "image/png"
+        dataUrl = `data:${mimeType};base64,${bytesToBase64(bytes)}`
+      }
+    }
+  }
+
+  imageDataUrlCache.set(imageIndex, dataUrl)
+  return dataUrl
+}
+
+function readVertexUv(
+  texcoords: Float32Array,
+  vertexIndex: number,
+  textureTransform?: {
+    offset?: [number, number]
+    rotation?: number
+    scale?: [number, number]
+  },
+): { u: number; v: number } {
+  let u = texcoords[vertexIndex * 2]!
+  let v = texcoords[vertexIndex * 2 + 1]!
+  if (textureTransform) {
+    const [sx, sy] = textureTransform.scale ?? [1, 1]
+    u *= sx
+    v *= sy
+    if (textureTransform.rotation) {
+      const cos = Math.cos(textureTransform.rotation)
+      const sin = Math.sin(textureTransform.rotation)
+      const ru = u * cos + v * sin
+      const rv = -u * sin + v * cos
+      u = ru
+      v = rv
+    }
+    if (textureTransform.offset) {
+      u += textureTransform.offset[0]
+      v += textureTransform.offset[1]
+    }
+  }
+  return { u, v }
+}
+
 function extractTrianglesFromGLTF(
   gltf: any,
   binaryBuffer?: ArrayBuffer,
-): Triangle[] {
+): { triangles: Triangle[]; extractedMaterials: Map<number, OBJMaterial> } {
   const triangles: Triangle[] = []
+  const extractedMaterials = new Map<number, OBJMaterial>()
+  const imageDataUrlCache = new Map<number, string | undefined>()
 
   if (!gltf.meshes || !gltf.accessors || !gltf.bufferViews) {
-    return triangles
+    return { triangles, extractedMaterials }
   }
 
   // Build mesh transforms from node hierarchy
@@ -242,21 +405,79 @@ function extractTrianglesFromGLTF(
         )
       }
 
-      // Get material color (if present and no vertex colors)
+      // Resolve glTF material color, texture, and PBR properties
       let materialColor: [number, number, number, number] | undefined
-      if (!vertexColors && primitive.material !== undefined && gltf.materials) {
-        const material = gltf.materials[primitive.material]
-        if (material?.pbrMetallicRoughness?.baseColorFactor) {
-          const factor = material.pbrMetallicRoughness.baseColorFactor
+      let extractedMaterialIndex: number | undefined
+      const material =
+        primitive.material !== undefined && gltf.materials
+          ? gltf.materials[primitive.material]
+          : undefined
+      const pbr = material?.pbrMetallicRoughness
+      const textureDataUrl = material
+        ? resolveBaseColorTextureDataUrl(
+            material,
+            gltf,
+            binaryBuffer,
+            imageDataUrlCache,
+          )
+        : undefined
+
+      if (material) {
+        if (pbr?.baseColorFactor) {
+          const factor = pbr.baseColorFactor
           // Convert from 0-1 range to 0-255 range for our Color type
           materialColor = [
             Math.round(factor[0] * 255),
             Math.round(factor[1] * 255),
             Math.round(factor[2] * 255),
-            factor[3],
+            factor[3] ?? 1.0,
           ]
+        } else if (textureDataUrl) {
+          // glTF 2.0 default baseColorFactor is [1, 1, 1, 1]
+          materialColor = [255, 255, 255, 1.0]
+        }
+
+        if (textureDataUrl) {
+          extractedMaterialIndex = primitive.material as number
+          if (!extractedMaterials.has(extractedMaterialIndex)) {
+            extractedMaterials.set(extractedMaterialIndex, {
+              name: material.name || `GLTFMaterial_${extractedMaterialIndex}`,
+              color: materialColor ?? [255, 255, 255, 1.0],
+              textureDataUrl,
+              metallicFactor:
+                typeof pbr?.metallicFactor === "number"
+                  ? pbr.metallicFactor
+                  : undefined,
+              roughnessFactor:
+                typeof pbr?.roughnessFactor === "number"
+                  ? pbr.roughnessFactor
+                  : undefined,
+              alphaMode: material.alphaMode,
+              alphaCutoff: material.alphaCutoff,
+              doubleSided: material.doubleSided,
+            })
+          }
         }
       }
+
+      // Get texture coordinates (TEXCOORD_n, defaulting to TEXCOORD_0)
+      let texcoords: Float32Array | undefined
+      const texCoordSet = pbr?.baseColorTexture?.texCoord ?? 0
+      const texcoordAccessorIndex =
+        primitive.attributes?.[`TEXCOORD_${texCoordSet}`] ??
+        primitive.attributes?.TEXCOORD_0
+      if (
+        texcoordAccessorIndex !== undefined &&
+        gltf.accessors?.[texcoordAccessorIndex]
+      ) {
+        texcoords = getAccessorData(
+          gltf.accessors[texcoordAccessorIndex],
+          gltf.bufferViews,
+          binaryBuffer,
+        )
+      }
+      const textureTransform =
+        pbr?.baseColorTexture?.extensions?.KHR_texture_transform
 
       // Get indices (if present)
       // Note: getAccessorData returns Float32Array with correct values
@@ -379,9 +600,26 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
+          const uvs =
+            texcoords && Math.max(i0, i1, i2) * 2 + 1 < texcoords.length
+              ? ([
+                  readVertexUv(texcoords, i0, textureTransform),
+                  readVertexUv(texcoords, i1, textureTransform),
+                  readVertexUv(texcoords, i2, textureTransform),
+                ] as Triangle["uvs"])
+              : undefined
+
           triangles.push(
             applyNodeTransformToTriangle(
-              { vertices: [v0, v1, v2], normal, color: triangleColor },
+              {
+                vertices: [v0, v1, v2],
+                normal,
+                color: triangleColor,
+                ...(uvs ? { uvs } : {}),
+                ...(extractedMaterialIndex !== undefined
+                  ? { materialIndex: extractedMaterialIndex }
+                  : {}),
+              },
               worldMatrix,
             ),
           )
@@ -494,9 +732,26 @@ function extractTrianglesFromGLTF(
             triangleColor = materialColor
           }
 
+          const uvs =
+            texcoords && (i + 2) * 2 + 1 < texcoords.length
+              ? ([
+                  readVertexUv(texcoords, i, textureTransform),
+                  readVertexUv(texcoords, i + 1, textureTransform),
+                  readVertexUv(texcoords, i + 2, textureTransform),
+                ] as Triangle["uvs"])
+              : undefined
+
           triangles.push(
             applyNodeTransformToTriangle(
-              { vertices: [v0, v1, v2], normal, color: triangleColor },
+              {
+                vertices: [v0, v1, v2],
+                normal,
+                color: triangleColor,
+                ...(uvs ? { uvs } : {}),
+                ...(extractedMaterialIndex !== undefined
+                  ? { materialIndex: extractedMaterialIndex }
+                  : {}),
+              },
               worldMatrix,
             ),
           )
@@ -505,7 +760,7 @@ function extractTrianglesFromGLTF(
     }
   }
 
-  return triangles
+  return { triangles, extractedMaterials }
 }
 
 function getAccessorData(
