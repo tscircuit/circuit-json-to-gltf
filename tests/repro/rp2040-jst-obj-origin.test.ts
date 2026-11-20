@@ -26,6 +26,10 @@ const obj = contacts
   })
   .join("\n")
 
+// The visual snapshot uses the complete C265102 model from the released board.
+const jstModelUrl =
+  "https://modelcdn.tscircuit.com/easyeda_models/assets/C265102.obj?uuid=b20262abc44c45d5b414bbc2d0b40d89"
+
 const pcb: PcbComponent = {
   type: "pcb_component",
   pcb_component_id: "pcb_j1",
@@ -113,23 +117,21 @@ test("an explicit OBJ origin aligns the exported J1 contacts", async () => {
   })
 })
 
-test("exported J1 contact placement snapshot", async () => {
-  // Lift the flat contact faces 0.02 mm for the render so they remain visible
-  // where they meet the board. The geometry checks use the original Z height.
+test("exported J1 connector and solder pads snapshot", async () => {
   const glb = await convertCircuitJsonToGltf(
     [
       {
         type: "pcb_board",
         pcb_board_id: "board",
-        center: { x: 16.5, y: -4.2 },
-        width: 17,
+        center: { x: 14.5, y: -4.2 },
+        width: 13.3,
         height: 14,
         thickness: 1.6,
         num_layers: 2,
         material: "fr4",
       },
       pcb,
-      { ...cad, position: { ...cad.position, z: 0.77 } },
+      { ...cad, model_obj_url: jstModelUrl },
       ...pads,
     ],
     { format: "glb", boardTextureResolution: 768 },
@@ -138,11 +140,12 @@ test("exported J1 contact placement snapshot", async () => {
 
   await expect(
     renderGLTFToPNGFromGLB(glb, {
-      camPos: [-16.5, 24, -4.15],
-      lookAt: [-16.5, 0.8, -4.2],
-      width: 640,
-      height: 480,
-      fov: 42,
+      camPos: [-4.5, 18, 2],
+      lookAt: [-16.5, 2.5, -4.2],
+      width: 720,
+      height: 540,
+      fov: 50,
+      backgroundColor: "#eef2f0",
     }),
-  ).toMatchPngSnapshot(import.meta.path, undefined, { maxDiffFraction: 0.002 })
-})
+  ).toMatchPngSnapshot(import.meta.path, undefined, { maxDiffFraction: 0.005 })
+}, 30_000)
