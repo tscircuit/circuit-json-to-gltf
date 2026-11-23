@@ -52,6 +52,7 @@ export async function convertCircuitJsonToGltf(
   // Convert 3D scene to GLTF
   const gltfOptions = {
     binary: format === "glb",
+    outputUnits: options.outputUnits,
     embedImages: true,
     forceIndices: true,
   }

@@ -21,7 +21,7 @@ export interface GLTF {
 }
 
 export interface GLTFExplosionLine {
-  /** Final glTF world coordinates, +Y up, mm. Points, not displacements. */
+  /** Final glTF world points, +Y up, in the export's outputUnits (default mm). */
   points: [number, number, number][]
   dashed?: boolean
   stageRef?: string

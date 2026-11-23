@@ -8,7 +8,7 @@ export async function convertSceneToGLTF(
   const builder = new GLTFBuilder()
 
   // Build the GLTF from our Scene3D structure
-  await builder.buildFromScene3D(scene)
+  await builder.buildFromScene3D(scene, options.outputUnits)
 
   // Export to GLTF
   const result = builder.export(options.binary)
