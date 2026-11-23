@@ -80,8 +80,8 @@ const pads: Extract<PcbSmtPad, { shape: "rect" }>[] = [
   shape: "rect",
 }))
 
-async function expectContactsOnPads(component: CadComponent) {
-  const glb = await convertCircuitJsonToGltf([pcb, component, ...pads], {
+async function expectContactsOnPads(component: CadComponent, footprint = pcb) {
+  const glb = await convertCircuitJsonToGltf([footprint, component, ...pads], {
     format: "glb",
   })
   if (!(glb instanceof ArrayBuffer)) throw new Error("Expected binary glTF")
@@ -105,7 +105,7 @@ async function expectContactsOnPads(component: CadComponent) {
   expect(counts).toEqual([2, 2, 2, 2, 2, 2])
 }
 
-test.failing("exported J1 OBJ contacts land on the six PCB pads", async () => {
+test("exported J1 OBJ contacts land on the six PCB pads", async () => {
   await expectContactsOnPads(cad)
 })
 
@@ -149,3 +149,18 @@ test("exported J1 connector and solder pads snapshot", async () => {
     }),
   ).toMatchPngSnapshot(import.meta.path, undefined, { maxDiffFraction: 0.005 })
 }, 30_000)
+
+test("an OBJ at the footprint origin still infers its board contact center", async () => {
+  await expectContactsOnPads(
+    { ...cad, position: { x: 16.5875, y: -4.2, z: 0.75 } },
+    { ...pcb, footprint_origin: { x: 16.5875, y: -4.2 } },
+  )
+})
+
+test("an OBJ with a separate center anchor still infers its board contact center", async () => {
+  await expectContactsOnPads({
+    ...cad,
+    position: { x: 16.5875, y: -4.2, z: 0.75 },
+    anchor_alignment: "center",
+  })
+})
