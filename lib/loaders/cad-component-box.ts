@@ -307,6 +307,8 @@ export async function loadCadComponentBox(
           ? COORDINATE_TRANSFORMS.CIRCUIT_Z_UP_TO_SCENE_Y_UP
           : defaultTransform,
       modelBoardNormalDirection: cad.model_board_normal_direction,
+      objFootprintOrigin:
+        meshType === "obj" ? pcbComponent?.footprint_origin : undefined,
     })
     if (meshOrigin) {
       box.mesh = translateMesh(box.mesh, {
