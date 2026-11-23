@@ -209,6 +209,9 @@ export async function convertCircuitJsonTo3D(
       mesh: panelMesh,
       color: resolvedPcbColor,
       sideColor: resolvedBoardSideColor,
+      // The panel renders in place of its boards, so it takes the board
+      // identity (3d-viewer tags its panel BoardGroup the same way).
+      componentMetadata: { pcb_board_id: pcbPanel.pcb_panel_id },
     }
 
     // Render panel textures if requested and resolution > 0
@@ -234,6 +237,7 @@ export async function convertCircuitJsonTo3D(
     }
 
     boxes.push(panelBox)
+    // Spreading panelBox gives the via plating the panel's identity.
     if (viaMesh.triangles.length)
       boxes.push({
         ...panelBox,
@@ -328,6 +332,7 @@ export async function convertCircuitJsonTo3D(
         mesh: foldedBoardMesh,
         color: resolvedPcbColor,
         sideColor: resolvedBoardSideColor,
+        componentMetadata: { pcb_board_id: pcbBoard.pcb_board_id },
       }
 
       // Render board textures if requested and resolution > 0
@@ -357,6 +362,7 @@ export async function convertCircuitJsonTo3D(
       boxes.push(boardBox)
       if (viaMesh.triangles.length) {
         const copperMesh = fold ? tryFoldBoardMesh(viaMesh, fold) : undefined
+        // Spreading boardBox gives the via plating the board's identity.
         boxes.push({
           ...boardBox,
           texture: undefined,
@@ -589,6 +595,8 @@ export async function convertCircuitJsonTo3D(
             ? "#879568"
             : "#b8bdc4",
       label: stiffener.pcb_stiffener_id,
+      // Stiffeners are part of the board body: hidden and isolated with it.
+      componentMetadata: { pcb_board_id: pcbBoard.pcb_board_id },
     })
   }
 

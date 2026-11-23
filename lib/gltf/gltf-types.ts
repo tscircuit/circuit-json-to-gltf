@@ -58,6 +58,7 @@ export interface GLTFNode {
       source_component_id?: string
       pcb_component_id?: string
       componentName?: string
+      pcb_board_id?: string
     }
   }
 }
