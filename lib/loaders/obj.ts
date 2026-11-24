@@ -147,10 +147,19 @@ function parseOBJ(
     } else if (trimmed.startsWith("f ")) {
       const parts = trimmed.slice(2).trim().split(/\s+/)
       const idxs = parts.map((p) => {
-        const [vi, ti, ni] = p.split("/") as [string, string?, string?]
+        const [vi, , ni] = p.split("/") as [string, string?, string?]
+        const vIndex = parseInt(vi)
+        const nIndex = ni ? parseInt(ni) : undefined
+        // OBJ indices are 1-based; negative values count back from the most
+        // recently defined element, so -1 is the last vertex or normal.
         return {
-          v: parseInt(vi) - 1,
-          n: ni ? parseInt(ni) - 1 : undefined,
+          v: vIndex < 0 ? vertices.length + vIndex : vIndex - 1,
+          n:
+            nIndex === undefined
+              ? undefined
+              : nIndex < 0
+                ? normals.length + nIndex
+                : nIndex - 1,
         }
       })
       for (let i = 1; i < idxs.length - 1; i++) {
