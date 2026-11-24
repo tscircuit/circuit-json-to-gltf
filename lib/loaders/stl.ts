@@ -45,10 +45,19 @@ function parseSTL(
 ): STLMesh {
   const view = new DataView(buffer)
 
+  // A binary STL has an exact size signature: an 84-byte header plus 50 bytes
+  // per declared triangle. Check it before the ASCII keyword because binary
+  // writers may legally begin the 80-byte header with "solid" (old SolidWorks
+  // exports do), and the ASCII parser would find no facets and return an
+  // empty mesh.
+  const isBinarySize =
+    buffer.byteLength >= 84 &&
+    buffer.byteLength - 84 === 50 * view.getUint32(80, true)
+
   // Check if it's binary STL (first 5 bytes should not be "solid")
   const header = new TextDecoder().decode(buffer.slice(0, 5))
 
-  if (header.toLowerCase() === "solid") {
+  if (!isBinarySize && header.toLowerCase() === "solid") {
     return parseASCIISTL(buffer, transform)
   } else {
     return parseBinarySTL(view, transform)
